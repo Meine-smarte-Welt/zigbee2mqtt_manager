@@ -1,0 +1,49 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Verbindet den Manager mit deiner Zigbee2MQTT-Instanz über die MQTT-Integration.",
+        "data": {
+          "base_topic": "Base-Topic",
+          "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)"
+        },
+        "data_description": {
+          "base_topic": "Entspricht `mqtt.base_topic` in der Zigbee2MQTT-Konfiguration (Standard: zigbee2mqtt)."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. + )."
+    },
+    "abort": {
+      "already_configured": "Für dieses Base-Topic existiert bereits ein Eintrag.",
+      "mqtt_unavailable": "Die MQTT-Integration ist nicht eingerichtet oder nicht verbunden."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Geräte"
+      },
+      "offline": {
+        "name": "Offline-Geräte"
+      },
+      "low_battery": {
+        "name": "Geräte mit niedriger Batterie"
+      },
+      "updates_available": {
+        "name": "Verfügbare Firmware-Updates"
+      }
+    }
+  }
+}

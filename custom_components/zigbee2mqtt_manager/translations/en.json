@@ -1,0 +1,49 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Connects the manager to your Zigbee2MQTT instance via the MQTT integration.",
+        "data": {
+          "base_topic": "Base topic",
+          "low_battery_threshold": "\"Low battery\" threshold (%)"
+        },
+        "data_description": {
+          "base_topic": "Matches `mqtt.base_topic` in your Zigbee2MQTT configuration (default: zigbee2mqtt)."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Invalid base topic (empty or contains # or +)."
+    },
+    "abort": {
+      "already_configured": "An entry for this base topic already exists.",
+      "mqtt_unavailable": "The MQTT integration is not set up or not connected."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "low_battery_threshold": "\"Low battery\" threshold (%)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Devices"
+      },
+      "offline": {
+        "name": "Offline devices"
+      },
+      "low_battery": {
+        "name": "Devices with low battery"
+      },
+      "updates_available": {
+        "name": "Firmware updates available"
+      }
+    }
+  }
+}

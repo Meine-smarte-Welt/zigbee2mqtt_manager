@@ -1,0 +1,13 @@
+{
+  "domain": "zigbee2mqtt_manager",
+  "name": "Zigbee2MQTT Manager",
+  "codeowners": ["@meinesmartewelt"],
+  "config_flow": true,
+  "dependencies": ["frontend", "http", "mqtt", "websocket_api"],
+  "documentation": "https://github.com/meinesmartewelt/zigbee2mqtt_manager",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/meinesmartewelt/zigbee2mqtt_manager/issues",
+  "requirements": [],
+  "version": "0.0.1"
+}
