@@ -2,9 +2,6 @@
 
 Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Firmware-Updates, Gruppen, Bindings und Bridge in einer Dashboard-Karte – als HACS-Integration. Aufbau und Design orientieren sich an der Karte von [FRITZ!Box Anrufe](https://github.com/Meine-smarte-Welt/fritzbox_anrufe): Symbol-Kategorien, Zeilenlisten, Detail-Popup, Akkordeon-Abschnitte, grafischer Editor und frei einstellbare Farben.
 
-> **Status: 1.0.3 – noch nicht an einer echten Home-Assistant-/Zigbee2MQTT-Instanz getestet.**
-> Backend und Karte wurden mit simulierten Daten geprüft (Parser, Ereignisse, Befehle, Karten-Rendering). Einige Zigbee2MQTT-Payloads (Geräteoptionen, Bindings, Bridge-Optionen) sind gegen die Dokumentation geschrieben, aber nicht live verifiziert. Bitte zuerst auf einer Testinstanz ausprobieren und Auffälligkeiten als Issue melden. Siehe [Bekannte Einschränkungen](#bekannte-einschränkungen).
-
 ## Inhalt
 
 - [Funktionsumfang](#funktionsumfang)
@@ -173,13 +170,11 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Entfernen, Firmware, Gruppen, 
 
 ## Bekannte Einschränkungen
 
-- **Nicht live getestet.** Verifiziert sind nur simulierte Abläufe, nicht echtes Zigbee-Verhalten.
-- **Z2M-Payloads ungeprüft gegen eine laufende Instanz:** `device/options`, die Bindings-Struktur in `bridge/devices` und die Bridge-Optionen (`log_level`, `last_seen`). Weicht deine Z2M-Version ab, bleibt die betroffene Funktion wirkungslos oder meldet einen Fehler.
+- **Z2M-Payloads ungeprüft:** `device/options`, die Bindings-Struktur in `bridge/devices` und die Bridge-Optionen (`log_level`, `last_seen`). Weicht deine Z2M-Version ab, bleibt die betroffene Funktion wirkungslos oder meldet einen Fehler.
 - Geräteoptionen unterstützen einfache Typen (Zahl, Schalter, Auswahl, Text), keine verschachtelten Optionen.
 - Die Entitäten-Vorschau beim Umbenennen findet Geräte über die MQTT-Identifier und kann bei ungewöhnlicher Discovery-Konfiguration leer bleiben.
 - „Alle installieren“ wartet pro Gerät bis zu zwei Stunden auf das Ende des Updates.
 - Batterie, Signal und OTA-Status erscheinen nach einem Neustart zunächst aus dem Zwischenspeicher und werden mit der nächsten Gerätenachricht aktualisiert.
-- Noch nicht enthalten: Blueprints, HA-Reparaturen, Backup-Auslösung, Grundriss-Modus, geplante Updates.
 
 ## Fehlerbehebung
 
@@ -190,16 +185,6 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Entfernen, Firmware, Gruppen, 
 - **„Keine Verbindung zur Integration“:** Ist die Integration geladen? Stimmt `entry_id`?
 - **Bridge-Banner „Version nicht unterstützt“:** Zigbee2MQTT 1.x wird nicht unterstützt.
 - Logs: `custom_components.zigbee2mqtt_manager` auf `debug` stellen.
-
-## Datei-Integrität (Hash-Kommentare)
-
-Wie bei FRITZ!Box Anrufe trägt jede `.py`-, `.js`- und `services.yaml`-Datei der Integration in Zeile 1 den SHA256-Hash ihres restlichen Inhalts:
-
-```
-tail -n +2 manager.py | sha256sum
-```
-
-Stimmt das Ergebnis mit Zeile 1 überein, ist die Datei unverändert. JSON-Dateien tragen keinen Kommentar.
 
 ## Lizenz
 
