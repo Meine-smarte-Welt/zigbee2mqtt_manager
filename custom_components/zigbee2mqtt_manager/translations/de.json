@@ -11,23 +11,44 @@
         "data_description": {
           "base_topic": "Entspricht `mqtt.base_topic` in der Zigbee2MQTT-Konfiguration (Standard: zigbee2mqtt)."
         }
+      },
+      "reconfigure": {
+        "title": "Base-Topic ändern",
+        "data": {
+          "base_topic": "Base-Topic"
+        },
+        "data_description": {
+          "base_topic": "Muss mit `mqtt.base_topic` in Zigbee2MQTT übereinstimmen."
+        }
       }
     },
     "error": {
-      "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. + )."
+      "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. +)."
     },
     "abort": {
       "already_configured": "Für dieses Base-Topic existiert bereits ein Eintrag.",
-      "mqtt_unavailable": "Die MQTT-Integration ist nicht eingerichtet oder nicht verbunden."
+      "mqtt_unavailable": "Die MQTT-Integration ist nicht eingerichtet oder nicht verbunden.",
+      "reconfigure_successful": "Das Base-Topic wurde geändert."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Zigbee2MQTT Manager – Einstellungen",
+        "description": "Installierte Version: **{version}**\n\n{update_info}",
         "data": {
-          "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)"
+          "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)",
+          "critical_battery_threshold": "Schwelle für „Batterie kritisch“ (%)",
+          "fire_events": "Home-Assistant-Ereignisse auslösen"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Muss kleiner oder gleich der Schwelle für „Batterie niedrig“ sein.",
+          "fire_events": "Löst z. B. zigbee2mqtt_manager_device_offline, _battery_low und _update_available aus – nutzbar als Automations-Auslöser."
         }
       }
+    },
+    "error": {
+      "critical_above_low": "Die kritische Schwelle darf nicht über der Schwelle für „niedrig“ liegen."
     }
   },
   "entity": {
@@ -41,8 +62,44 @@
       "low_battery": {
         "name": "Geräte mit niedriger Batterie"
       },
+      "critical_battery": {
+        "name": "Geräte mit kritischer Batterie"
+      },
       "updates_available": {
         "name": "Verfügbare Firmware-Updates"
+      },
+      "groups": {
+        "name": "Gruppen"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Pairing steuern",
+      "description": "Startet oder beendet den Pairing-Modus der Zigbee2MQTT-Bridge.",
+      "fields": {
+        "entry_id": {
+          "name": "Eintrags-ID",
+          "description": "Nur bei mehreren Instanzen nötig."
+        },
+        "enabled": {
+          "name": "Aktiv",
+          "description": "Pairing ein- oder ausschalten."
+        },
+        "duration": {
+          "name": "Dauer",
+          "description": "Dauer in Sekunden (10–254)."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Auf Firmware-Updates prüfen",
+      "description": "Prüft alle OTA-fähigen Geräte im Hintergrund auf Updates.",
+      "fields": {
+        "entry_id": {
+          "name": "Eintrags-ID",
+          "description": "Nur bei mehreren Instanzen nötig."
+        }
       }
     }
   }

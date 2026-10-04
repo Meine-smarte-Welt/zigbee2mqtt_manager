@@ -1,0 +1,25 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 09d1fafa2483b075d540c89574ba6b58a1c3ca1f6de063f8ac85bb7ac0fea967
+permit_join:
+  fields:
+    entry_id:
+      required: false
+      selector:
+        text:
+    enabled:
+      required: false
+      default: true
+      selector:
+        boolean:
+    duration:
+      required: false
+      selector:
+        number:
+          min: 10
+          max: 254
+          unit_of_measurement: s
+check_updates:
+  fields:
+    entry_id:
+      required: false
+      selector:
+        text:

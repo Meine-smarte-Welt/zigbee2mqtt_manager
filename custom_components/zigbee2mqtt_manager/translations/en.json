@@ -3,31 +3,52 @@
     "step": {
       "user": {
         "title": "Zigbee2MQTT Manager",
-        "description": "Connects the manager to your Zigbee2MQTT instance via the MQTT integration.",
+        "description": "Connects the manager to your Zigbee2MQTT instance through the MQTT integration.",
         "data": {
           "base_topic": "Base topic",
-          "low_battery_threshold": "\"Low battery\" threshold (%)"
+          "low_battery_threshold": "Threshold for “low battery” (%)"
         },
         "data_description": {
-          "base_topic": "Matches `mqtt.base_topic` in your Zigbee2MQTT configuration (default: zigbee2mqtt)."
+          "base_topic": "Matches `mqtt.base_topic` in the Zigbee2MQTT configuration (default: zigbee2mqtt)."
+        }
+      },
+      "reconfigure": {
+        "title": "Change base topic",
+        "data": {
+          "base_topic": "Base topic"
+        },
+        "data_description": {
+          "base_topic": "Must match `mqtt.base_topic` in Zigbee2MQTT."
         }
       }
     },
     "error": {
-      "invalid_topic": "Invalid base topic (empty or contains # or +)."
+      "invalid_topic": "Invalid base topic (empty or containing # or +)."
     },
     "abort": {
       "already_configured": "An entry for this base topic already exists.",
-      "mqtt_unavailable": "The MQTT integration is not set up or not connected."
+      "mqtt_unavailable": "The MQTT integration is not set up or not connected.",
+      "reconfigure_successful": "The base topic was changed."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Zigbee2MQTT Manager – settings",
+        "description": "Installed version: **{version}**\n\n{update_info}",
         "data": {
-          "low_battery_threshold": "\"Low battery\" threshold (%)"
+          "low_battery_threshold": "Threshold for “low battery” (%)",
+          "critical_battery_threshold": "Threshold for “critical battery” (%)",
+          "fire_events": "Fire Home Assistant events"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Must be less than or equal to the “low battery” threshold.",
+          "fire_events": "Fires e.g. zigbee2mqtt_manager_device_offline, _battery_low and _update_available – usable as automation triggers."
         }
       }
+    },
+    "error": {
+      "critical_above_low": "The critical threshold must not exceed the “low” threshold."
     }
   },
   "entity": {
@@ -41,8 +62,44 @@
       "low_battery": {
         "name": "Devices with low battery"
       },
+      "critical_battery": {
+        "name": "Devices with critical battery"
+      },
       "updates_available": {
         "name": "Firmware updates available"
+      },
+      "groups": {
+        "name": "Groups"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Control pairing",
+      "description": "Starts or stops pairing mode on the Zigbee2MQTT bridge.",
+      "fields": {
+        "entry_id": {
+          "name": "Entry ID",
+          "description": "Only needed with several instances."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Turn pairing on or off."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Duration in seconds (10–254)."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Check for firmware updates",
+      "description": "Checks all OTA-capable devices for updates in the background.",
+      "fields": {
+        "entry_id": {
+          "name": "Entry ID",
+          "description": "Only needed with several instances."
+        }
       }
     }
   }
