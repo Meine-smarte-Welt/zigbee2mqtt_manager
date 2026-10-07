@@ -743,8 +743,10 @@ class Z2MManager:
         result: list[dict[str, str]] = []
         for device in dev_reg.devices.values():
             matches = any(
-                domain == "mqtt" and str(ident).endswith(ieee)
-                for domain, ident in device.identifiers
+                len(ident) >= 2
+                and ident[0] == "mqtt"
+                and any(str(part).endswith(ieee) for part in ident[1:])
+                for ident in device.identifiers
             )
             if not matches:
                 continue
