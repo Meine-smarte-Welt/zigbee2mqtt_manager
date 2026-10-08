@@ -23,7 +23,8 @@
       }
     },
     "error": {
-      "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. +)."
+      "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. +).",
+      "topic_overlap": "Base-Topics mehrerer Instanzen dürfen nicht ineinander liegen (z. B. „zigbee2mqtt“ und „zigbee2mqtt/stick2“). Nimm getrennte wie „zigbee2mqtt“ und „zigbee2mqtt2“."
     },
     "abort": {
       "already_configured": "Für dieses Base-Topic existiert bereits ein Eintrag.",
@@ -89,6 +90,10 @@
         "duration": {
           "name": "Dauer",
           "description": "Dauer in Sekunden (10–254)."
+        },
+        "base_topic": {
+          "name": "Base-Topic",
+          "description": "Nur bei mehreren Instanzen nötig. Alternative zur Eintrags-ID."
         }
       }
     },
@@ -99,6 +104,10 @@
         "entry_id": {
           "name": "Eintrags-ID",
           "description": "Nur bei mehreren Instanzen nötig."
+        },
+        "base_topic": {
+          "name": "Base-Topic",
+          "description": "Nur bei mehreren Instanzen nötig. Alternative zur Eintrags-ID."
         }
       }
     }

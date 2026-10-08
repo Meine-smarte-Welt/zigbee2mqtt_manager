@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 7015548783e702dd46c068641a56594b3f45d4e925cbe78023a6275222718f33
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 9f5ac894c5ff2f6534159c0e6e691d24798baa1324f48b740343233cc96a5124
 """Zigbee2MQTT Manager – Verwaltung von Zigbee2MQTT direkt in Home Assistant."""
 
 from __future__ import annotations
@@ -125,28 +125,52 @@ async def _async_ensure_lovelace_resource(hass: HomeAssistant) -> None:
 
 
 # --- Services ---------------------------------------------------------------
-def _manager_for(hass: HomeAssistant, call: ServiceCall) -> Z2MManager:
+def _managers_for(hass: HomeAssistant, call: ServiceCall) -> list[Z2MManager]:
+    """Geladene Instanzen, auf die sich der Aufruf bezieht (Eintrags-ID oder Base-Topic)."""
     entry_id = call.data.get("entry_id")
+    base_topic = str(call.data.get("base_topic") or "").strip().strip("/")
+    managers: list[Z2MManager] = []
     for entry in hass.config_entries.async_entries(DOMAIN):
         if entry_id and entry.entry_id != entry_id:
             continue
-        if entry.state is ConfigEntryState.LOADED:
-            return entry.runtime_data
-    raise ServiceValidationError("Keine aktive Zigbee2MQTT-Manager-Instanz gefunden")
+        if entry.state is not ConfigEntryState.LOADED:
+            continue
+        if base_topic and entry.runtime_data.base_topic != base_topic:
+            continue
+        managers.append(entry.runtime_data)
+    if not managers:
+        raise ServiceValidationError("Keine aktive Zigbee2MQTT-Manager-Instanz gefunden")
+    return managers
+
+
+_TARGET_SCHEMA = {
+    vol.Optional("entry_id"): cv.string,
+    vol.Optional("base_topic"): cv.string,
+}
 
 
 def _async_register_services(hass: HomeAssistant) -> None:
     async def permit_join(call: ServiceCall) -> None:
-        manager = _manager_for(hass, call)
+        managers = _managers_for(hass, call)
+        if len(managers) > 1:
+            # Pairing nie versehentlich an allen Sticks gleichzeitig öffnen
+            raise ServiceValidationError(
+                "Mehrere Zigbee2MQTT-Instanzen gefunden – bitte base_topic oder "
+                "entry_id angeben"
+            )
         seconds = call.data.get("duration")
-        await manager.async_permit_join(call.data["enabled"], seconds)
+        await managers[0].async_permit_join(call.data["enabled"], seconds)
 
     async def check_updates(call: ServiceCall) -> None:
-        manager = _manager_for(hass, call)
-        try:
-            await manager.async_ota_check_all()
-        except ValueError as err:
-            raise HomeAssistantError(str(err)) from err
+        # Ohne Angabe werden alle Instanzen geprüft
+        errors: list[str] = []
+        for manager in _managers_for(hass, call):
+            try:
+                await manager.async_ota_check_all()
+            except ValueError as err:
+                errors.append(f"{manager.base_topic}: {err}")
+        if errors:
+            raise HomeAssistantError("; ".join(errors))
 
     hass.services.async_register(
         DOMAIN,
@@ -154,7 +178,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
         permit_join,
         schema=vol.Schema(
             {
-                vol.Optional("entry_id"): cv.string,
+                **_TARGET_SCHEMA,
                 vol.Optional("enabled", default=True): cv.boolean,
                 vol.Optional("duration"): vol.All(
                     vol.Coerce(int), vol.Range(min=10, max=254)
@@ -166,7 +190,7 @@ def _async_register_services(hass: HomeAssistant) -> None:
         DOMAIN,
         SERVICE_CHECK_UPDATES,
         check_updates,
-        schema=vol.Schema({vol.Optional("entry_id"): cv.string}),
+        schema=vol.Schema({**_TARGET_SCHEMA}),
     )
 
 

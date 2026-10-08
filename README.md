@@ -9,6 +9,7 @@ Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Fir
 - [Installation](#installation)
 - [Die Karte](#die-karte)
 - [Farben](#farben)
+- [Mehrere Instanzen (mehrere Sticks)](#mehrere-instanzen-mehrere-sticks)
 - [Services](#services)
 - [Ereignisse für Automationen](#ereignisse-für-automationen)
 - [Sensoren](#sensoren)
@@ -31,7 +32,9 @@ Die Karte hat sechs Kategorien in einer Symbolleiste (unter ca. 480 px Kartenbre
 | **Bindings** | Übersicht aller Geräte-Verknüpfungen; Lösen; Neu verknüpfen im Geräte-Popup |
 | **Bridge** (Zahnrad) | **App-Version** (Integration und Karte, mit farbigem Hinweis bei einer neuen Version), Status, Koordinator, Pairing, Bridge-Optionen, Neustart, Ereignisprotokoll |
 
-**Geräte-Popup** (Tipp auf eine Zeile) mit Akkordeon-Abschnitten: Informationen · Umbenennen (mit Liste der betroffenen HA-Entitäten) · Geräteoptionen (Formular aus dem Z2M-Optionsschema) · Firmware · Bindings · Gruppen · Entfernen.
+**Geräte-Popup** (Tipp auf eine Zeile) mit Akkordeon-Abschnitten: Informationen · **Funktionen (Expose)** · Umbenennen (mit Liste der betroffenen HA-Entitäten) · Geräteoptionen (Formular aus dem Z2M-Optionsschema) · Firmware · Bindings · Gruppen · Entfernen.
+
+Der Abschnitt **Funktionen (Expose)** zeigt alle Funktionen, die Zigbee2MQTT für das Gerät bereitstellt (z. B. Schalter, Helligkeit, Farbe, Temperatur, Linkqualität): mit Namen, Eigenschaft, **aktuellem Wert** samt Einheit, Zugriff (Lesen / Schreiben / Abfragen), Wertebereich bzw. Auswahlwerten, Beschreibung und Kennzeichnung als Konfiguration oder Diagnose. Zusammengesetzte Funktionen (z. B. Farbe x/y) und Gruppen wie Licht oder Schalter werden aufgelöst und gruppiert; ab neun Funktionen gibt es ein Filterfeld. Solange der Abschnitt offen ist, aktualisieren sich die Werte, sobald das Gerät etwas sendet (höchstens alle 3 Sekunden). Die Anzeige ist rein lesend; steuern lässt sich das Gerät wie bisher über seine Home-Assistant-Entitäten.
 
 Weitere Punkte:
 
@@ -112,13 +115,30 @@ Im Editor unter **Farben** (oder per `color_*`-Schlüssel). Jeder Wert darf Hex 
 
 Ist `color_row_icon` gesetzt, gewinnt diese einheitliche Farbe.
 
+## Mehrere Instanzen (mehrere Sticks)
+
+Läuft mehr als eine Zigbee2MQTT-Instanz (z. B. drei Koordinator-Sticks mit je eigenem Z2M), wird jede als eigener Eintrag eingerichtet: **Einstellungen → Geräte & Dienste → Integration hinzufügen → Zigbee2MQTT Manager**, jeweils mit dem passenden **Base-Topic** (`mqtt.base_topic` der jeweiligen Z2M-Instanz, z. B. `zigbee2mqtt`, `zigbee2mqtt2`, `zigbee2mqtt3`). Die Base-Topics müssen sich unterscheiden und dürfen nicht ineinander liegen (nicht `zigbee2mqtt` und `zigbee2mqtt/stick2`), sonst lehnt die Einrichtung sie ab. Jede Instanz bekommt eigene Sensoren, Ereignisse (mit `base_topic` in den Daten) und einen eigenen Zwischenspeicher.
+
+In der Karte gibt es zwei Wege:
+
+- **Umschalter (Standard):** Gibt es mehr als eine Instanz und ist keine festgelegt, erscheint oben in der Karte eine Auswahl der Sticks. Die Wahl wird im Browser gemerkt.
+- **Eine Karte je Stick:** Im Karten-Editor unter **Instanz (Stick)** die Instanz wählen, oder in YAML:
+
+```yaml
+type: custom:zigbee2mqtt-manager-card
+base_topic: zigbee2mqtt2     # oder: entry_id: abc123
+```
+
+`base_topic` ist die einfachere Variante, weil man die `entry_id` sonst nirgends sieht. Sind beide gesetzt, gilt `entry_id`.
+
 ## Services
 
-Beide Services sind für Automationen gedacht. `entry_id` ist nur bei mehreren Instanzen nötig.
+Beide Services sind für Automationen gedacht. Bei mehreren Instanzen wählt `base_topic` (oder `entry_id`) die Instanz. `check_updates` prüft ohne Angabe **alle** Instanzen; `permit_join` verlangt bei mehreren Instanzen eine Angabe, damit das Pairing nie versehentlich an allen Sticks gleichzeitig öffnet.
 
 ```yaml
 action: zigbee2mqtt_manager.permit_join
 data:
+  base_topic: zigbee2mqtt2   # nur bei mehreren Instanzen
   enabled: true
   duration: 120      # Sekunden, 10–254, optional
 ```
@@ -182,7 +202,8 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Entfernen, Firmware, Gruppen, 
 - **Kein Online/Offline-Status:** in Zigbee2MQTT `availability: true` aktivieren. Ohne Verfügbarkeit zeigt der Punkt am Symbol den Zustand aus „zuletzt gesehen“: halbtransparentes Grün = innerhalb von 25 Stunden gehört, Orange = länger nichts gehört, Grau = noch keine Nachricht. Ein Tooltip am Punkt erklärt die Herkunft. Rot („offline“) gibt es nur mit aktivierter Z2M-Verfügbarkeit.
 - **Gerätebilder:** Die Karte lädt die Bilder direkt im Browser von `www.zigbee2mqtt.io` (dieselbe Quelle wie das Z2M-Frontend, Datei nach Modellname). Ein in Z2M beim Gerät gesetztes `icon` hat Vorrang. Gibt es kein Bild oder ist die Seite nicht erreichbar (z. B. ohne Internet), erscheint das Symbol. Mit `show_images: false` werden keine externen Anfragen gestellt.
 - **„Zuletzt gesehen“ fehlt:** `advanced.last_seen: ISO_8601` setzen oder die Bridge-Option in der Bridge-Kategorie ändern.
-- **„Keine Verbindung zur Integration“:** Ist die Integration geladen? Stimmt `entry_id`?
+- **„Keine Verbindung zur Integration“:** Ist die Integration geladen? Stimmen `base_topic` bzw. `entry_id`?
+- **Funktionen (Expose) fehlen oder zeigen „noch kein Wert“:** Der Wert erscheint, sobald das Gerät das erste Mal gesendet hat (Zigbee2MQTT hält Gerätezustände nicht vor). Der Abschnitt wird nur für Geräte mit Zigbee2MQTT-Definition angezeigt. Das Laden der Details ist Administratoren vorbehalten.
 - **Bridge-Banner „Version nicht unterstützt“:** Zigbee2MQTT 1.x wird nicht unterstützt.
 - Logs: `custom_components.zigbee2mqtt_manager` auf `debug` stellen.
 

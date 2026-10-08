@@ -1,7 +1,11 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 09d1fafa2483b075d540c89574ba6b58a1c3ca1f6de063f8ac85bb7ac0fea967
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 693c7c2c3dc75d36b97308e9631f2af2dea9c2fc9ec6acb30ef1967561c2576a
 permit_join:
   fields:
     entry_id:
+      required: false
+      selector:
+        text:
+    base_topic:
       required: false
       selector:
         text:
@@ -20,6 +24,10 @@ permit_join:
 check_updates:
   fields:
     entry_id:
+      required: false
+      selector:
+        text:
+    base_topic:
       required: false
       selector:
         text:

@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): a545f1cd06deb95f2f207d4bedcd90336e51a2978b04649b2cd7884cdfc15cc1
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): eb2aa4f5b847e6ee0258f9e3879c48550a0adb92087436da0820d840eb9e3be6
 """WebSocket-API zwischen Lovelace-Karte und Integration."""
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from .const import DOMAIN, WS_ACTION, WS_SUBSCRIBE
 from .manager import Z2MManager
 
 WS_DETAILS = f"{DOMAIN}/details"
+WS_INSTANCES = f"{DOMAIN}/instances"
 
 ACTIONS = [
     # Geräte
@@ -44,12 +45,19 @@ ACTIONS = [
 ]
 
 
-def _get_manager(hass: HomeAssistant, entry_id: str | None) -> Z2MManager | None:
+def _get_manager(
+    hass: HomeAssistant, entry_id: str | None, base_topic: str | None = None
+) -> Z2MManager | None:
+    """Instanz nach Eintrags-ID oder Base-Topic wählen (ohne Angabe: die erste geladene)."""
+    wanted_topic = (base_topic or "").strip().strip("/")
     for entry in hass.config_entries.async_entries(DOMAIN):
         if entry_id and entry.entry_id != entry_id:
             continue
-        if entry.state is ConfigEntryState.LOADED:
-            return entry.runtime_data
+        if entry.state is not ConfigEntryState.LOADED:
+            continue
+        if wanted_topic and entry.runtime_data.base_topic != wanted_topic:
+            continue
+        return entry.runtime_data
     return None
 
 
@@ -58,12 +66,14 @@ def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_action)
     websocket_api.async_register_command(hass, ws_details)
+    websocket_api.async_register_command(hass, ws_instances)
 
 
 @websocket_api.websocket_command(
     {
         vol.Required("type"): WS_SUBSCRIBE,
         vol.Optional("entry_id"): str,
+        vol.Optional("base_topic"): str,
     }
 )
 @websocket_api.async_response
@@ -71,7 +81,7 @@ async def ws_subscribe(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Live-Daten abonnieren (Snapshot + Updates + Bridge-Antworten)."""
-    manager = _get_manager(hass, msg.get("entry_id"))
+    manager = _get_manager(hass, msg.get("entry_id"), msg.get("base_topic"))
     if manager is None:
         connection.send_error(
             msg["id"], "not_found", "Keine aktive Zigbee2MQTT-Manager-Instanz"
@@ -94,6 +104,7 @@ async def ws_subscribe(
     {
         vol.Required("type"): WS_DETAILS,
         vol.Optional("entry_id"): str,
+        vol.Optional("base_topic"): str,
         vol.Required("ieee"): str,
     }
 )
@@ -102,7 +113,7 @@ async def ws_details(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Optionen-Schema, aktuelle Werte und HA-Entitäten eines Geräts."""
-    manager = _get_manager(hass, msg.get("entry_id"))
+    manager = _get_manager(hass, msg.get("entry_id"), msg.get("base_topic"))
     if manager is None:
         connection.send_error(
             msg["id"], "not_found", "Keine aktive Zigbee2MQTT-Manager-Instanz"
@@ -119,6 +130,7 @@ async def ws_details(
     {
         vol.Required("type"): WS_ACTION,
         vol.Optional("entry_id"): str,
+        vol.Optional("base_topic"): str,
         vol.Required("action"): vol.In(ACTIONS),
         vol.Optional("ieee"): str,
         vol.Optional("group_id"): vol.Any(int, str),
@@ -133,7 +145,7 @@ async def ws_action(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Schreibende Aktionen (nur Administratoren)."""
-    manager = _get_manager(hass, msg.get("entry_id"))
+    manager = _get_manager(hass, msg.get("entry_id"), msg.get("base_topic"))
     if manager is None:
         connection.send_error(
             msg["id"], "not_found", "Keine aktive Zigbee2MQTT-Manager-Instanz"
@@ -169,7 +181,7 @@ async def ws_action(
         elif action == "bridge_option":
             await manager.async_set_bridge_option(msg.get("key", ""), value)
         elif action == "app_update_check":
-            await manager.async_check_app_update()
+            await manager.async_check_app_update(force=True)
         elif action == "group_add":
             await manager.async_group_add(str(value or ""))
         elif action == "group_rename":
@@ -189,3 +201,27 @@ async def ws_action(
         return
 
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command({vol.Required("type"): WS_INSTANCES})
+@callback
+def ws_instances(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Alle eingerichteten Zigbee2MQTT-Instanzen (für die Auswahl in Karte und Editor)."""
+    instances: list[dict[str, Any]] = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        loaded = entry.state is ConfigEntryState.LOADED
+        manager = entry.runtime_data if loaded else None
+        instances.append(
+            {
+                "entry_id": entry.entry_id,
+                "title": entry.title,
+                "base_topic": entry.data.get("base_topic"),
+                "loaded": loaded,
+                "online": manager.bridge_online if manager else None,
+                "devices": manager.data["stats"]["total"] if manager else None,
+            }
+        )
+    instances.sort(key=lambda i: (i["base_topic"] or "").lower())
+    connection.send_result(msg["id"], instances)

@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): afc946ad6551ab57f846ea5bf2ee022339f4ba147a4f06395681a06f1d17dc95
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 07f8da007822978ba02b510254854bae2532e6e3aee7ae327e8f03b3a13cd99d
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -119,6 +119,88 @@ def _major(version: Any) -> int | None:
         return None
     head = version.strip().lstrip("v").split(".", 1)[0]
     return int(head) if head.isdigit() else None
+
+
+# Expose-Typen, die nur Gruppen von Funktionen bündeln (Eigenschaften liegen auf
+# oberster Ebene des Gerätezustands, z. B. "state", "brightness")
+_EXPOSE_GROUP_TYPES = ("light", "switch", "fan", "cover", "lock", "climate")
+# Schutz vor unerwartet großen oder tief verschachtelten Expose-Bäumen
+_EXPOSE_MAX_DEPTH = 4
+_EXPOSE_MAX_ROWS = 200
+
+
+def _state_value(state: dict[str, Any], path: tuple[str, ...]) -> tuple[bool, Any]:
+    """Wert entlang eines Pfads aus dem Gerätezustand holen: (vorhanden, Wert)."""
+    node: Any = state
+    for part in path:
+        if not isinstance(node, dict) or part not in node:
+            return False, None
+        node = node[part]
+    return True, node
+
+
+def _flatten_exposes(
+    exposes: Any,
+    state: dict[str, Any],
+    path: tuple[str, ...] = (),
+    group: str | None = None,
+    endpoint: str | None = None,
+    out: list[dict[str, Any]] | None = None,
+    depth: int = 0,
+) -> list[dict[str, Any]]:
+    """Expose-Baum eines Geräts als flache Liste inkl. aktueller Werte."""
+    rows: list[dict[str, Any]] = out if out is not None else []
+    if not isinstance(exposes, list) or depth > _EXPOSE_MAX_DEPTH:
+        return rows
+    for expose in exposes:
+        if len(rows) >= _EXPOSE_MAX_ROWS:
+            break
+        if not isinstance(expose, dict):
+            continue
+        kind = expose.get("type")
+        features = expose.get("features")
+        own_endpoint = expose.get("endpoint") or endpoint
+
+        if kind in _EXPOSE_GROUP_TYPES and isinstance(features, list):
+            _flatten_exposes(
+                features, state, path, kind, own_endpoint, rows, depth + 1
+            )
+            continue
+        if kind == "composite" and isinstance(features, list):
+            prop = expose.get("property")
+            sub_path = path + (prop,) if prop else path
+            label = expose.get("label") or expose.get("name") or prop or group
+            _flatten_exposes(
+                features, state, sub_path, label, own_endpoint, rows, depth + 1
+            )
+            continue
+
+        prop = expose.get("property") or expose.get("name")
+        if not prop:
+            continue
+        access = expose.get("access")
+        row: dict[str, Any] = {
+            "property": prop,
+            "label": expose.get("label") or expose.get("name") or prop,
+            "type": kind,
+            "group": group,
+            "endpoint": own_endpoint,
+            "access": access if isinstance(access, int) and not isinstance(access, bool) else 1,
+            "unit": expose.get("unit"),
+            "description": expose.get("description"),
+            "category": expose.get("category"),
+            "min": expose.get("value_min"),
+            "max": expose.get("value_max"),
+            "step": expose.get("value_step"),
+            "values": expose.get("values") if isinstance(expose.get("values"), list) else None,
+            "value_on": expose.get("value_on"),
+            "value_off": expose.get("value_off"),
+        }
+        found, value = _state_value(state, path + (prop,))
+        if found:
+            row["value"] = value
+        rows.append(row)
+    return rows
 
 
 class Z2MManager:
@@ -467,6 +549,33 @@ class Z2MManager:
                         clusters.append(name)
         return clusters
 
+    def _device_config(self, meta: dict[str, Any]) -> dict[str, Any]:
+        """In Z2M gespeicherte Einstellungen eines Geräts (Optionen, Icon …)."""
+        config = self.bridge_info.get("config")
+        devices_cfg = config.get("devices") if isinstance(config, dict) else None
+        ieee = str(meta.get("ieee_address") or "")
+        name = meta.get("friendly_name")
+
+        def matches(key: Any, value: dict[str, Any]) -> bool:
+            return (
+                str(key).lower() == ieee.lower()
+                or str(value.get("ieee_address", "")).lower() == ieee.lower()
+                or (bool(name) and value.get("friendly_name") == name)
+            )
+
+        if isinstance(devices_cfg, dict):
+            direct = devices_cfg.get(ieee)
+            if isinstance(direct, dict):
+                return direct
+            for key, value in devices_cfg.items():
+                if isinstance(value, dict) and matches(key, value):
+                    return value
+        elif isinstance(devices_cfg, list):
+            for value in devices_cfg:
+                if isinstance(value, dict) and matches(value.get("id"), value):
+                    return value
+        return {}
+
     def _serialize(self, meta: dict[str, Any]) -> dict[str, Any]:
         name = meta.get("friendly_name", "")
         state = self._states.get(name, {})
@@ -482,12 +591,9 @@ class Z2MManager:
 
         # Eigenes Bild aus der Z2M-Gerätekonfiguration (Einstellung "icon"), falls gesetzt
         icon = None
-        config = self.bridge_info.get("config")
-        devices_cfg = config.get("devices") if isinstance(config, dict) else None
-        if isinstance(devices_cfg, dict):
-            dev_cfg = devices_cfg.get(meta.get("ieee_address"))
-            if isinstance(dev_cfg, dict) and isinstance(dev_cfg.get("icon"), str):
-                icon = dev_cfg["icon"]
+        dev_icon = self._device_config(meta).get("icon")
+        if isinstance(dev_icon, str):
+            icon = dev_icon
 
         return {
             "ieee": meta.get("ieee_address"),
@@ -512,6 +618,7 @@ class Z2MManager:
             "bindings": self._bindings_of(meta),
             "out_clusters": self._output_clusters(meta),
             "has_options": bool(definition.get("options")),
+            "has_exposes": bool(definition.get("exposes")),
             "ota": {
                 "capable": bool(definition.get("supports_ota")) or upd is not None,
                 "state": ota_state,
@@ -714,10 +821,7 @@ class Z2MManager:
                 }
             )
 
-        config = self.bridge_info.get("config")
-        devices_cfg = config.get("devices") if isinstance(config, dict) else None
-        current = devices_cfg.get(ieee) if isinstance(devices_cfg, dict) else None
-        current = current if isinstance(current, dict) else {}
+        current = self._device_config(meta)
         values = {
             s["property"]: current[s["property"]]
             for s in schema
@@ -725,13 +829,23 @@ class Z2MManager:
         }
         return schema, values
 
+    def _exposes_of(self, ieee: str | None) -> list[dict[str, Any]]:
+        """Alle Expose-Funktionen eines Geräts mit den zuletzt bekannten Werten."""
+        meta = self._meta.get(ieee or "")
+        if not meta:
+            raise ValueError(f"Unbekanntes Gerät: {ieee}")
+        definition = meta.get("definition") or {}
+        state = self._states.get(meta.get("friendly_name") or "", {})
+        return _flatten_exposes(definition.get("exposes"), state)
+
     def device_details(self, ieee: str | None) -> dict[str, Any]:
-        """Optionen-Schema + aktuelle Werte + zugehörige HA-Entitäten."""
+        """Optionen-Schema + Expose-Funktionen + aktuelle Werte + HA-Entitäten."""
         schema, values = self._options_schema(ieee)
         return {
             "ieee": ieee,
             "options_schema": schema,
             "options": values,
+            "exposes": self._exposes_of(ieee),
             "entities": self._entities_of(ieee),
         }
 
@@ -742,9 +856,12 @@ class Z2MManager:
         ent_reg = er.async_get(self.hass)
         result: list[dict[str, str]] = []
         for device in dev_reg.devices.values():
+            # Identifier-Tupel haben je nach Discovery 2 oder mehr Teile
             matches = any(
-                domain == "mqtt" and str(ident).endswith(ieee)
-                for domain, ident in device.identifiers
+                len(ident) >= 2
+                and ident[0] == "mqtt"
+                and any(str(part).lower().endswith(ieee.lower()) for part in ident[1:])
+                for ident in device.identifiers
             )
             if not matches:
                 continue
@@ -936,9 +1053,9 @@ class Z2MManager:
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
-    async def async_check_app_update(self) -> None:
+    async def async_check_app_update(self, force: bool = False) -> None:
         """Auf GitHub nach einer neueren Version der App suchen."""
-        latest = await async_fetch_latest(self.hass)
+        latest = await async_fetch_latest(self.hass, force)
         checked = dt_util.utcnow().isoformat(timespec="seconds")
         if latest is None:
             self.app = {**self.app, "checked_at": checked, "check_failed": True}

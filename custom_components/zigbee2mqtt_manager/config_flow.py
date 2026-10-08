@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): dfdc457ff6fc4e5156e62304b6d32f14ab9babbe70554898136ed036e80364b2
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6a81d520e042515b0da9ad1774abdb866acacdf2cd4bfa5afe1ee314e035c488
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -36,6 +36,26 @@ def _valid_topic(base: str) -> bool:
     return bool(base) and "#" not in base and "+" not in base
 
 
+def _overlaps_other_entry(
+    flow: ConfigFlow, base: str, exclude_entry_id: str | None = None
+) -> bool:
+    """True, wenn ein Base-Topic in einem anderen verschachtelt ist.
+
+    Mehrere Sticks brauchen getrennte Base-Topics. Liegt eines unter dem anderen
+    (z. B. "zigbee2mqtt" und "zigbee2mqtt/stick2"), würde die erste Instanz die
+    Nachrichten der zweiten mitlesen.
+    """
+    for entry in flow.hass.config_entries.async_entries(DOMAIN):
+        if entry.entry_id == exclude_entry_id:
+            continue
+        other = str(entry.data.get(CONF_BASE_TOPIC, "")).strip("/")
+        if other and (
+            base.startswith(f"{other}/") or other.startswith(f"{base}/")
+        ):
+            return True
+    return False
+
+
 class Z2MManagerConfigFlow(ConfigFlow, domain=DOMAIN):
     """Einrichtung: Base-Topic der Zigbee2MQTT-Instanz."""
 
@@ -55,6 +75,8 @@ class Z2MManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             base = user_input[CONF_BASE_TOPIC].strip().strip("/")
             if not _valid_topic(base):
                 errors[CONF_BASE_TOPIC] = "invalid_topic"
+            elif _overlaps_other_entry(self, base):
+                errors[CONF_BASE_TOPIC] = "topic_overlap"
             else:
                 await self.async_set_unique_id(base)
                 self._abort_if_unique_id_configured()
@@ -96,6 +118,8 @@ class Z2MManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             base = user_input[CONF_BASE_TOPIC].strip().strip("/")
             if not _valid_topic(base):
                 errors[CONF_BASE_TOPIC] = "invalid_topic"
+            elif _overlaps_other_entry(self, base, entry.entry_id):
+                errors[CONF_BASE_TOPIC] = "topic_overlap"
             else:
                 await self.async_set_unique_id(base)
                 self._abort_if_unique_id_mismatch(reason="already_configured")

@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): e6c7cc5193f23eb29b6d8c2f6db6c60c5cd50a2b30cc10b4a98e07d66edf1b44
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6370c89fc4a3a38f0a290532da0d67b43a77d12f2f8f5f5508053965aa8cf6c0
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -18,8 +18,14 @@
  *
  * Jede Kategorie ist einzeln ein-/ausblendbar (show_* im Editor bzw. YAML).
  * Tippt man auf ein Gerät, öffnet sich ein Popup mit Akkordeon-Abschnitten:
- * Info, Umbenennen (inkl. betroffener Entitäten), Geräteoptionen (Formular aus
- * dem Z2M-Schema), Firmware, Bindings, Gruppen und Entfernen.
+ * Info, Funktionen (alle Expose-Funktionen mit aktuellem Wert), Umbenennen
+ * (inkl. betroffener Entitäten), Geräteoptionen (Formular aus dem Z2M-Schema),
+ * Firmware, Bindings, Gruppen und Entfernen.
+ *
+ * Mehrere Zigbee2MQTT-Instanzen (z. B. drei Sticks): Gibt es mehr als eine und
+ * ist weder `entry_id` noch `base_topic` gesetzt, erscheint oben in der Karte
+ * ein Umschalter. Mit `entry_id`/`base_topic` lässt sich eine Karte fest an eine
+ * Instanz binden (z. B. eine Karte je Stick).
  *
  * Alle schreibenden Aktionen laufen über die Integration und sind dort auf
  * Administratoren beschränkt. Mit `read_only: true` blendet die Karte alle
@@ -33,7 +39,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.0.3";
+const CARD_VERSION = "1.0.4";
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
 
 const TAB_ORDER = ["devices", "battery", "updates", "groups", "bindings", "bridge"];
@@ -118,8 +124,10 @@ function sanitizeColor(value) {
 
 const CONFIG_DEFAULTS = {
   title: "Zigbee2MQTT Manager",
-  // Nur bei mehreren Z2M-Instanzen nötig (Config-Entry-ID der Integration).
+  // Nur bei mehreren Z2M-Instanzen: Karte fest an eine Instanz binden (Config-Entry-ID
+  // oder Base-Topic). Leer = Umschalter in der Karte, sobald es mehrere Instanzen gibt.
   entry_id: "",
+  base_topic: "",
   show_title: true,
   // Kategorien (Tabs) einzeln ein-/ausblendbar.
   show_devices: true,
@@ -250,6 +258,16 @@ const I18N = {
     f_power: "Stromversorgung", f_firmware: "Firmware-Build", f_lqi: "Signalqualität", f_battery: "Batterie", f_voltage: "Spannung",
     f_available: "Erreichbar", f_last_seen: "Zuletzt gesehen",
     type_Router: "Router", type_EndDevice: "Endgerät",
+    // Expose-Funktionen (Popup)
+    sec_exposes: "Funktionen (Expose)", no_exposes: "Dieses Gerät meldet keine Funktionen.",
+    exposes_hint: "Alle Funktionen, die Zigbee2MQTT für dieses Gerät bereitstellt, mit dem zuletzt bekannten Wert. Nur Anzeige.",
+    exposes_filter: "Funktionen filtern …", exposes_none_match: "Keine Treffer.",
+    ex_no_value: "noch kein Wert", ex_read: "Lesen", ex_write: "Schreiben", ex_get: "Abfragen",
+    ex_config: "Konfiguration", ex_diagnostic: "Diagnose", ex_on: "an", ex_off: "aus",
+    ex_range: "Bereich", ex_values: "Werte", ex_endpoint: "Endpunkt",
+    ex_g_light: "Licht", ex_g_switch: "Schalter", ex_g_fan: "Lüfter", ex_g_cover: "Rollo", ex_g_lock: "Schloss", ex_g_climate: "Klima",
+    // Mehrere Instanzen
+    instance: "Instanz (Stick)",
   },
   en: {
     connecting: "Connecting …",
@@ -316,6 +334,14 @@ const I18N = {
     f_power: "Power source", f_firmware: "Firmware build", f_lqi: "Link quality", f_battery: "Battery", f_voltage: "Voltage",
     f_available: "Reachable", f_last_seen: "Last seen",
     type_Router: "Router", type_EndDevice: "End device",
+    sec_exposes: "Features (exposes)", no_exposes: "This device reports no features.",
+    exposes_hint: "All features Zigbee2MQTT exposes for this device, with the last known value. Display only.",
+    exposes_filter: "Filter features …", exposes_none_match: "No matches.",
+    ex_no_value: "no value yet", ex_read: "Read", ex_write: "Write", ex_get: "Query",
+    ex_config: "Configuration", ex_diagnostic: "Diagnostic", ex_on: "on", ex_off: "off",
+    ex_range: "Range", ex_values: "Values", ex_endpoint: "Endpoint",
+    ex_g_light: "Light", ex_g_switch: "Switch", ex_g_fan: "Fan", ex_g_cover: "Cover", ex_g_lock: "Lock", ex_g_climate: "Climate",
+    instance: "Instance (stick)",
   },
 };
 
@@ -476,6 +502,27 @@ const BASE_CARD_STYLES = `
   }
   .settings-line:last-child { border-bottom: none; }
   .settings-label { color: var(--secondary-text-color, #727272); }
+  /* Expose-Funktionen im Geräte-Popup */
+  .ex-list { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
+  .ex-group { font-size: 0.8em; font-weight: 600; color: var(--secondary-text-color, #727272); padding: 10px 0 2px; }
+  .ex-group:first-child { padding-top: 2px; }
+  .ex-row { padding: 6px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
+  .ex-row[hidden], .ex-group[hidden] { display: none; }
+  .ex-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .ex-label { font-weight: 500; }
+  .ex-prop { font-size: 0.78em; margin-left: 6px; color: var(--secondary-text-color, #727272); word-break: break-all; }
+  .ex-value { font-weight: 500; text-align: right; word-break: break-word; }
+  .ex-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; margin-top: 3px; font-size: 0.75em; color: var(--secondary-text-color, #727272); }
+  .ex-meta .pill { font-size: 0.95em; padding: 0 7px; }
+  .ex-desc { font-size: 0.75em; color: var(--secondary-text-color, #727272); margin-top: 2px; }
+  /* Umschalter bei mehreren Zigbee2MQTT-Instanzen */
+  .instance-bar { display: flex; align-items: center; gap: 8px; padding: 0 0 8px; font-size: 0.85em; color: var(--secondary-text-color, #727272); }
+  .instance-bar ha-icon { --mdc-icon-size: 20px; }
+  .instance-bar select {
+    flex: 1 1 auto; min-width: 0; font: inherit; font-size: 1em; color: var(--primary-text-color, #212121);
+    background: var(--card-background-color, #fff); border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 6px; padding: 5px 8px; box-sizing: border-box;
+  }
   .settings-value { font-weight: 500; text-align: right; word-break: break-word; }
   .field { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; }
   .field label { font-size: 0.85em; color: var(--primary-text-color, #212121); }
@@ -577,6 +624,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     this._sort = {};
     this._expanded = false;
     if (!this._built) this._build();
+    // Wurde die Karte (z. B. im Editor) an eine andere Instanz gebunden: neu verbinden
+    if (this._unsub && this._subKey !== JSON.stringify(this._targetParams())) this._resubscribe();
     this._lastSig = null;
     this._render();
   }
@@ -606,6 +655,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     }
     clearTimeout(this._toastTimer);
     clearTimeout(this._confirmTimer);
+    clearTimeout(this._exTimer);
+    this._exTimer = null;
   }
 
   getCardSize() {
@@ -633,22 +684,103 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   }
 
   // ----------------------------------------------------------------- Verbindung
+  // Instanz, auf die sich alle Befehle der Karte beziehen
+  _targetParams() {
+    const c = this._config || {};
+    if (c.entry_id) return { entry_id: c.entry_id };
+    if (c.base_topic) return { base_topic: c.base_topic };
+    if (this._instance) return { entry_id: this._instance };
+    return {};
+  }
+
+  _fixedInstance() {
+    return Boolean(this._config?.entry_id || this._config?.base_topic);
+  }
+
+  // Bei mehreren Instanzen ohne feste Bindung: Liste holen und eine vorauswählen
+  async _ensureInstances() {
+    if (this._instancesLoaded || this._fixedInstance() || !this._hass) return;
+    this._instancesLoaded = true;
+    try {
+      const list = await this._hass.callWS({ type: "zigbee2mqtt_manager/instances" });
+      const loaded = (Array.isArray(list) ? list : []).filter((i) => i.loaded);
+      this._instances = loaded;
+      if (loaded.length > 1) {
+        let stored = null;
+        try {
+          stored = window.localStorage.getItem("zigbee2mqtt_manager_instance");
+        } catch (_e) {
+          /* Speicher nicht verfügbar */
+        }
+        this._instance = loaded.some((i) => i.entry_id === stored) ? stored : loaded[0].entry_id;
+      }
+    } catch (_e) {
+      /* ohne Liste verhält sich die Karte wie bisher (erste Instanz) */
+    }
+  }
+
+  _resubscribe() {
+    this._gen = (this._gen || 0) + 1;
+    if (this._unsub) {
+      this._unsub();
+      this._unsub = null;
+    }
+    this._subscribe();
+  }
+
+  _switchInstance(entryId) {
+    if (!entryId || entryId === this._instance) return;
+    this._instance = entryId;
+    try {
+      window.localStorage.setItem("zigbee2mqtt_manager_instance", entryId);
+    } catch (_e) {
+      /* Speicher nicht verfügbar */
+    }
+    this._data = null;
+    this._error = null;
+    this._details = {};
+    this._drafts = {};
+    this._selected = null;
+    this._confirming = null;
+    this._expanded = false;
+    this._filter = "all";
+    this._popupSig = null;
+    const backdrop = this.shadowRoot?.getElementById("backdrop");
+    if (backdrop) backdrop.hidden = true;
+    this._resubscribe();
+    this._refresh();
+  }
+
   async _subscribe() {
     if (this._subscribing || this._unsub || !this._hass) return;
     this._subscribing = true;
+    const gen = (this._gen = this._gen || 0);
     try {
-      const msg = { type: "zigbee2mqtt_manager/subscribe" };
-      if (this._config?.entry_id) msg.entry_id = this._config.entry_id;
-      const unsub = await this._hass.connection.subscribeMessage((ev) => this._onEvent(ev), msg);
-      if (!this.isConnected) unsub();
-      else this._unsub = unsub;
-      this._error = null;
+      await this._ensureInstances();
+      const params = this._targetParams();
+      const unsub = await this._hass.connection.subscribeMessage(
+        (ev) => {
+          if (gen === this._gen) this._onEvent(ev);
+        },
+        { type: "zigbee2mqtt_manager/subscribe", ...params }
+      );
+      if (!this.isConnected || gen !== this._gen) {
+        unsub();
+      } else {
+        this._unsub = unsub;
+        this._subKey = JSON.stringify(params);
+        this._error = null;
+      }
     } catch (err) {
-      this._error = err?.message || String(err);
-      this._lastSig = null;
-      this._render();
+      if (gen === this._gen) {
+        this._error = err?.message || String(err);
+        this._lastSig = null;
+        this._render();
+      }
     } finally {
       this._subscribing = false;
+      // Während des Verbindens wurde die Instanz gewechselt: mit dem neuen Ziel nachholen
+      if (gen !== this._gen && this.isConnected && !this._unsub) this._subscribe();
     }
   }
 
@@ -656,6 +788,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (ev.kind === "update") {
       this._data = ev.data;
       this._renderIfChanged();
+      this._maybeRefreshExposes();
     } else if (ev.kind === "response") {
       this._onResponse(ev.data);
     }
@@ -698,8 +831,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   async _call(action, params = {}) {
     if (!this._hass) return false;
-    const msg = { type: "zigbee2mqtt_manager/action", action, ...params };
-    if (this._config?.entry_id) msg.entry_id = this._config.entry_id;
+    const msg = { type: "zigbee2mqtt_manager/action", action, ...params, ...this._targetParams() };
     try {
       await this._hass.callWS(msg);
       return true;
@@ -709,17 +841,36 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     }
   }
 
-  async _loadDetails(ieee, force = false) {
+  // silent: vorhandene Details bleiben sichtbar, während neue geladen werden
+  async _loadDetails(ieee, force = false, silent = false) {
     if (!ieee || (!force && this._details[ieee])) return;
-    this._details[ieee] = { loading: true };
+    const gen = this._gen;
+    if (!(silent && this._details[ieee] && !this._details[ieee].loading)) this._details[ieee] = { loading: true };
+    this._exSeen = { ...(this._exSeen || {}), [ieee]: this._lastSeenOf(ieee) };
     try {
-      const msg = { type: "zigbee2mqtt_manager/details", ieee };
-      if (this._config?.entry_id) msg.entry_id = this._config.entry_id;
-      this._details[ieee] = await this._hass.callWS(msg);
+      const result = await this._hass.callWS({ type: "zigbee2mqtt_manager/details", ieee, ...this._targetParams() });
+      if (gen === this._gen) this._details[ieee] = result;
     } catch (err) {
-      this._details[ieee] = { error: err?.message || String(err) };
+      if (gen === this._gen) this._details[ieee] = { error: err?.message || String(err) };
     }
     this._renderPopup(true);
+  }
+
+  _lastSeenOf(ieee) {
+    return this._data?.devices?.find((x) => x.ieee === ieee)?.last_seen ?? null;
+  }
+
+  // Offenes Popup mit geöffnetem Funktionen-Abschnitt: Werte nachladen, sobald das
+  // Gerät etwas gesendet hat (höchstens alle 3 Sekunden)
+  _maybeRefreshExposes() {
+    const ieee = this._selected;
+    if (!ieee || !this._open["p:exposes"] || this._exTimer) return;
+    const d = this._data?.devices?.find((x) => x.ieee === ieee);
+    if (!d?.has_exposes || d.last_seen === this._exSeen?.[ieee]) return;
+    this._exTimer = setTimeout(() => {
+      this._exTimer = null;
+      if (this._selected === ieee) this._loadDetails(ieee, true, true);
+    }, 3000);
   }
 
   _reloadDetails() {
@@ -863,6 +1014,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     this._contentEl.innerHTML = `
       <ha-card${headerAttr}>
         <div class="card-content">
+          ${this._renderInstanceBar()}
           ${this._renderBanners()}
           ${this._renderTabs(visible)}
           ${this._renderMain()}
@@ -883,6 +1035,18 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   _isOpen(key, dflt = false) {
     return key in this._open ? this._open[key] : dflt;
+  }
+
+  // ----------------------------------------------------------------- Instanz-Umschalter
+  _renderInstanceBar() {
+    if (this._fixedInstance() || !this._instance || (this._instances || []).length < 2) return "";
+    return `<div class="instance-bar"><ha-icon icon="mdi:usb-port"></ha-icon>
+      <select data-change="instance" data-fk="instance" aria-label="${esc(this._t("instance"))}" title="${esc(this._t("instance"))}">${this._instances
+        .map(
+          (i) =>
+            `<option value="${esc(i.entry_id)}" ${i.entry_id === this._instance ? "selected" : ""}>${esc(i.base_topic || i.title)}</option>`
+        )
+        .join("")}</select></div>`;
   }
 
   // ----------------------------------------------------------------- Banner & Tabs
@@ -1463,7 +1627,28 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const key = t?.dataset?.draft;
     if (!key) return;
     this._drafts[key] = t.type === "checkbox" ? t.checked : t.value;
+    if (t.dataset.exfilter !== undefined) this._applyExposeFilter();
     if (t.dataset.rerender) this._refresh();
+  }
+
+  // Filter der Funktionsliste ohne Neuzeichnen (der Eingabefokus bleibt erhalten)
+  _applyExposeFilter() {
+    const root = this.shadowRoot.getElementById("popup");
+    if (!root || !this._selected) return;
+    const q = String(this._draft(`exf:${this._selected}`, "") || "").trim().toLowerCase();
+    let shown = 0;
+    root.querySelectorAll(".ex-row").forEach((row) => {
+      const hit = !q || (row.dataset.s || "").includes(q);
+      row.hidden = !hit;
+      if (hit) shown += 1;
+    });
+    root.querySelectorAll(".ex-group").forEach((g) => {
+      const rows = [];
+      for (let n = g.nextElementSibling; n && n.classList.contains("ex-row"); n = n.nextElementSibling) rows.push(n);
+      g.hidden = !rows.some((r) => !r.hidden);
+    });
+    const none = root.querySelector(".ex-none");
+    if (none) none.hidden = shown > 0;
   }
 
   _onChange(e) {
@@ -1473,6 +1658,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (t.dataset.change === "sort") {
       this._sort[t.dataset.tab] = t.value;
       this._refresh();
+    } else if (t.dataset.change === "instance") {
+      this._switchInstance(t.value);
     } else if (t.dataset.change === "bridge_option" && t.value) {
       this._call("bridge_option", { key: t.dataset.key, value: t.value });
     }
@@ -1610,7 +1797,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (!ieee) return;
     this._selected = ieee;
     this._popupSig = null;
-    if (!this._readOnly) this._loadDetails(ieee);
+    this._loadDetails(ieee, Boolean(this._details[ieee]), true);
     this._renderPopup(true);
   }
 
@@ -1640,6 +1827,89 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       [t("f_last_seen"), this._relTime(d.last_seen)],
     ];
     return lines.map(([k, v]) => this._line(k, esc(v))).join("");
+  }
+
+  // Text für den Wert einer Funktion (Zahl mit Einheit, Schalter, Auswahl, Objekte als JSON)
+  _exposeValue(row) {
+    const t = (k) => this._t(k);
+    if (!("value" in row)) return `<span class="muted">${esc(t("ex_no_value"))}</span>`;
+    const v = row.value;
+    if (v === null || v === undefined || v === "") return `<span class="muted">–</span>`;
+    if (row.type === "binary") {
+      if (v === true) return esc(row.value_on === "ON" ? t("ex_on") : t("yes"));
+      if (v === false) return esc(row.value_off === "OFF" ? t("ex_off") : t("no"));
+      if (v === "ON") return esc(t("ex_on"));
+      if (v === "OFF") return esc(t("ex_off"));
+      return esc(v);
+    }
+    if (typeof v === "object") {
+      let text;
+      try {
+        text = JSON.stringify(v);
+      } catch (_e) {
+        text = String(v);
+      }
+      const short = text.length > 90 ? `${text.slice(0, 90)} …` : text;
+      return `<span title="${esc(text)}">${esc(short)}</span>`;
+    }
+    return esc(row.unit ? `${v} ${row.unit}` : v);
+  }
+
+  _exposeGroupLabel(group) {
+    if (!group) return "";
+    const key = `ex_g_${group}`;
+    const text = I18N[this._lang]?.[key] ?? I18N.en[key];
+    return text || group;
+  }
+
+  _exposesBody(det, ieee) {
+    const t = (k) => this._t(k);
+    if (!det || det.loading) return `<div class="hint">${esc(t("loading"))}</div>`;
+    if (det.error) return `<div class="hint err">${esc(det.error)}</div>`;
+    const rows = det.exposes || [];
+    if (!rows.length) return `<div class="hint">${esc(t("no_exposes"))}</div>`;
+
+    const filter = String(this._draft(`exf:${ieee}`, "") || "").trim().toLowerCase();
+    const accessPills = (access) => {
+      const pills = [];
+      if (access & 1) pills.push(["ex_read", "var(--zmm-color-success)"]);
+      if (access & 2) pills.push(["ex_write", "var(--zmm-color-info)"]);
+      if (access & 4) pills.push(["ex_get", ""]);
+      return pills.map(([k, c]) => `<span class="pill"${c ? ` style="--c:${c}"` : ""}>${esc(t(k))}</span>`).join("");
+    };
+
+    let lastGroup;
+    let html = "";
+    for (const r of rows) {
+      if (r.group && r.group !== lastGroup) html += `<div class="ex-group">${esc(this._exposeGroupLabel(r.group))}</div>`;
+      lastGroup = r.group;
+
+      const meta = [accessPills(r.access)];
+      if (r.category === "config") meta.push(`<span class="pill">${esc(t("ex_config"))}</span>`);
+      else if (r.category === "diagnostic") meta.push(`<span class="pill">${esc(t("ex_diagnostic"))}</span>`);
+      if (r.endpoint) meta.push(`<span>${esc(t("ex_endpoint"))}: ${esc(r.endpoint)}</span>`);
+      if (r.min !== null && r.min !== undefined && r.max !== null && r.max !== undefined) {
+        meta.push(`<span>${esc(t("ex_range"))}: ${esc(r.min)} – ${esc(r.max)}${r.unit ? ` ${esc(r.unit)}` : ""}</span>`);
+      }
+      if (Array.isArray(r.values) && r.values.length) {
+        const shown = r.values.slice(0, 12).map((x) => String(x)).join(" · ");
+        meta.push(`<span>${esc(t("ex_values"))}: ${esc(shown)}${r.values.length > 12 ? " …" : ""}</span>`);
+      }
+      const search = `${r.label} ${r.property} ${r.group || ""}`.toLowerCase();
+      const hidden = filter && !search.includes(filter) ? " hidden" : "";
+      html += `<div class="ex-row" data-s="${esc(search)}"${hidden}>
+          <div class="ex-top"><span><span class="ex-label">${esc(r.label)}</span>${
+            r.label !== r.property ? `<span class="ex-prop">${esc(r.property)}</span>` : ""
+          }</span><span class="ex-value">${this._exposeValue(r)}</span></div>
+          <div class="ex-meta">${meta.join("")}</div>${r.description ? `<div class="ex-desc">${esc(r.description)}</div>` : ""}
+        </div>`;
+    }
+    const searchField =
+      rows.length > 8
+        ? `<div class="field"><input type="search" data-exfilter data-draft="exf:${esc(ieee)}" data-fk="exf" placeholder="${esc(t("exposes_filter"))}" value="${esc(this._draft(`exf:${ieee}`, ""))}" /></div>`
+        : "";
+    return `${searchField}<div class="ex-list">${html}<div class="hint ex-none" hidden>${esc(t("exposes_none_match"))}</div></div>
+      <div class="hint">${esc(t("exposes_hint"))}</div>`;
   }
 
   _optionField(ieee, opt, current) {
@@ -1684,11 +1954,20 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
     const focus = this._captureFocus();
     const scroll = popup.scrollTop;
+    const exScroll = popup.querySelector(".ex-list")?.scrollTop ?? 0;
     const ro = this._readOnly;
     const t = (k, v) => this._t(k, v);
     const sections = [];
 
     sections.push(this._accordion("p:info", "mdi:information-outline", t("sec_info"), this._infoLines(d), { open: true }));
+
+    if (d.has_exposes) {
+      sections.push(
+        this._accordion("p:exposes", "mdi:format-list-bulleted", t("sec_exposes"), this._exposesBody(det, d.ieee), {
+          meta: det?.exposes ? String(det.exposes.length) : "",
+        })
+      );
+    }
 
     if (!ro) {
       const entities = det?.entities?.length
@@ -1793,9 +2072,13 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     popup.querySelectorAll("details[data-k]").forEach((el) => {
       el.addEventListener("toggle", () => {
         this._open[el.dataset.k] = el.open;
+        // Beim Aufklappen der Funktionen sofort frische Werte holen
+        if (el.dataset.k === "p:exposes" && el.open && this._selected) this._loadDetails(this._selected, true, true);
       });
     });
     popup.scrollTop = scroll;
+    const exList = popup.querySelector(".ex-list");
+    if (exList) exList.scrollTop = exScroll;
     this._restoreFocus(focus);
   }
 }
@@ -1816,7 +2099,7 @@ if (!customElements.get("zigbee2mqtt-manager-card")) {
 
 const EDITOR_LABELS = {
   title: "Titel",
-  entry_id: "Instanz (Eintrags-ID, nur bei mehreren Zigbee2MQTT-Instanzen)",
+  entry_id: "Instanz (Stick)",
   show_title: "Überschrift (Titel) anzeigen",
   show_devices: "Kategorie 'Geräte' anzeigen",
   show_battery: "Kategorie 'Batterie' anzeigen",
@@ -1843,7 +2126,7 @@ const EDITOR_LABELS = {
 };
 
 const EDITOR_HELPERS = {
-  entry_id: "Leer lassen, wenn nur eine Zigbee2MQTT-Instanz eingerichtet ist.",
+  entry_id: "Welche Zigbee2MQTT-Instanz diese Karte anzeigt. „Automatisch“: Gibt es mehrere Instanzen, erscheint oben in der Karte ein Umschalter. Für eine Karte je Stick hier die Instanz festlegen.",
   title: "Leer lassen, um keine Überschrift anzuzeigen.",
   show_images: "Die Bilder werden direkt im Browser von www.zigbee2mqtt.io geladen. Ausschalten, wenn keine externen Anfragen gewünscht sind – es erscheinen dann die Symbole.",
   max_rows: "Bei gesetztem Wert erscheint unter der Liste 'Weitere anzeigen'.",
@@ -1860,9 +2143,31 @@ function computeEditorHelper(item) {
 
 const bool = (name) => ({ name, selector: { boolean: {} } });
 
+const AUTO_INSTANCE = "__auto__";
+
+// Auswahl der Instanz: Dropdown, sobald die Instanzen bekannt sind (sonst Textfeld)
+function entryIdField(instances) {
+  if (!Array.isArray(instances) || !instances.length) return { name: "entry_id", selector: { text: {} } };
+  return {
+    name: "entry_id",
+    selector: {
+      select: {
+        mode: "dropdown",
+        options: [
+          { value: AUTO_INSTANCE, label: "Automatisch (Umschalter in der Karte)" },
+          ...instances.map((i) => ({
+            value: i.entry_id,
+            label: `${i.base_topic || i.title}${i.loaded ? "" : " (nicht geladen)"}`,
+          })),
+        ],
+      },
+    },
+  };
+}
+
 const EDITOR_SCHEMA = [
   { name: "title", selector: { text: {} } },
-  { name: "entry_id", selector: { text: {} } },
+  entryIdField(null),
   {
     name: "",
     type: "expandable",
@@ -2040,6 +2345,7 @@ class Zigbee2MqttManagerCardEditor extends HTMLElement {
     try {
       const msg = { type: "zigbee2mqtt_manager/subscribe" };
       if (this._config?.entry_id) msg.entry_id = this._config.entry_id;
+      else if (this._config?.base_topic) msg.base_topic = this._config.base_topic;
       let unsub = null;
       let finished = false;
       unsub = await this._hass.connection.subscribeMessage((ev) => {
@@ -2073,8 +2379,32 @@ class Zigbee2MqttManagerCardEditor extends HTMLElement {
     // ha-form entfernt ein geleertes Textfeld aus der Konfiguration; dann würde der
     // Standardtitel wieder greifen. Ein bewusst leerer Titel wird daher als "" gespeichert.
     if (value.title === undefined || value.title === null) value.title = "";
+    // "Automatisch" ist im Dropdown ein Platzhalter und wird als leerer Wert gespeichert
+    if (value.entry_id === AUTO_INSTANCE || value.entry_id === undefined || value.entry_id === null) value.entry_id = "";
     this._config = value;
     this._fire();
+  }
+
+  // Formulardaten: leere Instanz als "Automatisch" anzeigen, sobald das Dropdown aktiv ist
+  _formData() {
+    const data = { ...this._config };
+    if (this._instances?.length && !data.entry_id) data.entry_id = AUTO_INSTANCE;
+    return data;
+  }
+
+  async _loadInstances() {
+    if (this._instancesRequested || !this._hass?.connection) return;
+    this._instancesRequested = true;
+    try {
+      const list = await this._hass.callWS({ type: "zigbee2mqtt_manager/instances" });
+      this._instances = Array.isArray(list) ? list : [];
+      if (this._form && this._instances.length) {
+        this._form.schema = EDITOR_SCHEMA.map((item) => (item.name === "entry_id" ? entryIdField(this._instances) : item));
+        this._form.data = this._formData();
+      }
+    } catch (_e) {
+      /* ohne laufende Integration bleibt das Textfeld */
+    }
   }
 
   _renderConfig() {
@@ -2088,7 +2418,8 @@ class Zigbee2MqttManagerCardEditor extends HTMLElement {
       this.appendChild(this._form);
     }
     this._form.hass = this._hass;
-    this._form.data = this._config;
+    this._form.data = this._formData();
+    this._loadInstances();
 
     if (!this._versionEl) {
       this._versionEl = document.createElement("div");

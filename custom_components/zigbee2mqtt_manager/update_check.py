@@ -1,10 +1,11 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 983ee799bb58ebf999232585a01fe02a711e9fc2157feac832093c27bb6e5db7
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 0e0a1d1891f5e1336eedfea8cd9cb66fc3933ad1c0072a284da0150a96d43b31
 """Prüft auf GitHub, ob eine neuere Version der Integration veröffentlicht wurde."""
 
 from __future__ import annotations
 
 import logging
 import re
+import time
 from typing import Any
 
 import aiohttp
@@ -13,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
+    DOMAIN,
     GITHUB_API_LATEST,
     GITHUB_API_TAGS,
     GITHUB_RELEASES_URL,
@@ -45,7 +47,25 @@ def is_newer(latest: str | None, current: str | None) -> bool:
     return new is not None and cur is not None and new > cur
 
 
-async def async_fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
+# Mehrere Instanzen teilen sich eine Abfrage (GitHub begrenzt unangemeldete Anfragen)
+_CACHE_KEY = f"{DOMAIN}_latest_version"
+_CACHE_SECONDS = 300
+
+
+async def async_fetch_latest(
+    hass: HomeAssistant, force: bool = False
+) -> dict[str, str] | None:
+    """Neueste Version holen (mit kurzem gemeinsamem Zwischenspeicher)."""
+    cached = hass.data.get(_CACHE_KEY)
+    if not force and cached and time.monotonic() - cached[0] < _CACHE_SECONDS:
+        return cached[1]
+    result = await _fetch_latest(hass)
+    if result is not None:
+        hass.data[_CACHE_KEY] = (time.monotonic(), result)
+    return result
+
+
+async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
     """Neueste veröffentlichte Version holen: {\"version\", \"url\"} oder None bei Fehler."""
     session = async_get_clientsession(hass)
     try:
