@@ -219,7 +219,7 @@ All write actions (rename, options, remove, firmware, groups, bindings, pairing,
 
 | Version | Changes |
 |---|---|
-| **1.0.5** | Fixed: popup and the "Features (expose)" section could not be operated (endless redraw loop, device image flickered). Offline display protected against stale reports. Dutch added (card, integration, README), LICENSE and `examples/` added. |
+| **1.0.5** | Fixed: popup and the "Features (expose)" section could not be operated (endless redraw loop, device image flickered). Offline display protected against stale reports. Dutch added (card, integration, README), LICENSE and `examples/` added. Thanks to @pr0xyzer (PR #2): matching HA entities via MQTT identifiers with more than two values (list when renaming). |
 | 1.0.4 | All expose features in the device popup, several sticks (multiple instances), fix for the device options. |
 | 1.0.3 | First official version. |
 

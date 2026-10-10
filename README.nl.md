@@ -219,7 +219,7 @@ Alle schrijfacties (hernoemen, opties, verwijderen, firmware, groepen, bindings,
 
 | Versie | Wijzigingen |
 |---|---|
-| **1.0.5** | Opgelost: popup en de sectie „Functies (expose)” waren niet te bedienen (eindeloze hertekenlus, apparaatafbeelding flikkerde). Offline-weergave beveiligd tegen verouderde meldingen. Nederlands toegevoegd (kaart, integratie, README), LICENSE en `examples/` toegevoegd. |
+| **1.0.5** | Opgelost: popup en de sectie „Functies (expose)” waren niet te bedienen (eindeloze hertekenlus, apparaatafbeelding flikkerde). Offline-weergave beveiligd tegen verouderde meldingen. Nederlands toegevoegd (kaart, integratie, README), LICENSE en `examples/` toegevoegd. Dank aan @pr0xyzer (PR #2): koppeling van HA-entiteiten via MQTT-identifiers met meer dan twee waarden (lijst bij hernoemen). |
 | 1.0.4 | Alle expose-functies in de apparaatpopup, meerdere sticks (meerdere instanties), correctie bij de apparaatopties. |
 | 1.0.3 | Eerste officiële versie. |
 
