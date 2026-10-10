@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6a81d520e042515b0da9ad1774abdb866acacdf2cd4bfa5afe1ee314e035c488
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): fa8712fdb6a02b741eabe066a16acbdff8388ba339dd29c6f658c790363dc044
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -159,15 +159,16 @@ class Z2MManagerOptionsFlow(OptionsFlow):
         opts = self.config_entry.options
         manager = getattr(self.config_entry, "runtime_data", None)
         app = getattr(manager, "app", None) or {}
-        german = str(self.hass.config.language).startswith("de")
+        lang = str(self.hass.config.language)[:2]
+        latest = app.get("latest_version")
+        link = app.get("release_url")
         if app.get("update_available"):
-            update_info = (
-                f"⚠️ Neue Version verfügbar: **{app.get('latest_version')}** – {app.get('release_url')}"
-                if german
-                else f"⚠️ New version available: **{app.get('latest_version')}** – {app.get('release_url')}"
-            )
-        elif app.get("latest_version"):
-            update_info = "✅ Aktuell" if german else "✅ Up to date"
+            update_info = {
+                "de": f"⚠️ Neue Version verfügbar: **{latest}** – {link}",
+                "nl": f"⚠️ Nieuwe versie beschikbaar: **{latest}** – {link}",
+            }.get(lang, f"⚠️ New version available: **{latest}** – {link}")
+        elif latest:
+            update_info = {"de": "✅ Aktuell", "nl": "✅ Actueel"}.get(lang, "✅ Up to date")
         else:
             update_info = ""
         return self.async_show_form(

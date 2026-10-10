@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6370c89fc4a3a38f0a290532da0d67b43a77d12f2f8f5f5508053965aa8cf6c0
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 111cabd1be2784d5e9c26789913cc4e347b4ec41b02743a651a7e1ea57fd11db
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -39,7 +39,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.0.4";
+const CARD_VERSION = "1.0.5";
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
 
 const TAB_ORDER = ["devices", "battery", "updates", "groups", "bindings", "bridge"];
@@ -257,6 +257,7 @@ const I18N = {
     f_vendor: "Hersteller", f_model: "Modell", f_description: "Beschreibung", f_type: "Typ", f_ieee: "IEEE-Adresse", f_nwk: "Netzwerkadresse",
     f_power: "Stromversorgung", f_firmware: "Firmware-Build", f_lqi: "Signalqualität", f_battery: "Batterie", f_voltage: "Spannung",
     f_available: "Erreichbar", f_last_seen: "Zuletzt gesehen",
+    avail_activity: "ja (kürzlich Nachricht empfangen, trotz Offline-Meldung)",
     type_Router: "Router", type_EndDevice: "Endgerät",
     // Expose-Funktionen (Popup)
     sec_exposes: "Funktionen (Expose)", no_exposes: "Dieses Gerät meldet keine Funktionen.",
@@ -333,6 +334,7 @@ const I18N = {
     f_vendor: "Vendor", f_model: "Model", f_description: "Description", f_type: "Type", f_ieee: "IEEE address", f_nwk: "Network address",
     f_power: "Power source", f_firmware: "Firmware build", f_lqi: "Link quality", f_battery: "Battery", f_voltage: "Voltage",
     f_available: "Reachable", f_last_seen: "Last seen",
+    avail_activity: "yes (message received recently, despite offline report)",
     type_Router: "Router", type_EndDevice: "End device",
     sec_exposes: "Features (exposes)", no_exposes: "This device reports no features.",
     exposes_hint: "All features Zigbee2MQTT exposes for this device, with the last known value. Display only.",
@@ -343,6 +345,90 @@ const I18N = {
     ex_g_light: "Light", ex_g_switch: "Switch", ex_g_fan: "Fan", ex_g_cover: "Cover", ex_g_lock: "Lock", ex_g_climate: "Climate",
     instance: "Instance (stick)",
   },
+  nl: {
+    connecting: "Verbinden …",
+    error_generic: "Actie mislukt.",
+    tab_devices: "Apparaten", tab_battery: "Batterij", tab_updates: "Updates",
+    tab_groups: "Groepen", tab_bindings: "Bindings", tab_bridge: "Bridge",
+    chip_devices: "Apparaten", chip_offline: "Offline", chip_low_battery: "Batterij laag", chip_updates: "Updates",
+    search: "Zoek op naam, model of IEEE", sort: "Sortering",
+    sort_name_asc: "Naam A–Z", sort_name_desc: "Naam Z–A", sort_battery_asc: "Batterij (laagste eerst)",
+    sort_lqi_asc: "Signaal (zwakste eerst)", sort_last_seen_desc: "Laatst gezien (nieuwste eerst)",
+    sort_last_seen_asc: "Laatst gezien (oudste eerst)", sort_ota: "Updatestatus",
+    no_data: "Nog geen gegevens van Zigbee2MQTT. Draait de bridge?", no_results: "Geen resultaten.",
+    show_more: "{n} meer tonen",
+    status_online: "Online (volgens Zigbee2MQTT)", status_offline: "Offline (volgens Zigbee2MQTT)", status_seen: "Waarschijnlijk online – laatst gezien {t}. De Z2M-beschikbaarheid is niet actief.", status_stale: "Lang niets gehoord – laatst gezien {t}. De Z2M-beschikbaarheid is niet actief.", status_unknown: "Status onbekend – nog geen bericht ontvangen.",
+    offline: "offline", online: "online", unknown: "onbekend", inactive: "inactief", interviewing: "Interview", disabled: "uitgeschakeld",
+    never: "nog nooit", yes: "ja", no: "nee", close: "Sluiten", save: "Opslaan", add: "Toevoegen", cancel: "Annuleren",
+    confirm: "Zeker weten?", loading: "Laden …", details: "Details", remove: "Apparaat verwijderen", rename: "Hernoemen",
+    group: "Groep",
+    // Banner
+    bridge_error: "Geen verbinding met de integratie", bridge_offline: "Zigbee2MQTT-bridge offline",
+    bridge_offline_hint: "De bridge meldt zich niet. Getoonde waarden komen uit de cache.",
+    bridge_incompatible: "Zigbee2MQTT-versie wordt niet ondersteund",
+    bridge_incompatible_hint: "Versie {v} gevonden – Zigbee2MQTT 2.x is vereist.",
+    pairing_active: "Koppelen actief", pairing_start: "Koppelen starten", pairing_stop: "Koppelen stoppen", until: "tot {time}",
+    restart_required: "Herstart vereist", restart_required_hint: "Zigbee2MQTT meldt gewijzigde opties die een herstart nodig hebben.",
+    job_check: "Firmwarecontrole bezig", job_update: "Firmware-updates worden geïnstalleerd",
+    // Updates
+    check_all: "Alles op updates controleren", checking: "Controle gestart …", update_all: "{n} updates na elkaar installeren",
+    update_all_hint: "Updates worden na elkaar geïnstalleerd, nooit tegelijk. Apparaten moeten stroom hebben en binnen bereik blijven.",
+    install: "Installeren", check: "Op update controleren", update_now: "Update installeren",
+    ota_available: "Update beschikbaar", ota_updating: "Wordt bijgewerkt", ota_scheduled: "Gepland", ota_idle: "Actueel",
+    ota_unknown: "Niet gecontroleerd", ota_unsupported: "Dit apparaat ondersteunt geen OTA-updates.",
+    update_confirm: "Tijdens de update moet het apparaat stroom hebben en binnen bereik blijven.",
+    update_found: "Update beschikbaar", no_update: "Geen update beschikbaar", done_update: "Update voltooid",
+    // Groepen
+    group_name: "Naam van de nieuwe groep", group_create: "Groep aanmaken", group_delete: "Groep verwijderen", group_empty: "Deze groep heeft nog geen leden.",
+    group_add_member: "Apparaat toevoegen", remove_member: "Uit groep verwijderen", no_groups: "Geen groepen aanwezig.",
+    group_broadcast_hint: "Groepen sturen opdrachten als broadcast tegelijk naar alle leden.", done_group: "Groep bijgewerkt",
+    no_groups_device: "Geen lid van een groep.",
+    // Bindings
+    no_bindings: "Geen bindings aanwezig.", no_bindings_device: "Geen bindings ingesteld.",
+    bindings_hint: "Bindings koppelen apparaten rechtstreeks (bijv. schakelaar → lamp) en werken ook zonder Home Assistant.",
+    bind: "Koppelen", unbind: "Loskoppelen", bind_target: "Doel (apparaat of groep)", pick_target: "Kies een doel.",
+    bind_hint: "Zonder keuze worden alle passende clusters gekoppeld. Maak batterijapparaten eerst wakker met een druk op de knop.",
+    done_bound: "Gekoppeld", done_unbound: "Koppeling verbroken",
+    // Bridge
+    sec_app: "App-versie", f_integration_version: "Integratie", f_card_version: "Kaart", f_latest_version: "Nieuwste versie",
+    app_up_to_date: "Actueel", app_update_available: "Update beschikbaar: {v}", app_check_failed: "Controle niet mogelijk (GitHub niet bereikbaar)", app_not_checked: "nog niet gecontroleerd",
+    f_checked: "Laatst gecontroleerd", app_check_now: "Nu controleren", app_checking: "Controleren op nieuwe versie …", app_release: "Release bekijken",
+    app_update_hint: "Werk bij via HACS (integratie) en start Home Assistant opnieuw op. Laad daarna de browser opnieuw (Ctrl+F5).",
+    app_mismatch: "Kaart ({card}) en integratie ({integration}) hebben verschillende versies. Leeg de browsercache (Ctrl+F5) of laad de app opnieuw.",
+    sec_status: "Status", sec_pairing: "Koppelen", sec_options: "Bridge-opties", sec_maintenance: "Onderhoud", sec_events: "Gebeurtenissen",
+    f_status: "Status", f_version: "Zigbee2MQTT-versie", f_coordinator: "Coördinator", f_base_topic: "Base-topic", f_pairing: "Koppelen",
+    pairing_hint: "De koppelmodus blijft maximaal 254 seconden actief.",
+    opt_log_level: "Logniveau", opt_last_seen: "Formaat „laatst gezien“",
+    options_hint: "Wijzigingen worden direct naar Zigbee2MQTT gestuurd. Sommige opties vereisen een herstart.",
+    done_bridge_option: "Optie opgeslagen", restart: "Bridge herstarten",
+    restart_hint: "Herstart alleen Zigbee2MQTT. Het Zigbee-netwerk is daarbij kort niet bereikbaar.", done_restart: "Herstart aangevraagd",
+    read_only_hint: "De kaart is alleen-lezen.", no_events: "Nog geen gebeurtenissen sinds de start.",
+    ev_device_joined: "Toegetreden", ev_device_leave: "Heeft het netwerk verlaten", ev_device_interview: "Interview", ev_device_announce: "Meldt zich",
+    ev_offline: "Offline", ev_online: "Weer online", ev_battery_low: "Batterij laag", ev_update_available: "Update beschikbaar",
+    // Popup
+    sec_info: "Informatie", sec_device_options: "Apparaatopties", sec_firmware: "Firmware", sec_remove: "Apparaat verwijderen",
+    new_name: "Nieuwe naam", rename_entities_hint: "Bij het hernoemen worden {n} entiteiten in Home Assistant mee aangepast:",
+    done_renamed: "Hernoemd", done_options: "Opties opgeslagen", no_options: "Dit apparaat heeft geen instelbare opties.",
+    options_device_hint: "Zigbee2MQTT slaat de opties op in zijn configuratie.", no_changes: "Geen wijzigingen.",
+    remove_hint: "Verwijdert het apparaat uit het Zigbee-netwerk. Daarna moet het opnieuw worden aangemeld.",
+    force_remove: "Forceren (ook als het apparaat niet reageert)", done_removed: "Apparaat verwijderd",
+    f_vendor: "Fabrikant", f_model: "Model", f_description: "Beschrijving", f_type: "Type", f_ieee: "IEEE-adres", f_nwk: "Netwerkadres",
+    f_power: "Voeding", f_firmware: "Firmware-build", f_lqi: "Signaalkwaliteit", f_battery: "Batterij", f_voltage: "Spanning",
+    f_available: "Bereikbaar", f_last_seen: "Laatst gezien",
+    avail_activity: "ja (recent bericht ontvangen, ondanks offline-melding)",
+    type_Router: "Router", type_EndDevice: "Eindapparaat",
+    // Expose-functies (popup)
+    sec_exposes: "Functies (expose)", no_exposes: "Dit apparaat meldt geen functies.",
+    exposes_hint: "Alle functies die Zigbee2MQTT voor dit apparaat beschikbaar stelt, met de laatst bekende waarde. Alleen weergave.",
+    exposes_filter: "Functies filteren …", exposes_none_match: "Geen resultaten.",
+    ex_no_value: "nog geen waarde", ex_read: "Lezen", ex_write: "Schrijven", ex_get: "Opvragen",
+    ex_config: "Configuratie", ex_diagnostic: "Diagnose", ex_on: "aan", ex_off: "uit",
+    ex_range: "Bereik", ex_values: "Waarden", ex_endpoint: "Endpoint",
+    ex_g_light: "Licht", ex_g_switch: "Schakelaar", ex_g_fan: "Ventilator", ex_g_cover: "Rolluik", ex_g_lock: "Slot", ex_g_climate: "Klimaat",
+    // Meerdere instanties
+    instance: "Instantie (stick)",
+  },
+
 };
 
 // --- Styles -----------------------------------------------------------------
@@ -845,6 +931,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   async _loadDetails(ieee, force = false, silent = false) {
     if (!ieee || (!force && this._details[ieee])) return;
     const gen = this._gen;
+    const before = silent && this._details[ieee] && !this._details[ieee].loading ? JSON.stringify(this._details[ieee]) : undefined;
     if (!(silent && this._details[ieee] && !this._details[ieee].loading)) this._details[ieee] = { loading: true };
     this._exSeen = { ...(this._exSeen || {}), [ieee]: this._lastSeenOf(ieee) };
     try {
@@ -853,6 +940,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     } catch (err) {
       if (gen === this._gen) this._details[ieee] = { error: err?.message || String(err) };
     }
+    // Stiller Nachladevorgang ohne neue Werte: nicht neu zeichnen (Fokus, Klicks bleiben ungestört)
+    if (silent && before !== undefined && JSON.stringify(this._details[ieee]) === before) return;
     this._renderPopup(true);
   }
 
@@ -1823,7 +1912,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       [t("f_lqi"), d.linkquality],
       [t("f_battery"), d.battery !== null && d.battery !== undefined ? `${d.battery} %` : null],
       [t("f_voltage"), d.voltage !== null && d.voltage !== undefined ? `${d.voltage} mV` : null],
-      [t("f_available"), d.available === null || d.available === undefined ? null : d.available ? t("yes") : t("no")],
+      [t("f_available"), d.available === null || d.available === undefined ? null : d.available ? (d.available_source === "activity" ? t("avail_activity") : t("yes")) : t("no")],
       [t("f_last_seen"), this._relTime(d.last_seen)],
     ];
     return lines.map(([k, v]) => this._line(k, esc(v))).join("");
@@ -2071,9 +2160,14 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     backdrop.hidden = false;
     popup.querySelectorAll("details[data-k]").forEach((el) => {
       el.addEventListener("toggle", () => {
-        this._open[el.dataset.k] = el.open;
+        // Ein frisch gezeichnetes <details open> löst selbst ein "toggle" aus. Nur echte
+        // Änderungen auswerten, sonst entsteht beim Neuzeichnen eine Endlosschleife
+        // (Popup flackert, lässt sich nicht bedienen, Expose lässt sich nicht schließen).
+        const k = el.dataset.k;
+        if (this._open[k] === el.open) return;
+        this._open[k] = el.open;
         // Beim Aufklappen der Funktionen sofort frische Werte holen
-        if (el.dataset.k === "p:exposes" && el.open && this._selected) this._loadDetails(this._selected, true, true);
+        if (k === "p:exposes" && el.open && this._selected) this._loadDetails(this._selected, true, true);
       });
     });
     popup.scrollTop = scroll;

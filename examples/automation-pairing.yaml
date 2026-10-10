@@ -1,0 +1,7 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 69f1b0fa9a1155826219dca35e75a369a1fb043f9a03ec38afcfbd82724f5d2c
+# Pairing für 120 Sekunden öffnen (bei mehreren Sticks base_topic angeben)
+action: zigbee2mqtt_manager.permit_join
+data:
+  base_topic: zigbee2mqtt
+  enabled: true
+  duration: 120

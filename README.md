@@ -1,3 +1,5 @@
+🇩🇪 Deutsch · [🇬🇧 English](README.en.md) · [🇳🇱 Nederlands](README.nl.md)
+
 # Zigbee2MQTT Manager für Home Assistant
 
 Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Firmware-Updates, Gruppen, Bindings und Bridge in einer Dashboard-Karte – als HACS-Integration. Aufbau und Design orientieren sich an der Karte von [FRITZ!Box Anrufe](https://github.com/Meine-smarte-Welt/fritzbox_anrufe): Symbol-Kategorien, Zeilenlisten, Detail-Popup, Akkordeon-Abschnitte, grafischer Editor und frei einstellbare Farben.
@@ -13,11 +15,13 @@ Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Fir
 - [Services](#services)
 - [Ereignisse für Automationen](#ereignisse-für-automationen)
 - [Sensoren](#sensoren)
+- [Versionsanzeige und Update-Hinweis](#versionsanzeige-und-update-hinweis)
 - [Einstellungen der Integration](#einstellungen-der-integration)
 - [Sicherheit](#sicherheit)
 - [Bekannte Einschränkungen](#bekannte-einschränkungen)
 - [Fehlerbehebung](#fehlerbehebung)
-- [Datei-Integrität](#datei-integrität-hash-kommentare)
+- [Versionshistorie](#versionshistorie)
+- [Datei-Integrität](#datei-integrität)
 
 ## Funktionsumfang
 
@@ -43,7 +47,7 @@ Weitere Punkte:
 - **Zwei-Klick-Bestätigung** statt Browser-Dialog bei riskanten Aktionen (Entfernen, Update, Neustart, Lösen, Löschen).
 - **Nur lesen:** `read_only: true` blendet alle Bedienelemente zum Ändern aus (Wandtablets).
 - **Zoom:** `zoom` skaliert die ganze Karte.
-- **Sprachen:** Deutsch und Englisch (nach Home-Assistant-Sprache).
+- **Sprachen:** Deutsch, Englisch und Niederländisch (nach Home-Assistant-Sprache).
 - **Diagnose-Download** mit anonymisierten Namen und IEEE-Adressen.
 
 ## Voraussetzungen
@@ -195,17 +199,43 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Entfernen, Firmware, Gruppen, 
 - Die Entitäten-Vorschau beim Umbenennen findet Geräte über die MQTT-Identifier und kann bei ungewöhnlicher Discovery-Konfiguration leer bleiben.
 - „Alle installieren“ wartet pro Gerät bis zu zwei Stunden auf das Ende des Updates.
 - Batterie, Signal und OTA-Status erscheinen nach einem Neustart zunächst aus dem Zwischenspeicher und werden mit der nächsten Gerätenachricht aktualisiert.
+- **Offline-Anzeige (seit 1.0.5) und Teststand:** Die Karte übernimmt die Verfügbarkeit von Zigbee2MQTT. Hat ein Gerät nach einer Offline-Meldung live gesendet, zeigt die Karte es als erreichbar. Das wurde gegen simulierte Daten geprüft, **nicht an echter Hardware**. Ob damit die in 1.0.4 gemeldeten falschen Offline-Anzeigen (Sensoren, Steckdose) verschwinden, ist offen: Rückmeldung ausdrücklich erwünscht.
+- Das Popup und der Abschnitt „Funktionen (Expose)“ wurden in 1.0.5 korrigiert (Endlosschleife beim Neuzeichnen), aber ebenfalls nicht an echter Hardware und nicht in der iOS-/Android-Companion-App geprüft.
 
 ## Fehlerbehebung
 
 - **Karte nicht gefunden:** Browser-Cache leeren; unter Einstellungen → Dashboards → Ressourcen prüfen, ob `/zigbee2mqtt_manager_files/…` vorhanden ist (im YAML-Modus manuell eintragen).
+- **Gerät wird offline angezeigt, ist aber erreichbar:** Zigbee2MQTT selbst meldet den Status (`<base_topic>/<Gerät>/availability`). Prüfe dort den Wert, z. B. mit dem MQTT-Explorer (Einstellungen → Geräte & Dienste → MQTT → Konfigurieren). Sende bitte bei Problemen den Diagnose-Download und nenne die Z2M-Einstellung `availability` (z. B. `timeout`) und das Gerätemodell. Bei Batteriegeräten setzt Z2M „offline“ erst nach Stunden ohne Nachricht.
 - **Kein Online/Offline-Status:** in Zigbee2MQTT `availability: true` aktivieren. Ohne Verfügbarkeit zeigt der Punkt am Symbol den Zustand aus „zuletzt gesehen“: halbtransparentes Grün = innerhalb von 25 Stunden gehört, Orange = länger nichts gehört, Grau = noch keine Nachricht. Ein Tooltip am Punkt erklärt die Herkunft. Rot („offline“) gibt es nur mit aktivierter Z2M-Verfügbarkeit.
 - **Gerätebilder:** Die Karte lädt die Bilder direkt im Browser von `www.zigbee2mqtt.io` (dieselbe Quelle wie das Z2M-Frontend, Datei nach Modellname). Ein in Z2M beim Gerät gesetztes `icon` hat Vorrang. Gibt es kein Bild oder ist die Seite nicht erreichbar (z. B. ohne Internet), erscheint das Symbol. Mit `show_images: false` werden keine externen Anfragen gestellt.
 - **„Zuletzt gesehen“ fehlt:** `advanced.last_seen: ISO_8601` setzen oder die Bridge-Option in der Bridge-Kategorie ändern.
 - **„Keine Verbindung zur Integration“:** Ist die Integration geladen? Stimmen `base_topic` bzw. `entry_id`?
 - **Funktionen (Expose) fehlen oder zeigen „noch kein Wert“:** Der Wert erscheint, sobald das Gerät das erste Mal gesendet hat (Zigbee2MQTT hält Gerätezustände nicht vor). Der Abschnitt wird nur für Geräte mit Zigbee2MQTT-Definition angezeigt. Das Laden der Details ist Administratoren vorbehalten.
+- **Popup oder Funktionen (Expose) lassen sich nicht bedienen (nur Version 1.0.4):** Auf 1.0.5 aktualisieren, Home Assistant neu starten, Browser-Cache leeren (Strg+F5) bzw. die Companion-App neu laden.
 - **Bridge-Banner „Version nicht unterstützt“:** Zigbee2MQTT 1.x wird nicht unterstützt.
 - Logs: `custom_components.zigbee2mqtt_manager` auf `debug` stellen.
+
+## Versionshistorie
+
+| Version | Änderungen |
+|---|---|
+| **1.0.5** | Behoben: Popup und Abschnitt „Funktionen (Expose)“ ließen sich nicht bedienen (Endlosschleife beim Neuzeichnen, Gerätebild flackerte). Offline-Anzeige gegen veraltete Meldungen abgesichert. Niederländisch ergänzt (Karte, Integration, README), LICENSE und `examples/` hinzugefügt. |
+| 1.0.4 | Alle Expose-Funktionen im Geräte-Popup, mehrere Sticks (mehrere Instanzen), Korrektur bei den Geräteoptionen. |
+| 1.0.3 | Erste offizielle Version. |
+
+## Datei-Integrität
+
+Jede `.py`-, `.js`- und `.yaml`-Datei trägt in der ersten Zeile einen SHA-256-Hash über den Inhalt ab Zeile 2. Prüfen: `tail -n +2 datei.py | sha256sum`. JSON-Dateien können keine Kommentare enthalten, ihre Hashes (SHA-256 über die komplette Datei) stehen hier:
+
+| Datei | SHA-256 |
+|---|---|
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `3796bdfe99c612311c6697342de3d3e8c1aa9827efc33059c1916c89172c52c7` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `714ca6bdd304f051e93e8960410630c361f942eed7ddd89c81969fe13aff9c4d` |
+| `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `a4cc4400d01de88795a97c7644a9a4c89495c99d440eec4b9b476e7784a3c0b4` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `9072d9f52b3f1be151b46c49dc22eb16df2cec81f295841a7c1ca1c2891e634a` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `20ec6ad0e627be9f5ba84d6fa2520550d64d5256ca97e4cfc51f6ed1149b9467` |
+| `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Lizenz
 

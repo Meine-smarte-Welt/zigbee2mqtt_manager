@@ -1,0 +1,5 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): e97b230492ecb7bfc2adb2be89a5fb42ff2fe4284c6be11c5a058563e0aeb2e2
+# Eine Karte für einen bestimmten Stick (Base-Topic der zweiten Z2M-Instanz)
+type: custom:zigbee2mqtt-manager-card
+title: Zigbee Stick 2
+base_topic: zigbee2mqtt2

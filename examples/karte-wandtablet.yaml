@@ -1,0 +1,11 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 3a3602561a61b0efb30b2d6da16f30ce21d4b0073298ff003037773d0ff76afa
+# Wandtablet: nur lesen, groß, nur Geräte und Batterie
+type: custom:zigbee2mqtt-manager-card
+title: ""
+show_updates: false
+show_groups: false
+show_bindings: false
+show_bridge: false
+default_tab: battery
+read_only: true
+zoom: 1.3

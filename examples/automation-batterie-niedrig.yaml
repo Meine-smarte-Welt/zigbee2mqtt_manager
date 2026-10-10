@@ -1,0 +1,9 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 60041b84b35ccb19d359255816b0c662a3018ebcb85369a8563e18791c9265fb
+alias: Z2M Batterie niedrig melden
+triggers:
+  - trigger: event
+    event_type: zigbee2mqtt_manager_battery_low
+actions:
+  - action: notify.mobile_app_handy   # an dein Gerät anpassen
+    data:
+      message: "{{ trigger.event.data.name }}: Batterie {{ trigger.event.data.battery }} %"

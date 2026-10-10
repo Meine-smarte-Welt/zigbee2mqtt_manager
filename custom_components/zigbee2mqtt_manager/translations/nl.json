@@ -1,0 +1,115 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Verbindt de manager via de MQTT-integratie met je Zigbee2MQTT-instantie.",
+        "data": {
+          "base_topic": "Base-topic",
+          "low_battery_threshold": "Drempel voor „batterij laag” (%)"
+        },
+        "data_description": {
+          "base_topic": "Komt overeen met `mqtt.base_topic` in de Zigbee2MQTT-configuratie (standaard: zigbee2mqtt)."
+        }
+      },
+      "reconfigure": {
+        "title": "Base-topic wijzigen",
+        "data": {
+          "base_topic": "Base-topic"
+        },
+        "data_description": {
+          "base_topic": "Moet overeenkomen met `mqtt.base_topic` in Zigbee2MQTT."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Ongeldig base-topic (leeg of met # of +).",
+      "topic_overlap": "Base-topics van meerdere instanties mogen niet in elkaar liggen (bijv. „zigbee2mqtt” en „zigbee2mqtt/stick2”). Gebruik gescheiden topics zoals „zigbee2mqtt” en „zigbee2mqtt2”."
+    },
+    "abort": {
+      "already_configured": "Voor dit base-topic bestaat al een item.",
+      "mqtt_unavailable": "De MQTT-integratie is niet ingesteld of niet verbonden.",
+      "reconfigure_successful": "Het base-topic is gewijzigd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – instellingen",
+        "description": "Geïnstalleerde versie: **{version}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Drempel voor „batterij laag” (%)",
+          "critical_battery_threshold": "Drempel voor „batterij kritiek” (%)",
+          "fire_events": "Home Assistant-gebeurtenissen activeren"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Moet kleiner dan of gelijk aan de drempel voor „batterij laag” zijn.",
+          "fire_events": "Activeert o.a. zigbee2mqtt_manager_device_offline, _battery_low en _update_available – bruikbaar als automatiseringstrigger."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "De kritieke drempel mag niet boven de drempel voor „laag” liggen."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Apparaten"
+      },
+      "offline": {
+        "name": "Offline apparaten"
+      },
+      "low_battery": {
+        "name": "Apparaten met lage batterij"
+      },
+      "critical_battery": {
+        "name": "Apparaten met kritieke batterij"
+      },
+      "updates_available": {
+        "name": "Beschikbare firmware-updates"
+      },
+      "groups": {
+        "name": "Groepen"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Koppelen beheren",
+      "description": "Start of stopt de koppelmodus van de Zigbee2MQTT-bridge.",
+      "fields": {
+        "entry_id": {
+          "name": "Item-ID",
+          "description": "Alleen nodig bij meerdere instanties."
+        },
+        "enabled": {
+          "name": "Actief",
+          "description": "Koppelen in- of uitschakelen."
+        },
+        "duration": {
+          "name": "Duur",
+          "description": "Duur in seconden (10–254)."
+        },
+        "base_topic": {
+          "name": "Base-topic",
+          "description": "Alleen nodig bij meerdere instanties. Alternatief voor de item-ID."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Op firmware-updates controleren",
+      "description": "Controleert alle OTA-geschikte apparaten op de achtergrond op updates.",
+      "fields": {
+        "entry_id": {
+          "name": "Item-ID",
+          "description": "Alleen nodig bij meerdere instanties."
+        },
+        "base_topic": {
+          "name": "Base-topic",
+          "description": "Alleen nodig bij meerdere instanties. Alternatief voor de item-ID."
+        }
+      }
+    }
+  }
+}
