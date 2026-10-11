@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 024cacf98909a6fe72a30fe4545a7bee11706bbdc82209c414f3359938aace25
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 791a6f15fafbc74f6ba8c64ffd0fd41a2ee4dd4711bb03ff52cf7f2e83180b3d
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -179,13 +179,17 @@ def _flatten_exposes(
         if not prop:
             continue
         access = expose.get("access")
+        access = access if isinstance(access, int) and not isinstance(access, bool) else 1
         row: dict[str, Any] = {
             "property": prop,
             "label": expose.get("label") or expose.get("name") or prop,
             "type": kind,
             "group": group,
             "endpoint": own_endpoint,
-            "access": access if isinstance(access, int) and not isinstance(access, bool) else 1,
+            "access": access,
+            # Schalter: Ja/Nein-Funktion mit Schreibzugriff auf oberster Ebene (nicht in einem
+            # zusammengesetzten Objekt). Nur diese lassen sich in der Karte direkt umlegen.
+            "switchable": kind == "binary" and bool(access & 2) and not path,
             "unit": expose.get("unit"),
             "description": expose.get("description"),
             "category": expose.get("category"),
@@ -201,6 +205,43 @@ def _flatten_exposes(
             row["value"] = value
         rows.append(row)
     return rows
+
+
+# Geräteklassen für die Gruppierung/Filterung in der Karte (Reihenfolge = Priorität)
+_CLASS_BY_EXPOSE_TYPE = (
+    ("light", "light"),
+    ("switch", "switch"),
+    ("climate", "climate"),
+    ("cover", "cover"),
+    ("lock", "lock"),
+    ("fan", "fan"),
+)
+
+
+def _device_class(definition: dict[str, Any]) -> str:
+    """Geräteklasse aus den Expose-Typen ableiten (Zigbee2MQTT liefert keine feste Klasse).
+
+    Ergebnis: light, switch, climate, cover, lock, fan, remote (hat die Funktion
+    "action", also Taster/Fernbedienung), sensor oder other (keine Funktionen bekannt).
+    """
+    exposes = definition.get("exposes")
+    if not isinstance(exposes, list) or not exposes:
+        return "other"
+    types = {e.get("type") for e in exposes if isinstance(e, dict)}
+    for expose_type, device_class in _CLASS_BY_EXPOSE_TYPE:
+        if expose_type in types:
+            return device_class
+    props = {
+        e.get("property") or e.get("name") for e in exposes if isinstance(e, dict)
+    }
+    if "action" in props:
+        return "remote"
+    return "sensor"
+
+
+def _same_value(a: Any, b: Any) -> bool:
+    """Gleicher Wert UND gleicher Typ (True ist hier nicht dasselbe wie 1)."""
+    return type(a) is type(b) and a == b
 
 
 class Z2MManager:
@@ -635,6 +676,7 @@ class Z2MManager:
             "vendor": definition.get("vendor"),
             "model": definition.get("model") or meta.get("model_id"),
             "image_model": definition.get("model"),
+            "device_class": _device_class(definition),
             "icon": icon,
             "description": definition.get("description"),
             "power_source": meta.get("power_source"),
@@ -965,6 +1007,33 @@ class Z2MManager:
             raise ValueError(f"Unbekannte Optionen: {', '.join(sorted(unknown))}")
         await self._request(
             "device/options", {"id": self._name_of(ieee), "options": options}
+        )
+
+    async def async_set_expose(self, ieee: str | None, prop: Any, value: Any) -> None:
+        """Einen Schalter (binäre Funktion mit Schreibzugriff) eines Geräts umlegen.
+
+        Geprüft wird alles im Backend: Das Gerät muss bekannt sein, die Funktion muss
+        in seinen Expose-Funktionen stehen, ein schreibbarer Schalter auf oberster
+        Ebene sein, und der Wert muss genau der Ein- oder Aus-Wert dieser Funktion sein.
+        """
+        name = self._name_of(ieee)
+        if not isinstance(prop, str) or not prop:
+            raise ValueError("Keine Funktion angegeben")
+        row = next((r for r in self._exposes_of(ieee) if r["property"] == prop), None)
+        if row is None:
+            raise ValueError(f"Unbekannte Funktion: {prop}")
+        if not row.get("switchable"):
+            raise ValueError(f"Die Funktion '{prop}' lässt sich nicht schalten")
+        value_on = True if row.get("value_on") is None else row["value_on"]
+        value_off = False if row.get("value_off") is None else row["value_off"]
+        if not (_same_value(value, value_on) or _same_value(value, value_off)):
+            raise ValueError(f"Ungültiger Wert für '{prop}'")
+        await mqtt.async_publish(
+            self.hass,
+            f"{self.base_topic}/{name}/set",
+            json.dumps({prop: value}),
+            qos=0,
+            retain=False,
         )
 
     async def async_remove(self, ieee: str | None, force: bool = False) -> None:

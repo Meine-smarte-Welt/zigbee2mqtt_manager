@@ -29,16 +29,20 @@ The card has six categories in an icon bar (icons only below roughly 480 px card
 
 | Category | What it does |
 |---|---|
-| **Devices** | List with reachability, model, signal, battery, "last seen"; statistic chips as filters (offline / low battery / updates); search; sorting |
+| **Devices** | List with reachability, model, signal, battery, "last seen"; statistic chips as filters (offline / low battery / updates); search; sorting; **grouping** by manufacturer or device class; **filters** (status, power, signal, …) |
 | **Battery** | Battery devices, lowest first; colors by low and critical threshold |
 | **Updates** | Installed vs. available firmware; "check all" and "install all one after another" as a background job with progress and cancel |
 | **Groups** | Create, rename, delete; add and remove members |
 | **Bindings** | Overview of all device bindings; unbind; bind again in the device popup |
 | **Bridge** (cog) | **App version** (integration and card, colored notice when a new version exists), status, coordinator, pairing, bridge options, restart, event log |
 
-**Device popup** (tap a row) with accordion sections: Information · **Features (expose)** · Rename (with the list of affected HA entities) · Device options (form from the Z2M option schema) · Firmware · Bindings · Groups · Remove.
+**Device popup** (tap a row) with accordion sections: Information · **Features (expose)** · **Entities (for automations)** · Rename (with the list of affected HA entities) · Device options (form from the Z2M option schema) · Firmware · Bindings · Groups · Remove.
 
-The **Features (expose)** section lists everything Zigbee2MQTT exposes for the device (switch, brightness, color, temperature, link quality …): name, property, **current value** with unit, access (read / write / get), value range or choices, description, and a configuration/diagnostic mark. Composite features (e.g. color x/y) and groups such as light or switch are resolved and grouped; from nine features on there is a filter field. While the section is open, values refresh when the device sends something (at most every 3 seconds). The display is read-only; control the device through its Home Assistant entities as before.
+The **Features (expose)** section lists everything Zigbee2MQTT exposes for the device (switch, brightness, color, temperature, link quality …): name, property, **current value** with unit, access (read / write / get), value range or choices, description, and a configuration/diagnostic mark. Composite features (e.g. color x/y) and groups such as light or switch are resolved and grouped; from nine features on there is a filter field. While the section is open, values refresh when the device sends something (at most every 3 seconds). **Writable switches** (yes/no features, e.g. the state of a plug or light) can be toggled directly: the new value shows immediately and is confirmed by the device shortly after. If the value is still unknown, "On" and "Off" buttons appear instead. All other features are display only; control the device through its Home Assistant entities as before. With `read_only: true` the switches are hidden.
+
+**Grouping and filters** (Devices, Battery and Updates): the **Group by** selector arranges the list as an accordion by **manufacturer** or **device class** (lights, plugs & switches, heating & climate, blinds & covers, locks, fans, buttons & remotes, sensors, other). Each group shows its count and, if any, its offline devices; the two icons beside the selector expand or collapse all groups. The collapsible **Filters** section narrows the list: status (online / offline), power source (battery only / mains only / low battery), signal (good / medium / weak), network role (router / end device), firmware (update available), last seen (more than 24 hours / 7 days ago), not in any Zigbee group, manufacturer and device class. Several filters apply together; active filters appear as small chips that a tap removes. The integration derives the device class from the device's features (Zigbee2MQTT provides no fixed class); devices without known features end up under "Other". Without Z2M availability enabled, online/offline is derived from "last seen", like the status dot. While grouping is active, `max_rows` does not apply.
+
+**Copying entities:** the popup section **Entities (for automations)** lists the device's Home Assistant entities with a copy icon per row. The copy icon in the popup header writes all entity names (one per line) to the clipboard, for example to paste into automations and scripts. If the browser denies clipboard access (it requires HTTPS), the text appears selected in a field so you can copy it with Ctrl+C.
 
 Further points:
 
@@ -90,6 +94,9 @@ show_images: true             # device images from zigbee2mqtt.io
 show_search: true
 show_filter_bar: true         # sort selection
 default_sort: name_asc        # name_asc | name_desc | battery_asc | lqi_asc | last_seen_desc | last_seen_asc | ota
+show_group_by: true           # "Group by" selector
+default_group_by: none        # none | vendor | class
+show_filters: true            # filters section
 show_model: true
 show_vendor: true
 show_ieee: false
@@ -190,7 +197,7 @@ Under **Configure** (showing the installed version): threshold "low battery", th
 
 ## Security
 
-All write actions (rename, options, remove, firmware, groups, bindings, pairing, restart, version check) and loading device details are restricted to **administrators** over WebSocket. Input is validated by the backend (duplicate names, unknown options, allowed bridge values). The card escapes all text; color values pass through an allowlist.
+All write actions (rename, options, toggling features, remove, firmware, groups, bindings, pairing, restart, version check) and loading device details are restricted to **administrators** over WebSocket. Input is validated by the backend (duplicate names, unknown options, allowed bridge values). When toggling a feature, the backend also checks that it exists, is writable and that the value is exactly its on or off value. The card escapes all text; color values pass through an allowlist.
 
 ## Known limitations
 
@@ -201,6 +208,9 @@ All write actions (rename, options, remove, firmware, groups, bindings, pairing,
 - After a restart, battery, signal and OTA state first come from the cache and are refreshed with the next device message.
 - **Offline display (since 1.0.5) and test status:** the card takes availability from Zigbee2MQTT. If a device sent live after an offline report, the card shows it as reachable. This was checked against simulated data, **not on real hardware**. Whether this removes the false offline displays reported in 1.0.4 (sensors, a plug) is open: feedback is explicitly welcome.
 - The popup and the "Features (expose)" section were fixed in 1.0.5 (endless redraw loop), but also not tested on real hardware or in the iOS/Android companion app.
+- **New in 1.1.0, test status:** grouping, filters, switches in the features and copying were checked against simulated data and in a headless browser, **not on real hardware** and not in the iOS/Android companion app. Whether Zigbee2MQTT accepts every switch as expected (e.g. on devices with several endpoints) is open.
+- The device class is an approximation derived from the device's features; special cases may end up under "Other" or "Sensors".
+- Switches act immediately without confirmation (including configuration switches such as child lock). The clipboard requires HTTPS.
 
 ## Troubleshooting
 
@@ -213,13 +223,16 @@ All write actions (rename, options, remove, firmware, groups, bindings, pairing,
 - **Features (expose) missing or showing "no value yet":** the value appears once the device has sent for the first time (Zigbee2MQTT does not keep device states). The section only appears for devices with a Zigbee2MQTT definition. Loading the details is reserved for administrators.
 - **Popup or features (expose) cannot be operated (version 1.0.4 only):** update to 1.0.5, restart Home Assistant, clear the browser cache (Ctrl+F5) or reload the companion app.
 - **Bridge banner "version not supported":** Zigbee2MQTT 1.x is not supported.
+- **Copying does not work:** the browser only allows clipboard access over HTTPS (or `localhost`). Otherwise the text appears selected in a field in the popup: copy it with Ctrl+C.
+- **A switch in the features does nothing:** the command goes to `<base_topic>/<device>/set`. Check in Zigbee2MQTT whether the device is reachable; the card shows the value the device reports back.
 - Logs: set `custom_components.zigbee2mqtt_manager` to `debug`.
 
 ## Version history
 
 | Version | Changes |
 |---|---|
-| **1.0.5** | Fixed: popup and the "Features (expose)" section could not be operated (endless redraw loop, device image flickered). Offline display protected against stale reports. Dutch added (card, integration, README), LICENSE and `examples/` added. Thanks to @pr0xyzer (PR #2): matching HA entities via MQTT identifiers with more than two values (list when renaming). |
+| **1.1.0** | New: **group** lists by manufacturer or device class (accordion) and **filter** them (status online/offline, power source, signal, network role, firmware, last seen, not in a Zigbee group, manufacturer, device class; active filters as chips). Writable **switches** under "Features (expose)" can be toggled directly. New popup section **Entities (for automations)** and copy buttons for the entity names. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: new `set_expose` action (administrators only, values are validated) and a device class per device. |
+| 1.0.5 | Fixed: popup and the "Features (expose)" section could not be operated (endless redraw loop, device image flickered). Offline display protected against stale reports. Dutch added (card, integration, README), LICENSE and `examples/` added. Thanks to @pr0xyzer (PR #2): matching HA entities via MQTT identifiers with more than two values (list when renaming). |
 | 1.0.4 | All expose features in the device popup, several sticks (multiple instances), fix for the device options. |
 | 1.0.3 | First official version. |
 
@@ -229,7 +242,7 @@ Every `.py`, `.js` and `.yaml` file carries a SHA-256 hash of its content from l
 
 | File | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `3796bdfe99c612311c6697342de3d3e8c1aa9827efc33059c1916c89172c52c7` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `fcc2361d67b5c819026cd0f07fbf5e438b1db6c895875730a97e295c08447c8b` |
 | `custom_components/zigbee2mqtt_manager/strings.json` | `714ca6bdd304f051e93e8960410630c361f942eed7ddd89c81969fe13aff9c4d` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
 | `custom_components/zigbee2mqtt_manager/translations/de.json` | `a4cc4400d01de88795a97c7644a9a4c89495c99d440eec4b9b476e7784a3c0b4` |

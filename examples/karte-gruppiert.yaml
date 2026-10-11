@@ -1,0 +1,7 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 1aa6ddfab5db7449542ebfa0139880ac0c33980887afcfdee37489cb87b2abc7
+# Nach Geräteklasse gruppiert (Lampen, Steckdosen, Sensoren …), Filter-Bereich sichtbar
+type: custom:zigbee2mqtt-manager-card
+title: Zigbee2MQTT Manager
+default_group_by: class       # none | vendor | class
+show_group_by: true           # Auswahl "Gruppieren" in der Karte
+show_filters: true            # einklappbarer Filter-Bereich

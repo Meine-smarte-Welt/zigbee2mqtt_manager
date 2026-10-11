@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 111cabd1be2784d5e9c26789913cc4e347b4ec41b02743a651a7e1ea57fd11db
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): ca70a5063d8f202f4774ea207df912ec7e6d7832cf0d28c02ad3db0b274fa3ed
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -17,10 +17,13 @@
  *   Bridge      - Status, App-Version (mit Update-Hinweis), Pairing, Optionen, Neustart, Ereignisprotokoll
  *
  * Jede Kategorie ist einzeln ein-/ausblendbar (show_* im Editor bzw. YAML).
+ * Geräte, Batterie und Updates lassen sich nach Hersteller oder Geräteklasse gruppieren
+ * (Akkordeon) und über einen einklappbaren Filter-Bereich eingrenzen (seit 1.1.0).
  * Tippt man auf ein Gerät, öffnet sich ein Popup mit Akkordeon-Abschnitten:
  * Info, Funktionen (alle Expose-Funktionen mit aktuellem Wert), Umbenennen
  * (inkl. betroffener Entitäten), Geräteoptionen (Formular aus dem Z2M-Schema),
- * Firmware, Bindings, Gruppen und Entfernen.
+ * Firmware, Bindings, Gruppen und Entfernen. Schreibbare Schalter unter "Funktionen"
+ * lassen sich direkt umlegen; die Entitäts-Namen lassen sich in die Zwischenablage kopieren.
  *
  * Mehrere Zigbee2MQTT-Instanzen (z. B. drei Sticks): Gibt es mehr als eine und
  * ist weder `entry_id` noch `base_topic` gesetzt, erscheint oben in der Karte
@@ -39,7 +42,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.0.5";
+const CARD_VERSION = "1.1.0";
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
 
 const TAB_ORDER = ["devices", "battery", "updates", "groups", "bindings", "bridge"];
@@ -68,6 +71,48 @@ const DEFAULT_SORT = "name_asc";
 const TAB_DEFAULT_SORT = { battery: "battery_asc", updates: "ota" };
 
 const OTA_ORDER = { updating: 0, available: 1, scheduled: 2, idle: 3 };
+
+// --- Gruppieren und Filtern (seit 1.1.0) ---------------------------------------
+// Tabs mit Geräteliste, auf die Gruppierung und Filter wirken.
+const FILTER_TABS = ["devices", "battery", "updates"];
+const GROUP_BY_OPTIONS = [
+  { value: "none", label: "group_none" },
+  { value: "vendor", label: "group_vendor" },
+  { value: "class", label: "group_class" },
+];
+// Die Klasse leitet das Backend aus den Expose-Funktionen ab (Reihenfolge = Anzeige).
+const DEVICE_CLASSES = ["light", "switch", "climate", "cover", "lock", "fan", "remote", "sensor", "other"];
+const CLASS_ICON = {
+  light: "mdi:lightbulb-outline",
+  switch: "mdi:power-socket-eu",
+  climate: "mdi:thermostat",
+  cover: "mdi:window-shutter",
+  lock: "mdi:lock-outline",
+  fan: "mdi:fan",
+  remote: "mdi:remote",
+  sensor: "mdi:eye-outline",
+  other: "mdi:help-circle-outline",
+};
+const UNKNOWN_VENDOR = "__unknown__";
+// Feste Filter (Auswahl: Wert -> Textschlüssel). Hersteller und Klasse werden aus den Daten gebildet.
+const FILTER_FIELDS = [
+  { key: "status", label: "flt_status", options: [["online", "flt_online"], ["offline", "flt_offline"]] },
+  {
+    key: "power",
+    label: "flt_power",
+    options: [["battery", "flt_battery_only"], ["mains", "flt_mains_only"], ["low", "flt_battery_low"]],
+  },
+  {
+    key: "signal",
+    label: "flt_signal",
+    options: [["good", "flt_sig_good"], ["mid", "flt_sig_mid"], ["weak", "flt_sig_weak"]],
+  },
+  { key: "role", label: "flt_role", options: [["Router", "type_Router"], ["EndDevice", "type_EndDevice"]] },
+  { key: "firmware", label: "flt_firmware", options: [["available", "flt_fw_available"]] },
+  { key: "seen", label: "flt_seen", options: [["24h", "flt_seen_24h"], ["7d", "flt_seen_7d"]] },
+  { key: "membership", label: "flt_membership", options: [["none", "flt_no_group"]] },
+];
+const FILTER_KEYS = [...FILTER_FIELDS.map((f) => f.key), "vendor", "class"];
 
 const DEVICE_ICON = {
   Router: "mdi:router-wireless",
@@ -145,6 +190,10 @@ const CONFIG_DEFAULTS = {
   show_search: true,
   show_filter_bar: true,
   default_sort: DEFAULT_SORT,
+  // Gruppieren (Akkordeon nach Hersteller/Geräteklasse) und Filter-Bereich
+  show_group_by: true,
+  default_group_by: "none",
+  show_filters: true,
   // Spalten der Geräteliste
   show_model: true,
   show_vendor: true,
@@ -269,6 +318,27 @@ const I18N = {
     ex_g_light: "Licht", ex_g_switch: "Schalter", ex_g_fan: "Lüfter", ex_g_cover: "Rollo", ex_g_lock: "Schloss", ex_g_climate: "Klima",
     // Mehrere Instanzen
     instance: "Instanz (Stick)",
+    // Gruppieren und Filtern (seit 1.1.0)
+    group_by: "Gruppieren", group_none: "Keine Gruppierung", group_vendor: "Hersteller", group_class: "Geräteklasse", group_unknown: "Unbekannt",
+    expand_all: "Alle aufklappen", collapse_all: "Alle zuklappen",
+    filters: "Filter", filter_active: "{n} aktiv", filter_reset: "Alle Filter zurücksetzen", filter_remove: "Filter entfernen",
+    flt_all: "Alle", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
+    flt_power: "Stromversorgung", flt_battery_only: "Nur Batteriegeräte", flt_mains_only: "Nur Netzbetrieb", flt_battery_low: "Batterie niedrig",
+    flt_signal: "Signal", flt_sig_good: "Gut (ab 100)", flt_sig_mid: "Mittel (50–99)", flt_sig_weak: "Schwach (unter 50)",
+    flt_role: "Netzwerk-Rolle", flt_firmware: "Firmware", flt_fw_available: "Update verfügbar",
+    flt_seen: "Zuletzt gesehen", flt_seen_24h: "Vor mehr als 24 Stunden", flt_seen_7d: "Vor mehr als 7 Tagen",
+    flt_membership: "Zigbee-Gruppen", flt_no_group: "In keiner Gruppe", flt_vendor: "Hersteller", flt_class: "Geräteklasse",
+    flt_hint: "Mehrere Filter gelten gleichzeitig (UND). Ohne aktive Z2M-Verfügbarkeit wird „Online/Offline“ aus „zuletzt gesehen“ abgeleitet, wie beim Statuspunkt. Die Filter gelten für Geräte, Batterie und Updates.",
+    cls_light: "Lampen", cls_switch: "Steckdosen & Schalter", cls_climate: "Heizung & Klima", cls_cover: "Rollos & Jalousien", cls_lock: "Schlösser",
+    cls_fan: "Lüfter", cls_remote: "Taster & Fernbedienungen", cls_sensor: "Sensoren", cls_other: "Sonstige",
+    // Schalter in den Funktionen, Entitäten kopieren (seit 1.1.0)
+    ex_set_on: "An", ex_set_off: "Aus",
+    exposes_hint_switch: "Alle Funktionen, die Zigbee2MQTT für dieses Gerät bereitstellt, mit dem zuletzt bekannten Wert. Schalter lassen sich direkt umlegen und wirken sofort am Gerät.",
+    sec_entities: "Entitäten (für Automationen)", entities_hint: "Entitäts-Namen aus Home Assistant. Mit dem Symbol kopierst du einen Namen in die Zwischenablage, zum Beispiel für Automationen oder Skripte.",
+    no_entities: "Keine Home-Assistant-Entitäten gefunden (ist die MQTT-Erkennung aktiv?).",
+    copy: "In die Zwischenablage kopieren", copy_all: "Alle kopieren", copy_entities: "Entitäts-Namen kopieren",
+    copied: "Kopiert: {v}", copied_n: "{n} Entitäten kopiert",
+    copy_failed: "Kopieren nicht möglich. Der Browser erlaubt die Zwischenablage nur über HTTPS.", copy_manual: "Zum Kopieren markieren (Strg+C):",
   },
   en: {
     connecting: "Connecting …",
@@ -344,6 +414,27 @@ const I18N = {
     ex_range: "Range", ex_values: "Values", ex_endpoint: "Endpoint",
     ex_g_light: "Light", ex_g_switch: "Switch", ex_g_fan: "Fan", ex_g_cover: "Cover", ex_g_lock: "Lock", ex_g_climate: "Climate",
     instance: "Instance (stick)",
+    // Grouping and filters (since 1.1.0)
+    group_by: "Group by", group_none: "No grouping", group_vendor: "Manufacturer", group_class: "Device class", group_unknown: "Unknown",
+    expand_all: "Expand all", collapse_all: "Collapse all",
+    filters: "Filters", filter_active: "{n} active", filter_reset: "Reset all filters", filter_remove: "Remove filter",
+    flt_all: "All", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
+    flt_power: "Power source", flt_battery_only: "Battery devices only", flt_mains_only: "Mains-powered only", flt_battery_low: "Low battery",
+    flt_signal: "Signal", flt_sig_good: "Good (100+)", flt_sig_mid: "Medium (50–99)", flt_sig_weak: "Weak (below 50)",
+    flt_role: "Network role", flt_firmware: "Firmware", flt_fw_available: "Update available",
+    flt_seen: "Last seen", flt_seen_24h: "More than 24 hours ago", flt_seen_7d: "More than 7 days ago",
+    flt_membership: "Zigbee groups", flt_no_group: "Not in any group", flt_vendor: "Manufacturer", flt_class: "Device class",
+    flt_hint: "Several filters apply together (AND). Without Z2M availability enabled, online/offline is derived from “last seen”, like the status dot. Filters apply to Devices, Battery and Updates.",
+    cls_light: "Lights", cls_switch: "Plugs & switches", cls_climate: "Heating & climate", cls_cover: "Blinds & covers", cls_lock: "Locks",
+    cls_fan: "Fans", cls_remote: "Buttons & remotes", cls_sensor: "Sensors", cls_other: "Other",
+    // Switches in the features, copy entities (since 1.1.0)
+    ex_set_on: "On", ex_set_off: "Off",
+    exposes_hint_switch: "All features Zigbee2MQTT exposes for this device, with the last known value. Switches can be toggled directly and take effect on the device immediately.",
+    sec_entities: "Entities (for automations)", entities_hint: "Entity names from Home Assistant. Use the icon to copy a name to the clipboard, for example for automations or scripts.",
+    no_entities: "No Home Assistant entities found (is MQTT discovery enabled?).",
+    copy: "Copy to clipboard", copy_all: "Copy all", copy_entities: "Copy entity names",
+    copied: "Copied: {v}", copied_n: "{n} entities copied",
+    copy_failed: "Copying failed. The browser only allows clipboard access over HTTPS.", copy_manual: "Select to copy (Ctrl+C):",
   },
   nl: {
     connecting: "Verbinden …",
@@ -427,6 +518,27 @@ const I18N = {
     ex_g_light: "Licht", ex_g_switch: "Schakelaar", ex_g_fan: "Ventilator", ex_g_cover: "Rolluik", ex_g_lock: "Slot", ex_g_climate: "Klimaat",
     // Meerdere instanties
     instance: "Instantie (stick)",
+    // Groeperen en filteren (sinds 1.1.0)
+    group_by: "Groeperen", group_none: "Geen groepering", group_vendor: "Fabrikant", group_class: "Apparaatklasse", group_unknown: "Onbekend",
+    expand_all: "Alles uitklappen", collapse_all: "Alles inklappen",
+    filters: "Filters", filter_active: "{n} actief", filter_reset: "Alle filters wissen", filter_remove: "Filter verwijderen",
+    flt_all: "Alle", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
+    flt_power: "Voeding", flt_battery_only: "Alleen batterijapparaten", flt_mains_only: "Alleen netvoeding", flt_battery_low: "Batterij laag",
+    flt_signal: "Signaal", flt_sig_good: "Goed (vanaf 100)", flt_sig_mid: "Matig (50–99)", flt_sig_weak: "Zwak (onder 50)",
+    flt_role: "Netwerkrol", flt_firmware: "Firmware", flt_fw_available: "Update beschikbaar",
+    flt_seen: "Laatst gezien", flt_seen_24h: "Langer dan 24 uur geleden", flt_seen_7d: "Langer dan 7 dagen geleden",
+    flt_membership: "Zigbee-groepen", flt_no_group: "In geen enkele groep", flt_vendor: "Fabrikant", flt_class: "Apparaatklasse",
+    flt_hint: "Meerdere filters gelden tegelijk (EN). Zonder actieve Z2M-beschikbaarheid wordt online/offline afgeleid uit “laatst gezien”, net als bij het statusbolletje. De filters gelden voor Apparaten, Batterij en Updates.",
+    cls_light: "Lampen", cls_switch: "Stekkers & schakelaars", cls_climate: "Verwarming & klimaat", cls_cover: "Rolluiken & zonwering", cls_lock: "Sloten",
+    cls_fan: "Ventilatoren", cls_remote: "Knoppen & afstandsbedieningen", cls_sensor: "Sensoren", cls_other: "Overig",
+    // Schakelaars in de functies, entiteiten kopiëren (sinds 1.1.0)
+    ex_set_on: "Aan", ex_set_off: "Uit",
+    exposes_hint_switch: "Alle functies die Zigbee2MQTT voor dit apparaat beschikbaar stelt, met de laatst bekende waarde. Schakelaars kun je direct omzetten; het werkt meteen op het apparaat.",
+    sec_entities: "Entiteiten (voor automatiseringen)", entities_hint: "Entiteitsnamen uit Home Assistant. Met het pictogram kopieer je een naam naar het klembord, bijvoorbeeld voor automatiseringen of scripts.",
+    no_entities: "Geen Home Assistant-entiteiten gevonden (is MQTT-discovery actief?).",
+    copy: "Naar klembord kopiëren", copy_all: "Alles kopiëren", copy_entities: "Entiteitsnamen kopiëren",
+    copied: "Gekopieerd: {v}", copied_n: "{n} entiteiten gekopieerd",
+    copy_failed: "Kopiëren mislukt. De browser staat het klembord alleen toe via HTTPS.", copy_manual: "Selecteer om te kopiëren (Ctrl+C):",
   },
 
 };
@@ -517,6 +629,20 @@ const BASE_CARD_STYLES = `
   .filter-bar-field.grow { flex: 1 1 160px; }
   .filter-bar-field.grow input { flex: 1 1 auto; min-width: 0; }
 
+  /* Filter-Bereich, aktive Filter und Gruppen (seit 1.1.0) */
+  .flt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 12px; padding-top: 4px; }
+  .flt-field { display: flex; flex-direction: column; gap: 2px; font-size: 0.8em; color: var(--secondary-text-color, #727272); }
+  .flt-field select {
+    font: inherit; font-size: 1em; color: var(--primary-text-color, #212121); width: 100%;
+    background: var(--card-background-color, #fff); border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: 6px; padding: 5px 8px; box-sizing: border-box;
+  }
+  .group-list { display: flex; flex-direction: column; gap: 8px; }
+  .group-list .settings-accordion-body { padding-top: 0; }
+  .filters-wrap { margin-bottom: 8px; }
+  .fchips { padding: 0 0 8px; }
+  .fchips .chip { cursor: pointer; align-items: center; gap: 4px; --mdc-icon-size: 14px; }
+
   /* Zeilenliste */
   .rows { display: flex; flex-direction: column; }
   .row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
@@ -601,6 +727,31 @@ const BASE_CARD_STYLES = `
   .ex-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 6px; margin-top: 3px; font-size: 0.75em; color: var(--secondary-text-color, #727272); }
   .ex-meta .pill { font-size: 0.95em; padding: 0 7px; }
   .ex-desc { font-size: 0.75em; color: var(--secondary-text-color, #727272); margin-top: 2px; }
+  /* Schalter in den Funktionen (seit 1.1.0) */
+  .ex-sw { display: inline-flex; align-items: center; gap: 8px; }
+  .ex-set { display: inline-flex; gap: 6px; }
+  .sw {
+    position: relative; width: 38px; height: 20px; border-radius: 10px; border: none; padding: 0; cursor: pointer;
+    background: var(--disabled-text-color, #9e9e9e); transition: background 0.15s ease; flex-shrink: 0;
+  }
+  .sw .knob {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--card-background-color, #fff); transition: transform 0.15s ease; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .sw.on { background: var(--zmm-color-success); }
+  .sw.on .knob { transform: translateX(18px); }
+  .sw[disabled] { opacity: 0.5; cursor: default; }
+  .sw:focus-visible { outline: 2px solid var(--zmm-color-tab-active); outline-offset: 2px; }
+  .sw-label { min-width: 2.2em; text-align: left; font-weight: 500; }
+  /* Entitäten kopieren */
+  .ent-list { max-height: 260px; overflow-y: auto; }
+  .ent { display: flex; flex-direction: column; min-width: 0; }
+  .ent code { font-size: 0.9em; word-break: break-all; }
+  .ent .muted { font-size: 0.78em; }
+  .manual-copy {
+    width: 100%; box-sizing: border-box; font: inherit; font-size: 0.85em; color: var(--primary-text-color, #212121);
+    background: var(--card-background-color, #fff); border: 1px solid var(--divider-color, #e0e0e0); border-radius: 6px; padding: 6px 8px;
+  }
   /* Umschalter bei mehreren Zigbee2MQTT-Instanzen */
   .instance-bar { display: flex; align-items: center; gap: 8px; padding: 0 0 8px; font-size: 0.85em; color: var(--secondary-text-color, #727272); }
   .instance-bar ha-icon { --mdc-icon-size: 20px; }
@@ -637,6 +788,7 @@ const BASE_CARD_STYLES = `
   .popup-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--divider-color, #e0e0e0); position: sticky; top: 0; background: inherit; z-index: 1; }
   .popup-title { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .popup-close { border: none; background: transparent; cursor: pointer; color: var(--secondary-text-color, #727272); padding: 2px; display: inline-flex; }
+  .popup-close:hover { color: var(--primary-text-color, #212121); }
   .popup-body { padding: 10px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
 
   /* Hinweis-Toast */
@@ -647,7 +799,7 @@ const BASE_CARD_STYLES = `
   }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
   .toast.error { background: var(--zmm-color-error); color: #fff; }
-  @media (prefers-reduced-motion: reduce) { .toast, .settings-accordion-summary::after { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .toast, .settings-accordion-summary::after, .sw, .sw .knob { transition: none; } }
 `;
 
 // Unterhalb ~480 px Kartenbreite wird auf reine Icons umgeschaltet (Tooltip via
@@ -689,6 +841,11 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     this._tab = "devices";
     this._filter = "all";
     this._sort = {};
+    this._flt = {};
+    this._groupBy = null;
+    this._groupKeys = [];
+    this._pending = new Set();
+    this._manualCopy = null;
     this._expanded = false;
     this._selected = null;
     this._drafts = {};
@@ -708,6 +865,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     this._tab = visible.includes(this._config.default_tab) ? this._config.default_tab : visible[0] || "devices";
     this._filter = "all";
     this._sort = {};
+    this._flt = {};
+    this._groupBy = null;
     this._expanded = false;
     if (!this._built) this._build();
     // Wurde die Karte (z. B. im Editor) an eine andere Instanz gebunden: neu verbinden
@@ -1276,6 +1435,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       } else if (this._filter === "updates") list = list.filter((d) => d.ota.state === "available");
     }
 
+    if (FILTER_TABS.includes(tab)) list = this._applyFilters(list);
+
     const q = this._search;
     if (q) {
       list = list.filter((d) =>
@@ -1295,6 +1456,120 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     });
   }
 
+  // Status wie der Statuspunkt: Z2M-Verfügbarkeit hat Vorrang, sonst aus "zuletzt gesehen" abgeleitet.
+  _statusOf(d) {
+    if (d.available === true) return "online";
+    if (d.available === false) return "offline";
+    const ts = d.last_seen ? Date.parse(d.last_seen) : NaN;
+    if (Number.isNaN(ts)) return "unknown";
+    return Date.now() - ts <= STALE_AFTER_MS ? "online" : "offline";
+  }
+
+  _applyFilters(list) {
+    const flt = this._flt || {};
+    const active = FILTER_KEYS.filter((k) => flt[k]);
+    if (!active.length) return list;
+    const low = this._data?.stats?.low_battery_threshold ?? 20;
+    const inGroup = new Set();
+    for (const g of this._data?.groups || []) for (const m of g.members || []) inGroup.add(m.ieee);
+    const now = Date.now();
+    return list.filter((d) =>
+      active.every((k) => {
+        const v = flt[k];
+        switch (k) {
+          case "status":
+            return this._statusOf(d) === v;
+          case "power": {
+            const bat = (d.battery !== null && d.battery !== undefined) || /battery/i.test(String(d.power_source || ""));
+            if (v === "battery") return bat;
+            if (v === "mains") return !bat;
+            return d.battery !== null && d.battery !== undefined && d.battery < low;
+          }
+          case "signal": {
+            const q = d.linkquality;
+            if (q === null || q === undefined) return false;
+            return v === "good" ? q >= 100 : v === "mid" ? q >= 50 && q < 100 : q < 50;
+          }
+          case "role":
+            return d.type === v;
+          case "firmware":
+            return d.ota?.state === "available";
+          case "seen": {
+            const ts = d.last_seen ? Date.parse(d.last_seen) : NaN;
+            const limit = (v === "24h" ? 24 : 24 * 7) * 3600 * 1000;
+            return Number.isNaN(ts) || now - ts > limit;
+          }
+          case "membership":
+            return !inGroup.has(d.ieee);
+          case "vendor":
+            return v === UNKNOWN_VENDOR ? !d.vendor : d.vendor === v;
+          case "class":
+            return (d.device_class || "other") === v;
+          default:
+            return true;
+        }
+      })
+    );
+  }
+
+  _groupMode() {
+    const g = this._groupBy ?? this._config.default_group_by;
+    return GROUP_BY_OPTIONS.some((o) => o.value === g) ? g : "none";
+  }
+
+  _fltOptionLabel(key, value) {
+    if (key === "vendor") return value === UNKNOWN_VENDOR ? this._t("group_unknown") : value;
+    if (key === "class") return this._t(`cls_${value}`);
+    const field = FILTER_FIELDS.find((f) => f.key === key);
+    const opt = field?.options.find(([v]) => v === value);
+    return opt ? this._t(opt[1]) : value;
+  }
+
+  _renderFilterPanel(tab) {
+    if (!this._config.show_filters || !FILTER_TABS.includes(tab)) return "";
+    const t = (k, v) => this._t(k, v);
+    const active = FILTER_KEYS.filter((k) => this._flt[k]);
+    const devices = this._data.devices;
+    const select = (key, label, options) => `<label class="flt-field"><span>${esc(label)}</span>
+        <select data-change="flt" data-flt="${key}" data-fk="flt:${key}"><option value="">${esc(t("flt_all"))}</option>${options
+          .map(([v, l]) => `<option value="${esc(v)}" ${this._flt[key] === v ? "selected" : ""}>${esc(l)}</option>`)
+          .join("")}</select></label>`;
+
+    const vendors = [...new Set(devices.map((d) => d.vendor).filter(Boolean))].sort((a, b) => a.localeCompare(b, this._lang));
+    const vendorOptions = vendors.map((v) => [v, v]);
+    if (devices.some((d) => !d.vendor)) vendorOptions.push([UNKNOWN_VENDOR, t("group_unknown")]);
+    const classOptions = DEVICE_CLASSES.filter((c) => devices.some((d) => (d.device_class || "other") === c)).map((c) => [c, t(`cls_${c}`)]);
+
+    const fields = [
+      ...FILTER_FIELDS.map((f) => select(f.key, t(f.label), f.options.map(([v, l]) => [v, t(l)]))),
+      select("vendor", t("flt_vendor"), vendorOptions),
+      select("class", t("flt_class"), classOptions),
+    ].join("");
+    const body = `<div class="flt-grid">${fields}</div>
+      <div class="hint">${esc(t("flt_hint"))}</div>
+      <div class="toolbar"><button class="btn small" data-act="flt_reset" ${active.length ? "" : "disabled"}>${esc(t("filter_reset"))}</button></div>`;
+    return `<div class="filters-wrap">${this._accordion("f:filters", "mdi:filter-variant", t("filters"), body, {
+      meta: active.length ? t("filter_active", { n: active.length }) : "",
+    })}</div>`;
+  }
+
+  // Aktive Filter als kleine Chips (Tippen entfernt den Filter), auch bei eingeklapptem Filter-Bereich
+  _renderActiveFilters(tab) {
+    if (!FILTER_TABS.includes(tab)) return "";
+    const active = FILTER_KEYS.filter((k) => this._flt[k]);
+    if (!active.length) return "";
+    const t = (k) => this._t(k);
+    const labelKey = (k) => (k === "vendor" ? "flt_vendor" : k === "class" ? "flt_class" : FILTER_FIELDS.find((f) => f.key === k).label);
+    return `<div class="chips fchips">${active
+      .map(
+        (k) =>
+          `<button class="chip on" data-act="flt_clear" data-flt="${k}" title="${esc(t("filter_remove"))}">${esc(t(labelKey(k)))}: ${esc(
+            this._fltOptionLabel(k, this._flt[k])
+          )}<ha-icon icon="mdi:close"></ha-icon></button>`
+      )
+      .join("")}</div>`;
+  }
+
   _renderStats() {
     const s = this._data.stats;
     if (!this._config.show_stats) return "";
@@ -1311,7 +1586,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   _renderFilterBar(tab, withSort = true) {
     const cfg = this._config;
-    if (!cfg.show_search && !(cfg.show_filter_bar && withSort)) return "";
+    const canGroup = Boolean(cfg.show_group_by) && withSort && FILTER_TABS.includes(tab);
+    if (!cfg.show_search && !(cfg.show_filter_bar && withSort) && !canGroup) return "";
     const search = cfg.show_search
       ? `<label class="filter-bar-field grow"><ha-icon icon="mdi:magnify" style="--mdc-icon-size:18px"></ha-icon>
            <input type="search" data-draft="search" data-fk="search" data-rerender="1"
@@ -1323,7 +1599,19 @@ class Zigbee2MqttManagerCard extends HTMLElement {
              (o) => `<option value="${o.value}" ${o.value === this._sortKey(tab) ? "selected" : ""}>${esc(this._t(o.label))}</option>`
            ).join("")}</select></label>`
       : "";
-    return `<div class="filter-bar">${search}${sort}</div>`;
+    const mode = this._groupMode();
+    const group = canGroup
+      ? `<label class="filter-bar-field">${esc(this._t("group_by"))}
+           <select data-change="group_by" data-fk="group_by">${GROUP_BY_OPTIONS.map(
+             (o) => `<option value="${o.value}" ${o.value === mode ? "selected" : ""}>${esc(this._t(o.label))}</option>`
+           ).join("")}</select></label>`
+      : "";
+    const expand =
+      canGroup && mode !== "none"
+        ? `<span class="filter-bar-field"><button class="btn icon" data-act="grp_all" data-value="1" title="${esc(this._t("expand_all"))}" aria-label="${esc(this._t("expand_all"))}"><ha-icon icon="mdi:unfold-more-horizontal"></ha-icon></button>
+             <button class="btn icon" data-act="grp_all" data-value="0" title="${esc(this._t("collapse_all"))}" aria-label="${esc(this._t("collapse_all"))}"><ha-icon icon="mdi:unfold-less-horizontal"></ha-icon></button></span>`
+        : "";
+    return `<div class="filter-bar">${search}${sort}${group}${expand}</div>`;
   }
 
   _relTime(iso) {
@@ -1468,12 +1756,49 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (!list.length) {
       return `<div class="empty">${esc(this._data.devices.length ? this._t("no_results") : this._t("no_data"))}</div>`;
     }
+    const mode = FILTER_TABS.includes(tab) ? this._groupMode() : "none";
+    if (mode !== "none") return this._renderGrouped(tab, list, mode);
     const { shown, hidden } = this._limited(list);
     return `<div class="rows">${shown.map((d) => this._deviceRow(d, tab)).join("")}</div>${
       hidden
         ? `<div class="more"><button class="btn" data-act="more">${esc(this._t("show_more", { n: hidden }))}</button></div>`
         : ""
     }`;
+  }
+
+  // Gruppierte Liste: je Hersteller bzw. Geräteklasse ein Akkordeon (max_rows gilt hier nicht)
+  _renderGrouped(tab, list, mode) {
+    const buckets = new Map();
+    for (const d of list) {
+      const k = mode === "vendor" ? d.vendor || "" : d.device_class || "other";
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k).push(d);
+    }
+    const keys = [...buckets.keys()];
+    if (mode === "class") {
+      const rank = (c) => (DEVICE_CLASSES.includes(c) ? DEVICE_CLASSES.indexOf(c) : DEVICE_CLASSES.length);
+      keys.sort((a, b) => rank(a) - rank(b));
+    } else {
+      keys.sort((a, b) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b, this._lang)));
+    }
+    const openByDefault = keys.length <= 3 || this._search !== "";
+    this._groupKeys = [];
+    const html = keys
+      .map((k) => {
+        const items = buckets.get(k);
+        const off = items.filter((d) => d.available === false).length;
+        const meta = off ? `${items.length} · ${off} ${this._t("offline")}` : String(items.length);
+        const label = mode === "vendor" ? k || this._t("group_unknown") : this._t(`cls_${k}`);
+        const icon = mode === "vendor" ? "mdi:factory" : CLASS_ICON[k] || CLASS_ICON.other;
+        const key = `g:${tab}:${mode}:${k}`;
+        this._groupKeys.push(key);
+        return this._accordion(key, icon, label, `<div class="rows">${items.map((d) => this._deviceRow(d, tab)).join("")}</div>`, {
+          meta,
+          open: openByDefault,
+        });
+      })
+      .join("");
+    return `<div class="group-list">${html}</div>`;
   }
 
   _renderDeviceTab(tab) {
@@ -1494,7 +1819,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
           </div>
           <div class="hint">${esc(this._t("update_all_hint"))}</div>`;
     }
-    return `${tab === "devices" ? this._renderStats() : ""}${toolbar}${this._renderFilterBar(tab)}${this._renderRowList(tab, this._devices(tab))}`;
+    return `${tab === "devices" ? this._renderStats() : ""}${toolbar}${this._renderFilterBar(tab)}${this._renderFilterPanel(tab)}${this._renderActiveFilters(tab)}${this._renderRowList(tab, this._devices(tab))}`;
   }
 
   // ----------------------------------------------------------------- Gruppen
@@ -1747,6 +2072,15 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (t.dataset.change === "sort") {
       this._sort[t.dataset.tab] = t.value;
       this._refresh();
+    } else if (t.dataset.change === "group_by") {
+      this._groupBy = t.value;
+      this._expanded = false;
+      this._refresh();
+    } else if (t.dataset.change === "flt") {
+      if (t.value) this._flt[t.dataset.flt] = t.value;
+      else delete this._flt[t.dataset.flt];
+      this._expanded = false;
+      this._refresh();
     } else if (t.dataset.change === "instance") {
       this._switchInstance(t.value);
     } else if (t.dataset.change === "bridge_option" && t.value) {
@@ -1773,6 +2107,30 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       case "more":
         this._expanded = true;
         return this._refresh();
+      case "flt_reset":
+        this._flt = {};
+        this._expanded = false;
+        return this._refresh();
+      case "flt_clear":
+        delete this._flt[d.flt];
+        this._expanded = false;
+        return this._refresh();
+      case "grp_all":
+        for (const k of this._groupKeys || []) this._open[k] = d.value === "1";
+        return this._refresh();
+      case "ex_toggle": {
+        let next;
+        try {
+          next = JSON.parse(d.next);
+        } catch (_e) {
+          return;
+        }
+        return void (await this._toggleExpose(d.ieee || this._selected, d.prop, next));
+      }
+      case "copy":
+        return void (await this._copyText(d.text));
+      case "copy_all":
+        return void (await this._copyEntities(this._selected));
       case "open":
         return this._openPopup(d.ieee);
       case "close":
@@ -1851,6 +2209,75 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       }
       default:
     }
+  }
+
+  // Schalter (binäre Funktion mit Schreibzugriff) umlegen. Der neue Wert wird sofort angezeigt;
+  // nach kurzer Zeit holt die Karte den echten Wert vom Gerät nach.
+  async _toggleExpose(ieee, prop, next) {
+    if (!ieee || !prop) return;
+    const key = `${ieee}:${prop}`;
+    if (this._pending.has(key)) return;
+    this._pending.add(key);
+    this._renderPopup(true);
+    const ok = await this._call("set_expose", { ieee, key: prop, value: next });
+    if (ok) {
+      const row = this._details[ieee]?.exposes?.find((r) => r.property === prop);
+      if (row) row.value = next;
+    }
+    this._renderPopup(true);
+    setTimeout(async () => {
+      this._pending.delete(key);
+      if (this._selected === ieee) await this._loadDetails(ieee, true, true);
+      this._renderPopup(true);
+    }, 1500);
+  }
+
+  _legacyCopy(text) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+      this.shadowRoot.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  // In die Zwischenablage kopieren. Ohne HTTPS verweigert der Browser den Zugriff: dann
+  // erscheint der Text markiert in einem Feld zum manuellen Kopieren (Strg+C).
+  async _copyText(text, doneMessage) {
+    const value = String(text ?? "");
+    if (!value) return false;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(value);
+      ok = true;
+    } catch (_e) {
+      ok = this._legacyCopy(value);
+    }
+    if (!ok) {
+      this._manualCopy = value;
+      this._manualFocus = true;
+      this._open["p:entities"] = true;
+      this._toast(this._t("copy_failed"), true);
+      this._renderPopup(true);
+      return false;
+    }
+    this._manualCopy = null;
+    this._toast(doneMessage || this._t("copied", { v: value }));
+    return true;
+  }
+
+  async _copyEntities(ieee) {
+    const det = this._details[ieee];
+    const ids = (det?.entities || []).map((e) => e.entity_id).filter(Boolean);
+    if (!ids.length) return this._toast(this._t(det?.loading ? "loading" : "no_entities"), true);
+    return this._copyText(ids.join("\n"), ids.length > 1 ? this._t("copied_n", { n: ids.length }) : undefined);
   }
 
   _saveOptions() {
@@ -1944,6 +2371,22 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     return esc(row.unit ? `${v} ${row.unit}` : v);
   }
 
+  // Schalter bzw. An/Aus-Knöpfe (wenn der Wert noch unbekannt ist) für eine schreibbare binäre Funktion
+  _exposeSwitch(ieee, r) {
+    const t = (k) => this._t(k);
+    const on = r.value_on === undefined || r.value_on === null ? true : r.value_on;
+    const off = r.value_off === undefined || r.value_off === null ? false : r.value_off;
+    const busy = this._pending.has(`${ieee}:${r.property}`);
+    const attrs = (next) =>
+      `data-act="ex_toggle" data-ieee="${esc(ieee)}" data-prop="${esc(r.property)}" data-next="${esc(JSON.stringify(next))}"${busy ? " disabled" : ""}`;
+    if (!("value" in r) || r.value === null || r.value === undefined) {
+      return `<span class="ex-set"><button class="btn small" ${attrs(on)}>${esc(t("ex_set_on"))}</button><button class="btn small" ${attrs(off)}>${esc(t("ex_set_off"))}</button></span>`;
+    }
+    const isOn =
+      r.value === on || (typeof r.value === "string" && typeof on === "string" && r.value.toUpperCase() === on.toUpperCase());
+    return `<span class="ex-sw"><button class="sw ${isOn ? "on" : ""}" role="switch" aria-checked="${isOn}" aria-label="${esc(r.label)}" ${attrs(isOn ? off : on)}><span class="knob"></span></button><span class="sw-label">${esc(isOn ? t("ex_on") : t("ex_off"))}</span></span>`;
+  }
+
   _exposeGroupLabel(group) {
     if (!group) return "";
     const key = `ex_g_${group}`;
@@ -1957,6 +2400,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (det.error) return `<div class="hint err">${esc(det.error)}</div>`;
     const rows = det.exposes || [];
     if (!rows.length) return `<div class="hint">${esc(t("no_exposes"))}</div>`;
+    const ro = this._readOnly;
+    const hasSwitch = !ro && rows.some((r) => r.switchable);
 
     const filter = String(this._draft(`exf:${ieee}`, "") || "").trim().toLowerCase();
     const accessPills = (access) => {
@@ -1989,7 +2434,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       html += `<div class="ex-row" data-s="${esc(search)}"${hidden}>
           <div class="ex-top"><span><span class="ex-label">${esc(r.label)}</span>${
             r.label !== r.property ? `<span class="ex-prop">${esc(r.property)}</span>` : ""
-          }</span><span class="ex-value">${this._exposeValue(r)}</span></div>
+          }</span><span class="ex-value">${r.switchable && !ro ? this._exposeSwitch(ieee, r) : this._exposeValue(r)}</span></div>
           <div class="ex-meta">${meta.join("")}</div>${r.description ? `<div class="ex-desc">${esc(r.description)}</div>` : ""}
         </div>`;
     }
@@ -1998,7 +2443,32 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         ? `<div class="field"><input type="search" data-exfilter data-draft="exf:${esc(ieee)}" data-fk="exf" placeholder="${esc(t("exposes_filter"))}" value="${esc(this._draft(`exf:${ieee}`, ""))}" /></div>`
         : "";
     return `${searchField}<div class="ex-list">${html}<div class="hint ex-none" hidden>${esc(t("exposes_none_match"))}</div></div>
-      <div class="hint">${esc(t("exposes_hint"))}</div>`;
+      <div class="hint">${esc(t(hasSwitch ? "exposes_hint_switch" : "exposes_hint"))}</div>`;
+  }
+
+  // Entitäten des Geräts in Home Assistant (zum Kopieren für Automationen und Skripte)
+  _entitiesBody(det) {
+    const t = (k) => this._t(k);
+    if (!det || det.loading) return `<div class="hint">${esc(t("loading"))}</div>`;
+    if (det.error) return `<div class="hint err">${esc(det.error)}</div>`;
+    const ents = det.entities || [];
+    const manual = this._manualCopy
+      ? `<div class="field"><label>${esc(t("copy_manual"))}</label><textarea class="manual-copy" readonly rows="${Math.min(
+          6,
+          String(this._manualCopy).split("\n").length
+        )}">${esc(this._manualCopy)}</textarea></div>`
+      : "";
+    if (!ents.length) return `${manual}<div class="hint">${esc(t("no_entities"))}</div>`;
+    const lines = ents
+      .map(
+        (en) => `<div class="settings-line"><span class="ent"><code>${esc(en.entity_id)}</code>${
+          en.name ? `<span class="muted">${esc(en.name)}</span>` : ""
+        }</span><button class="btn icon" data-act="copy" data-text="${esc(en.entity_id)}" title="${esc(t("copy"))}" aria-label="${esc(t("copy"))}"><ha-icon icon="mdi:content-copy"></ha-icon></button></div>`
+      )
+      .join("");
+    return `${manual}<div class="ent-list">${lines}</div>
+      <div class="toolbar"><button class="btn small" data-act="copy_all"><ha-icon icon="mdi:content-copy"></ha-icon>${esc(t("copy_all"))}</button></div>
+      <div class="hint">${esc(t("entities_hint"))}</div>`;
   }
 
   _optionField(ieee, opt, current) {
@@ -2037,7 +2507,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       return;
     }
     const det = this._details[d.ieee];
-    const sig = JSON.stringify([d, det, this._confirming, this._readOnly, this._data.groups]);
+    const sig = JSON.stringify([d, det, this._confirming, this._readOnly, this._data.groups, [...this._pending], this._manualCopy]);
     if (!force && sig === this._popupSig && !backdrop.hidden) return;
     this._popupSig = sig;
 
@@ -2057,6 +2527,12 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         })
       );
     }
+
+    sections.push(
+      this._accordion("p:entities", "mdi:code-braces", t("sec_entities"), this._entitiesBody(det), {
+        meta: det?.entities?.length ? String(det.entities.length) : "",
+      })
+    );
 
     if (!ro) {
       const entities = det?.entities?.length
@@ -2154,7 +2630,11 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
     const headImg = this._deviceImage(d);
     popup.innerHTML = `<div class="popup-head">${headImg}<ha-icon icon="${DEVICE_ICON[d.type] || "mdi:zigbee"}"${headImg ? " hidden" : ""}></ha-icon>
-        <span class="popup-title">${esc(d.name)}</span>
+        <span class="popup-title">${esc(d.name)}</span>${
+          det?.entities?.length
+            ? `<button class="popup-close" data-act="copy_all" title="${esc(t("copy_entities"))}" aria-label="${esc(t("copy_entities"))}"><ha-icon icon="mdi:content-copy"></ha-icon></button>`
+            : ""
+        }
         <button class="popup-close" data-act="close" aria-label="${esc(t("close"))}"><ha-icon icon="mdi:close"></ha-icon></button></div>
       <div class="popup-body">${sections.join("")}</div>`;
     backdrop.hidden = false;
@@ -2171,6 +2651,14 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       });
     });
     popup.scrollTop = scroll;
+    if (this._manualFocus) {
+      this._manualFocus = false;
+      const manual = popup.querySelector(".manual-copy");
+      if (manual) {
+        manual.focus();
+        manual.select();
+      }
+    }
     const exList = popup.querySelector(".ex-list");
     if (exList) exList.scrollTop = exScroll;
     this._restoreFocus(focus);
@@ -2209,6 +2697,9 @@ const EDITOR_LABELS = {
   show_search: "Suchfeld anzeigen",
   show_filter_bar: "Sortierung auf der Karte anzeigen",
   default_sort: "Standard-Sortierung der Geräteliste",
+  show_group_by: "Auswahl 'Gruppieren' anzeigen (Hersteller / Geräteklasse)",
+  default_group_by: "Standard-Gruppierung der Listen",
+  show_filters: "Filter-Bereich anzeigen (Status, Batterie, Signal, …)",
   show_model: "Modell anzeigen",
   show_vendor: "Hersteller anzeigen",
   show_ieee: "IEEE-Adresse anzeigen",
@@ -2223,7 +2714,8 @@ const EDITOR_HELPERS = {
   entry_id: "Welche Zigbee2MQTT-Instanz diese Karte anzeigt. „Automatisch“: Gibt es mehrere Instanzen, erscheint oben in der Karte ein Umschalter. Für eine Karte je Stick hier die Instanz festlegen.",
   title: "Leer lassen, um keine Überschrift anzuzeigen.",
   show_images: "Die Bilder werden direkt im Browser von www.zigbee2mqtt.io geladen. Ausschalten, wenn keine externen Anfragen gewünscht sind – es erscheinen dann die Symbole.",
-  max_rows: "Bei gesetztem Wert erscheint unter der Liste 'Weitere anzeigen'.",
+  max_rows: "Bei gesetztem Wert erscheint unter der Liste 'Weitere anzeigen'. Bei aktiver Gruppierung gilt die Begrenzung nicht.",
+  default_group_by: "Gilt für Geräte, Batterie und Updates. In der Karte lässt sich die Gruppierung jederzeit umstellen.",
   read_only: "Blendet Umbenennen, Optionen, Firmware-Installation, Gruppen-/Binding-Änderungen, Pairing und Neustart aus. Zusätzlich sind Aktionen ohnehin Administratoren vorbehalten.",
 };
 
@@ -2311,6 +2803,17 @@ const EDITOR_SCHEMA = [
           },
         },
       },
+      bool("show_group_by"),
+      {
+        name: "default_group_by",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: GROUP_BY_OPTIONS.map((o) => ({ value: o.value, label: I18N.de[o.label] })),
+          },
+        },
+      },
+      bool("show_filters"),
       {
         name: "",
         type: "expandable",

@@ -29,16 +29,20 @@ De kaart heeft zes categorieën in een pictogrambalk (onder ca. 480 px kaartbree
 
 | Categorie | Wat het kan |
 |---|---|
-| **Apparaten** | Lijst met bereikbaarheid, model, signaal, batterij, „laatst gezien”; statistiekchips als filter (offline / batterij laag / updates); zoeken; sorteren |
+| **Apparaten** | Lijst met bereikbaarheid, model, signaal, batterij, „laatst gezien”; statistiekchips als filter (offline / batterij laag / updates); zoeken; sorteren; **groeperen** per fabrikant of apparaatklasse; **filters** (status, voeding, signaal, …) |
 | **Batterij** | Batterijapparaten, laagste stand eerst; kleuren volgens lage en kritieke drempel |
 | **Updates** | Geïnstalleerde vs. beschikbare firmware; „alles controleren” en „alles na elkaar installeren” als achtergrondtaak met voortgang en annuleren |
 | **Groepen** | Aanmaken, hernoemen, verwijderen; leden toevoegen en verwijderen |
 | **Bindings** | Overzicht van alle apparaatkoppelingen; loskoppelen; opnieuw koppelen in de apparaatpopup |
 | **Bridge** (tandwiel) | **App-versie** (integratie en kaart, gekleurde melding bij een nieuwe versie), status, coördinator, koppelen, bridge-opties, herstart, gebeurtenissenlogboek |
 
-**Apparaatpopup** (tik op een rij) met accordeonsecties: Informatie · **Functies (expose)** · Hernoemen (met lijst van de betrokken HA-entiteiten) · Apparaatopties (formulier uit het Z2M-optieschema) · Firmware · Bindings · Groepen · Verwijderen.
+**Apparaatpopup** (tik op een rij) met accordeonsecties: Informatie · **Functies (expose)** · **Entiteiten (voor automatiseringen)** · Hernoemen (met lijst van de betrokken HA-entiteiten) · Apparaatopties (formulier uit het Z2M-optieschema) · Firmware · Bindings · Groepen · Verwijderen.
 
-De sectie **Functies (expose)** toont alles wat Zigbee2MQTT voor het apparaat beschikbaar stelt (schakelaar, helderheid, kleur, temperatuur, linkkwaliteit …): naam, eigenschap, **actuele waarde** met eenheid, toegang (lezen / schrijven / opvragen), waardebereik of keuzewaarden, beschrijving en een markering als configuratie of diagnose. Samengestelde functies (bijv. kleur x/y) en groepen zoals licht of schakelaar worden opgelost en gegroepeerd; vanaf negen functies is er een filterveld. Zolang de sectie openstaat, worden de waarden vernieuwd zodra het apparaat iets verstuurt (hoogstens elke 3 seconden). De weergave is alleen-lezen; bedien het apparaat zoals voorheen via de Home Assistant-entiteiten.
+De sectie **Functies (expose)** toont alles wat Zigbee2MQTT voor het apparaat beschikbaar stelt (schakelaar, helderheid, kleur, temperatuur, linkkwaliteit …): naam, eigenschap, **actuele waarde** met eenheid, toegang (lezen / schrijven / opvragen), waardebereik of keuzewaarden, beschrijving en een markering als configuratie of diagnose. Samengestelde functies (bijv. kleur x/y) en groepen zoals licht of schakelaar worden opgelost en gegroepeerd; vanaf negen functies is er een filterveld. Zolang de sectie openstaat, worden de waarden vernieuwd zodra het apparaat iets verstuurt (hoogstens elke 3 seconden). **Schrijfbare schakelaars** (ja/nee-functies, bijv. de status van een stekker of lamp) kun je direct omzetten: de nieuwe waarde verschijnt meteen en wordt kort daarna door het apparaat bevestigd. Is de waarde nog onbekend, dan verschijnen in plaats daarvan de knoppen „Aan” en „Uit”. Alle andere functies worden alleen getoond; bedien het apparaat daarvoor zoals voorheen via de Home Assistant-entiteiten. Met `read_only: true` verdwijnen de schakelaars.
+
+**Groeperen en filteren** (Apparaten, Batterij en Updates): de keuze **Groeperen** toont de lijst als accordeon per **fabrikant** of **apparaatklasse** (lampen, stekkers & schakelaars, verwarming & klimaat, rolluiken & zonwering, sloten, ventilatoren, knoppen & afstandsbedieningen, sensoren, overig). Elke groep toont het aantal en, indien aanwezig, de offline-apparaten; met de twee pictogrammen naast de keuze klap je alle groepen uit of in. Het inklapbare gedeelte **Filters** beperkt de lijst: status (online / offline), voeding (alleen batterij / alleen netvoeding / batterij laag), signaal (goed / matig / zwak), netwerkrol (router / eindapparaat), firmware (update beschikbaar), laatst gezien (langer dan 24 uur / 7 dagen geleden), in geen enkele Zigbee-groep, fabrikant en apparaatklasse. Meerdere filters gelden tegelijk; actieve filters verschijnen als kleine chips die je met een tik verwijdert. De apparaatklasse leidt de integratie af uit de functies van het apparaat (Zigbee2MQTT levert geen vaste klasse); apparaten zonder bekende functies komen onder „Overig”. Zonder actieve Z2M-beschikbaarheid wordt online/offline net als bij het statusbolletje afgeleid uit „laatst gezien”. Bij actieve groepering geldt `max_rows` niet.
+
+**Entiteiten kopiëren:** de popupsectie **Entiteiten (voor automatiseringen)** toont de Home Assistant-entiteiten van het apparaat met per rij een kopieerpictogram. Het kopieerpictogram in de popupkop zet alle entiteitsnamen (één per regel) op het klembord, bijvoorbeeld om in automatiseringen en scripts te plakken. Staat de browser het klembord niet toe (dat vereist HTTPS), dan verschijnt de tekst geselecteerd in een veld om met Ctrl+C te kopiëren.
 
 Verdere punten:
 
@@ -90,6 +94,9 @@ show_images: true             # apparaatafbeeldingen van zigbee2mqtt.io
 show_search: true
 show_filter_bar: true         # sorteerkeuze
 default_sort: name_asc        # name_asc | name_desc | battery_asc | lqi_asc | last_seen_desc | last_seen_asc | ota
+show_group_by: true           # keuze „Groeperen”
+default_group_by: none        # none | vendor | class
+show_filters: true            # filtergedeelte
 show_model: true
 show_vendor: true
 show_ieee: false
@@ -190,7 +197,7 @@ Onder **Configureren** (met weergave van de geïnstalleerde versie): drempel „
 
 ## Beveiliging
 
-Alle schrijfacties (hernoemen, opties, verwijderen, firmware, groepen, bindings, koppelen, herstart, versiecontrole) en het laden van apparaatdetails zijn via WebSocket beperkt tot **beheerders**. Invoer wordt door de backend gecontroleerd (dubbele namen, onbekende opties, toegestane bridgewaarden). De kaart maskeert alle teksten; kleurwaarden lopen via een allowlist.
+Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware, groepen, bindings, koppelen, herstart, versiecontrole) en het laden van apparaatdetails zijn via WebSocket beperkt tot **beheerders**. Invoer wordt door de backend gecontroleerd (dubbele namen, onbekende opties, toegestane bridgewaarden). Bij het omzetten van een functie controleert de backend bovendien of die bestaat, schrijfbaar is en de waarde exact de aan- of uitwaarde is. De kaart maskeert alle teksten; kleurwaarden lopen via een allowlist.
 
 ## Bekende beperkingen
 
@@ -201,6 +208,9 @@ Alle schrijfacties (hernoemen, opties, verwijderen, firmware, groepen, bindings,
 - Na een herstart komen batterij, signaal en OTA-status eerst uit de cache en worden met het volgende apparaatbericht vernieuwd.
 - **Offline-weergave (sinds 1.0.5) en teststatus:** de kaart neemt de beschikbaarheid over van Zigbee2MQTT. Heeft een apparaat na een offline-melding live gestuurd, dan toont de kaart het als bereikbaar. Dit is getest met gesimuleerde gegevens, **niet op echte hardware**. Of hiermee de in 1.0.4 gemelde onjuiste offline-weergaven (sensoren, een stekker) verdwijnen, is open: feedback is nadrukkelijk welkom.
 - De popup en de sectie „Functies (expose)” zijn in 1.0.5 gecorrigeerd (eindeloze hertekenlus), maar ook niet op echte hardware en niet in de iOS-/Android-companion-app getest.
+- **Nieuw in 1.1.0, teststatus:** groeperen, filters, schakelaars in de functies en kopiëren zijn getest met gesimuleerde gegevens en in een headless browser, **niet op echte hardware** en niet in de iOS-/Android-companion-app. Of Zigbee2MQTT elke schakelaar zoals verwacht accepteert (bijv. bij apparaten met meerdere endpoints), is open.
+- De apparaatklasse is een benadering uit de functies van het apparaat; bijzondere gevallen kunnen onder „Overig” of „Sensoren” terechtkomen.
+- Schakelaars werken direct en zonder bevestiging (ook configuratieschakelaars zoals het kinderslot). Het klembord vereist HTTPS.
 
 ## Probleemoplossing
 
@@ -213,13 +223,16 @@ Alle schrijfacties (hernoemen, opties, verwijderen, firmware, groepen, bindings,
 - **Functies (expose) ontbreken of tonen „nog geen waarde”:** de waarde verschijnt zodra het apparaat voor het eerst heeft verstuurd (Zigbee2MQTT bewaart geen apparaatstatussen). De sectie wordt alleen getoond voor apparaten met een Zigbee2MQTT-definitie. Het laden van de details is voorbehouden aan beheerders.
 - **Popup of functies (expose) zijn niet te bedienen (alleen versie 1.0.4):** werk bij naar 1.0.5, herstart Home Assistant, leeg de browsercache (Ctrl+F5) of laad de companion-app opnieuw.
 - **Bridgebanner „versie niet ondersteund”:** Zigbee2MQTT 1.x wordt niet ondersteund.
+- **Kopiëren werkt niet:** de browser staat het klembord alleen toe via HTTPS (of `localhost`). Anders verschijnt de tekst geselecteerd in een veld in de popup: kopieer met Ctrl+C.
+- **Een schakelaar in de functies doet niets:** het commando gaat naar `<base_topic>/<apparaat>/set`. Controleer in Zigbee2MQTT of het apparaat bereikbaar is; de kaart toont de waarde die het apparaat terugmeldt.
 - Logs: zet `custom_components.zigbee2mqtt_manager` op `debug`.
 
 ## Versiegeschiedenis
 
 | Versie | Wijzigingen |
 |---|---|
-| **1.0.5** | Opgelost: popup en de sectie „Functies (expose)” waren niet te bedienen (eindeloze hertekenlus, apparaatafbeelding flikkerde). Offline-weergave beveiligd tegen verouderde meldingen. Nederlands toegevoegd (kaart, integratie, README), LICENSE en `examples/` toegevoegd. Dank aan @pr0xyzer (PR #2): koppeling van HA-entiteiten via MQTT-identifiers met meer dan twee waarden (lijst bij hernoemen). |
+| **1.1.0** | Nieuw: lijsten **groeperen** per fabrikant of apparaatklasse (accordeon) en **filteren** (status online/offline, voeding, signaal, netwerkrol, firmware, laatst gezien, zonder Zigbee-groep, fabrikant, apparaatklasse; actieve filters als chips). Schrijfbare **schakelaars** onder „Functies (expose)” kun je direct omzetten. Nieuwe popupsectie **Entiteiten (voor automatiseringen)** en kopieerknoppen voor de entiteitsnamen. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: nieuwe actie `set_expose` (alleen beheerders, waarden worden gecontroleerd) en een apparaatklasse per apparaat. |
+| 1.0.5 | Opgelost: popup en de sectie „Functies (expose)” waren niet te bedienen (eindeloze hertekenlus, apparaatafbeelding flikkerde). Offline-weergave beveiligd tegen verouderde meldingen. Nederlands toegevoegd (kaart, integratie, README), LICENSE en `examples/` toegevoegd. Dank aan @pr0xyzer (PR #2): koppeling van HA-entiteiten via MQTT-identifiers met meer dan twee waarden (lijst bij hernoemen). |
 | 1.0.4 | Alle expose-functies in de apparaatpopup, meerdere sticks (meerdere instanties), correctie bij de apparaatopties. |
 | 1.0.3 | Eerste officiële versie. |
 
@@ -229,7 +242,7 @@ Elk `.py`-, `.js`- en `.yaml`-bestand heeft op de eerste regel een SHA-256-hash 
 
 | Bestand | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `3796bdfe99c612311c6697342de3d3e8c1aa9827efc33059c1916c89172c52c7` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `fcc2361d67b5c819026cd0f07fbf5e438b1db6c895875730a97e295c08447c8b` |
 | `custom_components/zigbee2mqtt_manager/strings.json` | `714ca6bdd304f051e93e8960410630c361f942eed7ddd89c81969fe13aff9c4d` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
 | `custom_components/zigbee2mqtt_manager/translations/de.json` | `a4cc4400d01de88795a97c7644a9a4c89495c99d440eec4b9b476e7784a3c0b4` |
