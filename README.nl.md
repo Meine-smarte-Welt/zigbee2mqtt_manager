@@ -1,4 +1,4 @@
-🇩🇪 [Deutsch](README.md) · [🇬🇧 English](README.en.md) · 🇳🇱 Nederlands
+🇩🇪 [Deutsch](README.md) · [🇬🇧 English](README.en.md) · 🇳🇱 Nederlands · [🇫🇷 Français](README.fr.md)
 
 # Zigbee2MQTT Manager voor Home Assistant
 
@@ -51,7 +51,7 @@ Verdere punten:
 - **Bevestigen met twee klikken** in plaats van een browserdialoog bij riskante acties (verwijderen, update, herstart, loskoppelen, wissen).
 - **Alleen-lezen:** `read_only: true` verbergt alle bedieningselementen die iets wijzigen (wandtablets).
 - **Zoom:** `zoom` schaalt de hele kaart.
-- **Talen:** Duits, Engels en Nederlands (volgens de taal van Home Assistant).
+- **Talen:** Duits, Engels, Nederlands en Frans (volgens de taal van Home Assistant).
 - **Diagnose-download** met geanonimiseerde namen en IEEE-adressen.
 
 ## Vereisten
@@ -247,6 +247,7 @@ Elk `.py`-, `.js`- en `.yaml`-bestand heeft op de eerste regel een SHA-256-hash 
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
 | `custom_components/zigbee2mqtt_manager/translations/de.json` | `a4cc4400d01de88795a97c7644a9a4c89495c99d440eec4b9b476e7784a3c0b4` |
 | `custom_components/zigbee2mqtt_manager/translations/en.json` | `9072d9f52b3f1be151b46c49dc22eb16df2cec81f295841a7c1ca1c2891e634a` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `b9ff60abca3a4b610d5213e80046ebb7547ab8d23b5fabb5c9407c2083b9eda9` |
 | `custom_components/zigbee2mqtt_manager/translations/nl.json` | `20ec6ad0e627be9f5ba84d6fa2520550d64d5256ca97e4cfc51f6ed1149b9467` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 

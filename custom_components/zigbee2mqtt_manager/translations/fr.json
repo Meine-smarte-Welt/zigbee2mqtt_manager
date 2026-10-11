@@ -1,0 +1,115 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Connecte le gestionnaire à votre instance Zigbee2MQTT via l'intégration MQTT.",
+        "data": {
+          "base_topic": "Base topic",
+          "low_battery_threshold": "Seuil pour « batterie faible » (%)"
+        },
+        "data_description": {
+          "base_topic": "Correspond à `mqtt.base_topic` dans la configuration Zigbee2MQTT (par défaut : zigbee2mqtt)."
+        }
+      },
+      "reconfigure": {
+        "title": "Modifier le base topic",
+        "data": {
+          "base_topic": "Base topic"
+        },
+        "data_description": {
+          "base_topic": "Doit correspondre à `mqtt.base_topic` dans Zigbee2MQTT."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Base topic invalide (vide ou contenant # ou +).",
+      "topic_overlap": "Les base topics de plusieurs instances ne doivent pas être imbriqués (p. ex. « zigbee2mqtt » et « zigbee2mqtt/stick2 »). Utilisez des base topics distincts comme « zigbee2mqtt » et « zigbee2mqtt2 »."
+    },
+    "abort": {
+      "already_configured": "Une entrée existe déjà pour ce base topic.",
+      "mqtt_unavailable": "L'intégration MQTT n'est pas configurée ou n'est pas connectée.",
+      "reconfigure_successful": "Le base topic a été modifié."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – paramètres",
+        "description": "Version installée : **{version}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Seuil pour « batterie faible » (%)",
+          "critical_battery_threshold": "Seuil pour « batterie critique » (%)",
+          "fire_events": "Déclencher des événements Home Assistant"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Doit être inférieur ou égal au seuil « batterie faible ».",
+          "fire_events": "Déclenche p. ex. zigbee2mqtt_manager_device_offline, _battery_low et _update_available – utilisables comme déclencheurs d'automatisation."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "Le seuil critique ne doit pas dépasser le seuil « faible »."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Appareils"
+      },
+      "offline": {
+        "name": "Appareils hors ligne"
+      },
+      "low_battery": {
+        "name": "Appareils avec batterie faible"
+      },
+      "critical_battery": {
+        "name": "Appareils avec batterie critique"
+      },
+      "updates_available": {
+        "name": "Mises à jour du firmware disponibles"
+      },
+      "groups": {
+        "name": "Groupes"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Contrôler l'appairage",
+      "description": "Active ou désactive le mode appairage du bridge Zigbee2MQTT.",
+      "fields": {
+        "entry_id": {
+          "name": "ID de l'entrée",
+          "description": "Nécessaire uniquement en cas de plusieurs instances."
+        },
+        "enabled": {
+          "name": "Activé",
+          "description": "Activer ou désactiver l'appairage."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Durée en secondes (10–254)."
+        },
+        "base_topic": {
+          "name": "Base topic",
+          "description": "Nécessaire uniquement en cas de plusieurs instances. Alternative à l'ID de l'entrée."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Rechercher les mises à jour du firmware",
+      "description": "Recherche en arrière-plan les mises à jour de tous les appareils compatibles OTA.",
+      "fields": {
+        "entry_id": {
+          "name": "ID de l'entrée",
+          "description": "Nécessaire uniquement en cas de plusieurs instances."
+        },
+        "base_topic": {
+          "name": "Base topic",
+          "description": "Nécessaire uniquement en cas de plusieurs instances. Alternative à l'ID de l'entrée."
+        }
+      }
+    }
+  }
+}
