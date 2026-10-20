@@ -45,7 +45,8 @@
           "nc_types": "Soorten meldingen",
           "stale_hours": "„Lang niets gehoord” na (uren)",
           "problem_include_updates": "Updates tellen als storing",
-          "problem_include_stale": "„Lang niets gehoord” telt als storing"
+          "problem_include_stale": "„Lang niets gehoord” telt als storing",
+          "sidebar_panel": "Item in de zijbalk"
         },
         "data_description": {
           "critical_battery_threshold": "Moet kleiner dan of gelijk aan de drempel voor „batterij laag” zijn.",
@@ -54,7 +55,8 @@
           "nc_types": "Kies welke meldingen worden verstuurd. De lijst is op urgentie gesorteerd, kritieke meldingen staan bovenaan.",
           "stale_hours": "Uren zonder bericht waarna een apparaat als „lang niets gehoord” geldt (0 = uit). Apparaten die Zigbee2MQTT al als offline meldt, tellen onder offline.",
           "problem_include_updates": "De sensor „Storing” gaat ook aan als er een firmware-update beschikbaar is.",
-          "problem_include_stale": "De sensor „Storing” gaat ook aan als een apparaat langer dan de ingestelde tijd stil is. Pas op bij apparaten die zelden zenden."
+          "problem_include_stale": "De sensor „Storing” gaat ook aan als een apparaat langer dan de ingestelde tijd stil is. Pas op bij apparaten die zelden zenden.",
+          "sidebar_panel": "Toont de kaart als eigen pagina „Zigbee2MQTT” in de zijbalk (alleen beheerders), zodat er geen eigen dashboard nodig is."
         }
       }
     },
@@ -75,6 +77,9 @@
       },
       "critical_battery": {
         "name": "Apparaten met kritieke batterij"
+      },
+      "disabled": {
+        "name": "Uitgeschakelde apparaten"
       },
       "updates_available": {
         "name": "Beschikbare firmware-updates"

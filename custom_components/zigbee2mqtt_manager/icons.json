@@ -5,6 +5,7 @@
       "offline": { "default": "mdi:lan-disconnect" },
       "low_battery": { "default": "mdi:battery-alert" },
       "critical_battery": { "default": "mdi:battery-alert-variant-outline" },
+      "disabled": { "default": "mdi:cancel" },
       "updates_available": { "default": "mdi:update" },
       "groups": { "default": "mdi:group" }
     }

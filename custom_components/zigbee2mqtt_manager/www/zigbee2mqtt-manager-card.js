@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6cd67ccbed033691fddf12a4a723c82fa5e16feda8b29aa30d8ea7f4530d771b
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b34ece270f4f1e3106ef7587d59b76e33f2e888cb53171f1a078e6ab98948c76
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -42,7 +42,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.1.1b3";
+const CARD_VERSION = "1.2.0";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
@@ -325,6 +325,7 @@ const I18N = {
     instance: "Instanz (Stick)",
     // Gruppieren und Filtern (seit 1.1.0)
     group_by: "Gruppieren", group_none: "Keine Gruppierung", group_vendor: "Hersteller", group_class: "Geräteklasse", group_unknown: "Unbekannt",
+    chip_disabled: "Deaktiviert", sec_comment: "Kommentar", comment_ph: "Kommentar zum Gerät (z. B. Standort, Zweck)", comment_hint: "Zigbee2MQTT speichert den Kommentar in der Geräteeinstellung „description“ (höchstens 500 Zeichen). Leer lassen entfernt ihn.", done_comment: "Kommentar gespeichert",
     flt_disabled: "Deaktiviert", flt_stale: "Lange nichts gehört", chip_stale: "Lange still", stale_badge: "lange still", status_disabled: "In Zigbee2MQTT deaktiviert", group_area: "Raum", group_no_area: "Ohne Raum", f_area: "Raum", f_ha_device: "HA-Gerät", f_comment: "Kommentar", status_silent: "Online laut Zigbee2MQTT, aber lange nichts gehört – zuletzt gesehen {t}.",
     expand_all: "Alle aufklappen", collapse_all: "Alle zuklappen",
     filters: "Filter", filter_active: "{n} aktiv", filter_reset: "Alle Filter zurücksetzen", filter_remove: "Filter entfernen",
@@ -345,7 +346,7 @@ const I18N = {
     copy: "In die Zwischenablage kopieren", copy_all: "Alle kopieren", copy_entities: "Entitäts-Namen kopieren",
     copied: "Kopiert: {v}", copied_n: "{n} Entitäten kopiert",
     copy_failed: "Kopieren nicht möglich. Der Browser erlaubt die Zwischenablage nur über HTTPS.", copy_manual: "Zum Kopieren markieren (Strg+C):",
-    // Notification Center (seit 1.1.1b1)
+    // Notification Center (seit 1.2.0)
     nc_title: "Notification Center", nc_detected: "erkannt", nc_not_installed: "nicht installiert",
     nc_master: "Meldungen senden", nc_types: "Meldungsarten",
     nc_hint: "Das Notification Center sammelt Meldungen und verteilt sie weiter. Hier legst du fest, was dieser Manager meldet. Die Liste ist nach Dringlichkeit sortiert, Kritisches steht oben.",
@@ -429,6 +430,7 @@ const I18N = {
     instance: "Instance (stick)",
     // Grouping and filters (since 1.1.0)
     group_by: "Group by", group_none: "No grouping", group_vendor: "Manufacturer", group_class: "Device class", group_unknown: "Unknown",
+    chip_disabled: "Disabled", sec_comment: "Comment", comment_ph: "Comment for this device (e.g. location, purpose)", comment_hint: "Zigbee2MQTT stores the comment in the device setting \"description\" (up to 500 characters). Leave it empty to remove it.", done_comment: "Comment saved",
     flt_disabled: "Disabled", flt_stale: "Not heard for long", chip_stale: "Silent", stale_badge: "silent", status_disabled: "Disabled in Zigbee2MQTT", group_area: "Area", group_no_area: "No area", f_area: "Area", f_ha_device: "HA device", f_comment: "Comment", status_silent: "Online according to Zigbee2MQTT, but not heard from in a long time – last seen {t}.",
     expand_all: "Expand all", collapse_all: "Collapse all",
     filters: "Filters", filter_active: "{n} active", filter_reset: "Reset all filters", filter_remove: "Remove filter",
@@ -449,7 +451,7 @@ const I18N = {
     copy: "Copy to clipboard", copy_all: "Copy all", copy_entities: "Copy entity names",
     copied: "Copied: {v}", copied_n: "{n} entities copied",
     copy_failed: "Copying failed. The browser only allows clipboard access over HTTPS.", copy_manual: "Select to copy (Ctrl+C):",
-    // Notification Center (since 1.1.1b1)
+    // Notification Center (since 1.2.0)
     nc_title: "Notification Center", nc_detected: "detected", nc_not_installed: "not installed",
     nc_master: "Send notifications", nc_types: "Notification types",
     nc_hint: "The Notification Center collects notifications and passes them on. Here you decide what this manager reports. The list is sorted by urgency, critical items first.",
@@ -541,6 +543,7 @@ const I18N = {
     instance: "Instantie (stick)",
     // Groeperen en filteren (sinds 1.1.0)
     group_by: "Groeperen", group_none: "Geen groepering", group_vendor: "Fabrikant", group_class: "Apparaatklasse", group_unknown: "Onbekend",
+    chip_disabled: "Uitgeschakeld", sec_comment: "Opmerking", comment_ph: "Opmerking bij het apparaat (bijv. locatie, doel)", comment_hint: "Zigbee2MQTT slaat de opmerking op in de apparaatinstelling „description” (maximaal 500 tekens). Leeg laten verwijdert haar.", done_comment: "Opmerking opgeslagen",
     flt_disabled: "Uitgeschakeld", flt_stale: "Lang niets gehoord", chip_stale: "Stil", stale_badge: "stil", status_disabled: "Uitgeschakeld in Zigbee2MQTT", group_area: "Ruimte", group_no_area: "Zonder ruimte", f_area: "Ruimte", f_ha_device: "HA-apparaat", f_comment: "Opmerking", status_silent: "Online volgens Zigbee2MQTT, maar lang niets gehoord – laatst gezien {t}.",
     expand_all: "Alles uitklappen", collapse_all: "Alles inklappen",
     filters: "Filters", filter_active: "{n} actief", filter_reset: "Alle filters wissen", filter_remove: "Filter verwijderen",
@@ -561,7 +564,7 @@ const I18N = {
     copy: "Naar klembord kopiëren", copy_all: "Alles kopiëren", copy_entities: "Entiteitsnamen kopiëren",
     copied: "Gekopieerd: {v}", copied_n: "{n} entiteiten gekopieerd",
     copy_failed: "Kopiëren mislukt. De browser staat het klembord alleen toe via HTTPS.", copy_manual: "Selecteer om te kopiëren (Ctrl+C):",
-    // Notification Center (sinds 1.1.1b1)
+    // Notification Center (sinds 1.2.0)
     nc_title: "Notification Center", nc_detected: "gevonden", nc_not_installed: "niet geïnstalleerd",
     nc_master: "Meldingen verzenden", nc_types: "Soorten meldingen",
     nc_hint: "Het Notification Center verzamelt meldingen en geeft ze door. Hier bepaal je wat deze manager meldt. De lijst is op urgentie gesorteerd, kritieke meldingen staan bovenaan.",
@@ -653,6 +656,7 @@ const I18N = {
     instance: "Instance (clé)",
     // Regrouper et filtrer (depuis 1.1.0)
     group_by: "Regrouper", group_none: "Aucun regroupement", group_vendor: "Fabricant", group_class: "Classe d'appareil", group_unknown: "Inconnu",
+    chip_disabled: "Désactivés", sec_comment: "Commentaire", comment_ph: "Commentaire sur l'appareil (p. ex. emplacement, usage)", comment_hint: "Zigbee2MQTT enregistre le commentaire dans le paramètre d'appareil « description » (500 caractères maximum). Laisse le champ vide pour le supprimer.", done_comment: "Commentaire enregistré",
     flt_disabled: "Désactivé", flt_stale: "Silencieux depuis longtemps", chip_stale: "Silencieux", stale_badge: "silencieux", status_disabled: "Désactivé dans Zigbee2MQTT", group_area: "Pièce", group_no_area: "Sans pièce", f_area: "Pièce", f_ha_device: "Appareil HA", f_comment: "Commentaire", status_silent: "En ligne selon Zigbee2MQTT, mais sans nouvelles depuis longtemps – dernière activité {t}.",
     expand_all: "Tout déplier", collapse_all: "Tout replier",
     filters: "Filtres", filter_active: "{n} actifs", filter_reset: "Réinitialiser tous les filtres", filter_remove: "Retirer le filtre",
@@ -673,7 +677,7 @@ const I18N = {
     copy: "Copier dans le presse-papiers", copy_all: "Tout copier", copy_entities: "Copier les noms d'entités",
     copied: "Copié : {v}", copied_n: "{n} entités copiées",
     copy_failed: "Copie impossible. Le navigateur n'autorise le presse-papiers que via HTTPS.", copy_manual: "Sélectionne pour copier (Ctrl+C) :",
-    // Notification Center (depuis 1.1.1b1)
+    // Notification Center (depuis 1.2.0)
     nc_title: "Notification Center", nc_detected: "détecté", nc_not_installed: "non installé",
     nc_master: "Envoyer les notifications", nc_types: "Types de notifications",
     nc_hint: "Le Notification Center collecte les notifications et les distribue. Ici, tu choisis ce que ce gestionnaire signale. La liste est triée par urgence, les notifications critiques en premier.",
@@ -765,6 +769,7 @@ const I18N = {
     instance: "Instancia (clave)",
     // Agrupar y filtrar (desde 1.1.0)
     group_by: "Agrupar", group_none: "Sin agrupar", group_vendor: "Fabricante", group_class: "Clase de dispositivo", group_unknown: "Desconocido",
+    chip_disabled: "Desactivados", sec_comment: "Comentario", comment_ph: "Comentario sobre el dispositivo (p. ej. ubicación, uso)", comment_hint: "Zigbee2MQTT guarda el comentario en el ajuste del dispositivo «description» (máximo 500 caracteres). Déjalo vacío para quitarlo.", done_comment: "Comentario guardado",
     flt_disabled: "Desactivado", flt_stale: "Sin noticias desde hace tiempo", chip_stale: "Silencioso", stale_badge: "silencioso", status_disabled: "Desactivado en Zigbee2MQTT", group_area: "Área", group_no_area: "Sin área", f_area: "Área", f_ha_device: "Dispositivo HA", f_comment: "Comentario", status_silent: "En línea según Zigbee2MQTT, pero sin noticias desde hace tiempo – última actividad {t}.",
     expand_all: "Desplegar todo", collapse_all: "Plegar todo",
     filters: "Filtros", filter_active: "{n} activos", filter_reset: "Restablecer todos los filtros", filter_remove: "Quitar filtro",
@@ -785,7 +790,7 @@ const I18N = {
     copy: "Copiar al portapapeles", copy_all: "Copiar todo", copy_entities: "Copiar nombres de entidades",
     copied: "Copiado: {v}", copied_n: "{n} entidades copiadas",
     copy_failed: "No se pudo copiar. El navegador solo permite el portapapeles mediante HTTPS.", copy_manual: "Selecciona para copiar (Ctrl+C):",
-    // Notification Center (desde 1.1.1b1)
+    // Notification Center (desde 1.2.0)
     nc_title: "Notification Center", nc_detected: "detectado", nc_not_installed: "no instalado",
     nc_master: "Enviar notificaciones", nc_types: "Tipos de notificación",
     nc_hint: "El Notification Center recoge las notificaciones y las distribuye. Aquí eliges qué comunica este gestor. La lista está ordenada por urgencia, primero las críticas.",
@@ -872,7 +877,7 @@ const BASE_CARD_STYLES = `
     padding: 4px 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--divider-color, #e0e0e0);
   }
   .filter-bar-field { display: flex; align-items: center; gap: 6px; font-size: 0.8em; color: var(--secondary-text-color, #727272); }
-  .filter-bar-field select, .filter-bar-field input[type="search"], .field input, .field select {
+  .filter-bar-field select, .filter-bar-field input[type="search"], .field input, .field select, .field textarea.comment-edit {
     font: inherit; font-size: 1em; color: var(--primary-text-color, #212121);
     background: var(--card-background-color, #fff); border: 1px solid var(--divider-color, #e0e0e0);
     border-radius: 6px; padding: 5px 8px; box-sizing: border-box;
@@ -1023,6 +1028,7 @@ const BASE_CARD_STYLES = `
   .field.inline { flex-direction: row; align-items: center; gap: 8px; }
   .field-row { display: flex; gap: 8px; align-items: center; }
   .field-row input { flex: 1 1 auto; min-width: 0; }
+  .field textarea.comment-edit { width: 100%; resize: vertical; min-height: 3.2em; }
   .clusters { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 4px 0; font-size: 0.85em; }
   .clusters label { display: inline-flex; align-items: center; gap: 4px; }
   .timeline { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; }
@@ -1405,7 +1411,9 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     let msg = null;
     if (topic === "device/rename") msg = this._t("done_renamed");
     else if (topic === "device/options") {
-      msg = this._t("done_options");
+      const fromComment = Date.now() - (this._commentSavedAt || 0) < 15000;
+      this._commentSavedAt = 0;
+      msg = this._t(fromComment ? "done_comment" : "done_options");
       this._reloadDetails();
     } else if (topic === "device/ota_update/update") msg = this._t("done_update");
     else if (topic === "device/ota_update/check")
@@ -1834,6 +1842,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (tab === "devices") {
       if (this._filter === "offline") list = list.filter((d) => this._isOffline(d));
       else if (this._filter === "stale") list = list.filter((d) => d.stale === true && !d.disabled);
+      else if (this._filter === "disabled") list = list.filter((d) => d.disabled === true);
       else if (this._filter === "low") {
         const t = this._data.stats.low_battery_threshold;
         list = list.filter((d) => d.battery !== null && d.battery !== undefined && d.battery < t);
@@ -1994,6 +2003,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       ${(s.stale || this._filter === "stale") ? chip("stale", s.stale || 0, this._t("chip_stale"), "var(--zmm-color-warning)") : ""}
       ${chip("low", s.low_battery, this._t("chip_low_battery"), "var(--zmm-color-warning)")}
       ${chip("updates", s.updates_available, this._t("chip_updates"), "var(--zmm-color-info)")}
+      ${(s.disabled || this._filter === "disabled") ? chip("disabled", s.disabled || 0, this._t("chip_disabled"), "") : ""}
     </div>`;
   }
 
@@ -2638,6 +2648,15 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         if (await this._call("group_member_add", { group_id: gid, ieee: this._selected })) delete this._drafts[`pg:${this._selected}`];
         return;
       }
+      case "comment_save": {
+        const ieee = this._selected;
+        if (!ieee) return;
+        const value = String(this._draft(`comment:${ieee}`, "")).trim();
+        this._commentSavedAt = Date.now();
+        if (await this._call("set_comment", { ieee, value })) delete this._drafts[`comment:${ieee}`];
+        else this._commentSavedAt = 0;
+        return;
+      }
       case "rename": {
         const ieee = this._selected;
         const value = String(this._draft(`rename:${ieee}`, "")).trim();
@@ -2996,6 +3015,18 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     );
 
     if (!ro) {
+      const commentDraft = String(this._draft(`comment:${d.ieee}`, d.comment || ""));
+      sections.push(
+        this._accordion(
+          "p:comment",
+          "mdi:comment-text-outline",
+          t("sec_comment"),
+          `<div class="field"><label>${esc(t("f_comment"))}</label>
+             <textarea class="comment-edit" rows="3" maxlength="500" data-draft="comment:${esc(d.ieee)}" data-fk="comment" placeholder="${esc(t("comment_ph"))}">${esc(commentDraft)}</textarea>
+             <div class="help">${esc(t("comment_hint"))}</div></div>
+           <div class="toolbar"><button class="btn primary small" data-act="comment_save">${esc(t("save"))}</button></div>`
+        )
+      );
       const entities = det?.entities?.length
         ? `<div class="hint">${esc(t("rename_entities_hint", { n: det.entities.length }))}</div><div class="timeline" style="max-height:140px">${det.entities
             .map((en) => `<div class="timeline-item"><span>${esc(en.entity_id)}</span></div>`)

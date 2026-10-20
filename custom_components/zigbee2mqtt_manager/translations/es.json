@@ -45,7 +45,8 @@
           "nc_types": "Tipos de notificación",
           "stale_hours": "«Sin noticias» tras (horas)",
           "problem_include_updates": "Las actualizaciones cuentan como problema",
-          "problem_include_stale": "«Sin noticias» cuenta como problema"
+          "problem_include_stale": "«Sin noticias» cuenta como problema",
+          "sidebar_panel": "Entrada en la barra lateral"
         },
         "data_description": {
           "critical_battery_threshold": "Debe ser menor o igual que el umbral de «batería baja».",
@@ -54,7 +55,8 @@
           "nc_types": "Elige qué notificaciones se envían. La lista está ordenada por urgencia, primero las críticas.",
           "stale_hours": "Horas sin mensaje tras las cuales un dispositivo se considera «sin noticias» (0 = desactivado). Los dispositivos que Zigbee2MQTT ya notifica como sin conexión cuentan como sin conexión.",
           "problem_include_updates": "El sensor «Problema» también se activa cuando hay una actualización de firmware disponible.",
-          "problem_include_stale": "El sensor «Problema» también se activa cuando un dispositivo lleva callado más tiempo del indicado. Cuidado con dispositivos que envían raramente."
+          "problem_include_stale": "El sensor «Problema» también se activa cuando un dispositivo lleva callado más tiempo del indicado. Cuidado con dispositivos que envían raramente.",
+          "sidebar_panel": "Muestra la tarjeta como página «Zigbee2MQTT» en la barra lateral (solo administradores), sin necesidad de crear un panel."
         }
       }
     },
@@ -75,6 +77,9 @@
       },
       "critical_battery": {
         "name": "Dispositivos con batería crítica"
+      },
+      "disabled": {
+        "name": "Dispositivos desactivados"
       },
       "updates_available": {
         "name": "Actualizaciones de firmware disponibles"

@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): c9ac470f2d48671103365dfc6b2e76ae857fa6b34f78abbe3142323faa1e17f3
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 213eafcf036a89e690fca3bc26050720dbc310a5c0490769c3f38d7de4129c4f
 """Prüft auf GitHub, ob eine neuere Version der Integration veröffentlicht wurde."""
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ _VERSION_RE = re.compile(
     r"^[vV]?(\d+(?:\.\d+)*)(?:[.\-_]?(alpha|beta|rc|a|b|c)[.\-_]?(\d*))?",
     re.IGNORECASE,
 )
-# Rang der Vorabstufen; eine fertige Version steht über allen (1.1.1b1 < 1.1.1rc1 < 1.1.1)
+# Rang der Vorabstufen; eine fertige Version steht über allen (z. B. 1.2.0b1 < 1.2.0rc1 < 1.2.0)
 _STAGE_RANK = {"a": 0, "alpha": 0, "b": 1, "beta": 1, "rc": 2, "c": 2}
 _FINAL_RANK = 3
 _TIMEOUT = aiohttp.ClientTimeout(total=15)
@@ -60,7 +60,7 @@ def parse_version(text: Any) -> tuple[int, ...] | None:
 
 
 def is_prerelease(text: Any) -> bool:
-    """True bei Vorabversionen wie 1.1.1b1 oder 1.1.1rc1."""
+    """True bei Vorabversionen wie 1.2.0b1 oder 1.2.0rc1."""
     parsed = parse_version(text)
     return parsed is not None and parsed[3] != _FINAL_RANK
 

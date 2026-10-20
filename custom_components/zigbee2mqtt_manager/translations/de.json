@@ -45,7 +45,8 @@
           "nc_types": "Meldungsarten",
           "stale_hours": "„Lange nichts gehört“ nach (Stunden)",
           "problem_include_updates": "Updates zählen als Störung",
-          "problem_include_stale": "„Lange nichts gehört“ zählt als Störung"
+          "problem_include_stale": "„Lange nichts gehört“ zählt als Störung",
+          "sidebar_panel": "Eintrag in der Seitenleiste"
         },
         "data_description": {
           "critical_battery_threshold": "Muss kleiner oder gleich der Schwelle für „Batterie niedrig“ sein.",
@@ -54,7 +55,8 @@
           "nc_types": "Auswahl der Meldungen, die gesendet werden. Die Liste ist nach Dringlichkeit sortiert, Kritisches steht oben.",
           "stale_hours": "Stunden ohne Nachricht, ab denen ein Gerät als „lange nichts gehört“ gilt (0 = aus). Geräte, die Zigbee2MQTT schon als offline meldet, zählen unter Offline.",
           "problem_include_updates": "Der Sensor „Störung“ geht auch an, wenn ein Firmware-Update verfügbar ist.",
-          "problem_include_stale": "Der Sensor „Störung“ geht auch an, wenn ein Gerät länger als die eingestellte Zeit still ist. Vorsicht bei Geräten, die selten senden."
+          "problem_include_stale": "Der Sensor „Störung“ geht auch an, wenn ein Gerät länger als die eingestellte Zeit still ist. Vorsicht bei Geräten, die selten senden.",
+          "sidebar_panel": "Zeigt die Karte als eigene Seite „Zigbee2MQTT“ in der Seitenleiste (nur für Administratoren). So ist kein eigenes Dashboard nötig."
         }
       }
     },
@@ -75,6 +77,9 @@
       },
       "critical_battery": {
         "name": "Geräte mit kritischer Batterie"
+      },
+      "disabled": {
+        "name": "Deaktivierte Geräte"
       },
       "updates_available": {
         "name": "Verfügbare Firmware-Updates"

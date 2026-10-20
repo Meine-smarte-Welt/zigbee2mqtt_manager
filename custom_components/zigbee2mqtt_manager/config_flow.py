@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 3e7633f447a75afe9dc0f2086532d3bafaec62576e08acea4320ac9e32acd471
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): ec291fa61c993155c278f6a885f39b16fb56a64f26c97eb8a2fb0e8142acea9d
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from .const import (
     CONF_LOW_BATTERY,
     CONF_PROBLEM_STALE,
     CONF_PROBLEM_UPDATES,
+    CONF_SIDEBAR_PANEL,
     CONF_STALE_HOURS,
     DEFAULT_BASE_TOPIC,
     DEFAULT_CRITICAL_BATTERY,
@@ -31,6 +32,7 @@ from .const import (
     DEFAULT_LOW_BATTERY,
     DEFAULT_PROBLEM_STALE,
     DEFAULT_PROBLEM_UPDATES,
+    DEFAULT_SIDEBAR_PANEL,
     DEFAULT_STALE_HOURS,
     DOMAIN,
     VERSION,
@@ -231,6 +233,10 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                     vol.Required(
                         CONF_PROBLEM_STALE,
                         default=opts.get(CONF_PROBLEM_STALE, DEFAULT_PROBLEM_STALE),
+                    ): bool,
+                    vol.Required(
+                        CONF_SIDEBAR_PANEL,
+                        default=opts.get(CONF_SIDEBAR_PANEL, DEFAULT_SIDEBAR_PANEL),
                     ): bool,
                     vol.Required(
                         NC_OPT_ENABLED, default=opts.get(NC_OPT_ENABLED, True)

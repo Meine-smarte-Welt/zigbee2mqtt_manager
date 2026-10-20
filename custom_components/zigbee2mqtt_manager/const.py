@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 0c1cd590e0bfd976d432a2e8a1d909a2a320e0fe9c2b94e2a2dc465cf887d6ce
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2e8ec170b0968fbf6695b53ba7d447b9306ff322ad7099f2287c231017cc1502
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.1.1b3"
+VERSION = "1.2.0"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
@@ -14,6 +14,7 @@ CONF_STALE_HOURS = "stale_hours"
 CONF_PROBLEM_UPDATES = "problem_include_updates"
 CONF_PROBLEM_STALE = "problem_include_stale"
 CONF_WELCOME_SHOWN = "welcome_shown"
+CONF_SIDEBAR_PANEL = "sidebar_panel"
 
 DEFAULT_BASE_TOPIC = "zigbee2mqtt"
 DEFAULT_LOW_BATTERY = 20
@@ -23,10 +24,15 @@ DEFAULT_FIRE_EVENTS = True
 DEFAULT_STALE_HOURS = 24
 DEFAULT_PROBLEM_UPDATES = True
 DEFAULT_PROBLEM_STALE = False
+# Eigener Eintrag in der Seitenleiste (Panel), der die Karte als Seite zeigt
+DEFAULT_SIDEBAR_PANEL = True
 
 # Statische Auslieferung der Lovelace-Karte (Ordner "www")
 CARD_URL_BASE = "/zigbee2mqtt_manager_files"
 CARD_FILENAME = "zigbee2mqtt-manager-card.js"
+PANEL_FILENAME = "zigbee2mqtt-manager-panel.js"
+PANEL_ELEMENT = "zigbee2mqtt-manager-panel"
+PANEL_URL_PATH = "zigbee2mqtt-manager"
 
 # Zusammenfassung mehrerer schneller MQTT-Nachrichten zu einem Push
 FLUSH_DELAY = 1.0
@@ -44,6 +50,8 @@ PERMIT_JOIN_SECONDS = 254
 STORAGE_VERSION = 1
 STORAGE_SAVE_DELAY = 30
 MAX_EVENT_LOG = 50
+# Höchstlänge des Gerätekommentars (Z2M-Einstellung "description")
+MAX_COMMENT_LENGTH = 500
 
 # Mindestversion der Zigbee2MQTT-Bridge (2.x)
 MIN_Z2M_MAJOR = 2

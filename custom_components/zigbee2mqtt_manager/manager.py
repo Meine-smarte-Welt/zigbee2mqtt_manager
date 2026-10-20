@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 52f6eed4cb3ae45131f4ff0bef1513a6fbe18afa6f46fe6193fcf9d0484cefa7
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): df66b5184c8d5dd73aa5c131e4e7b0beabaf52f826b55253e4aaf368d16fded6
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -31,10 +31,12 @@ from .const import (
     CONF_LOW_BATTERY,
     CONF_PROBLEM_STALE,
     CONF_PROBLEM_UPDATES,
+    CONF_SIDEBAR_PANEL,
     CONF_STALE_HOURS,
     DEFAULT_CRITICAL_BATTERY,
     DEFAULT_FIRE_EVENTS,
     DEFAULT_LOW_BATTERY,
+    MAX_COMMENT_LENGTH,
     DEFAULT_PROBLEM_STALE,
     DEFAULT_PROBLEM_UPDATES,
     DEFAULT_STALE_HOURS,
@@ -293,6 +295,8 @@ class Z2MManager:
         self._availability_ts: dict[str, datetime] = {}
         self._live_msg: dict[str, datetime] = {}
         self._last_msg: dict[str, str] = {}
+        # Gerade gespeicherte Kommentare (ieee -> Text), bis Z2M die Konfiguration neu meldet
+        self._comment_pending: dict[str, str] = {}
 
         # Persistenter Cache (nach IEEE), siehe async_start()
         self._store: Store[dict[str, Any]] = Store(
@@ -503,6 +507,7 @@ class Z2MManager:
             self._schedule_update()
         elif sub == "info" and isinstance(payload, dict):
             self.bridge_info = payload
+            self._comment_pending.clear()
             self._schedule_update()
         elif sub == "devices" and isinstance(payload, list):
             self._apply_devices(payload)
@@ -518,6 +523,10 @@ class Z2MManager:
     def _handle_response(self, topic: str, payload: Any) -> None:
         if not isinstance(payload, dict):
             return
+        if topic == "device/options" and payload.get("status") == "error":
+            if self._comment_pending:
+                self._comment_pending.clear()
+                self._schedule_update()
         if topic.startswith(_FORWARDED_RESPONSES):
             self._notify(
                 "response",
@@ -746,7 +755,9 @@ class Z2MManager:
             icon = dev_icon
 
         config = self._device_config(meta)
-        comment = config.get("description")
+        comment = self._comment_pending.get(
+            str(meta.get("ieee_address") or "").lower(), config.get("description")
+        )
         comment = comment.strip() if isinstance(comment, str) and comment.strip() else None
         ha = self._ha_devices().get(str(meta.get("ieee_address") or "").lower())
         availability = self._effective_availability(name)
@@ -977,7 +988,7 @@ class Z2MManager:
     @staticmethod
     def _core_of(options: Any) -> dict[str, Any]:
         return {
-            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES)
+            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES, CONF_SIDEBAR_PANEL)
         }
 
     def core_options_changed(self) -> bool:
@@ -1319,6 +1330,25 @@ class Z2MManager:
             "device/rename",
             {"from": old_name, "to": new_name, "homeassistant_rename": True},
         )
+
+    async def async_set_comment(self, ieee: str | None, comment: Any) -> None:
+        """Kommentar des Geräts ändern (Z2M-Geräteeinstellung "description")."""
+        if comment is not None and not isinstance(comment, str):
+            raise ValueError("Der Kommentar muss ein Text sein")
+        text = "".join(
+            ch for ch in (comment or "") if ch in "\n" or ch.isprintable()
+        ).strip()
+        if len(text) > MAX_COMMENT_LENGTH:
+            raise ValueError(
+                f"Der Kommentar ist zu lang (höchstens {MAX_COMMENT_LENGTH} Zeichen)"
+            )
+        await self._request(
+            "device/options",
+            {"id": self._name_of(ieee), "options": {"description": text}},
+        )
+        # Sofort anzeigen; Z2M bestätigt per Antwort, Fehler setzen den Wert zurück
+        self._comment_pending[str(ieee or "").lower()] = text
+        self._schedule_update()
 
     async def async_set_options(self, ieee: str | None, options: Any) -> None:
         if not isinstance(options, dict) or not options:
