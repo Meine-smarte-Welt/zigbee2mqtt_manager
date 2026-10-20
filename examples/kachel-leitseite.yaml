@@ -1,0 +1,17 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 7f3045b745215360e70fac4ff2ca1ded6ea1d300413927de37a826ca79bfb9ca
+# Kleine Kachel für die Leitseite: wird rot, sobald im Zigbee-Netz etwas auffällt
+# (Gerät offline, Batterie niedrig/kritisch, Firmware-Update – je nach Einstellung).
+# Ein Tipp öffnet das Zigbee-Dashboard.
+# Die Entität passt du an: Einstellungen → Geräte & Dienste → Zigbee2MQTT Manager → Entität „Störung“ / „Problem“.
+type: tile
+entity: binary_sensor.zigbee2mqtt_manager_zigbee2mqtt_problem
+name: Zigbee
+icon: mdi:zigbee
+color: red
+state_content:
+  - state
+  - offline
+  - low_battery
+tap_action:
+  action: navigate
+  navigation_path: /dashboard-zigbee

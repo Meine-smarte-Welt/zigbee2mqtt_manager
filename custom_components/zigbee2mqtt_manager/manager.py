@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 71cfbd6edee5f96ac8c36b53e8b9d748ae511e64f1bb592971c8566689c92547
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 52f6eed4cb3ae45131f4ff0bef1513a6fbe18afa6f46fe6193fcf9d0484cefa7
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from collections import deque
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -15,6 +16,7 @@ from homeassistant.components import mqtt
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
@@ -27,9 +29,15 @@ from .const import (
     CONF_CRITICAL_BATTERY,
     CONF_FIRE_EVENTS,
     CONF_LOW_BATTERY,
+    CONF_PROBLEM_STALE,
+    CONF_PROBLEM_UPDATES,
+    CONF_STALE_HOURS,
     DEFAULT_CRITICAL_BATTERY,
     DEFAULT_FIRE_EVENTS,
     DEFAULT_LOW_BATTERY,
+    DEFAULT_PROBLEM_STALE,
+    DEFAULT_PROBLEM_UPDATES,
+    DEFAULT_STALE_HOURS,
     DOMAIN,
     EVENT_BATTERY_LOW,
     EVENT_DEVICE_JOINED,
@@ -44,6 +52,7 @@ from .const import (
     OTA_CHECK_SPACING,
     PERMIT_JOIN_SECONDS,
     STORAGE_SAVE_DELAY,
+    STALE_TICK,
     STORAGE_VERSION,
     VERSION,
 )
@@ -256,6 +265,8 @@ def _same_value(a: Any, b: Any) -> bool:
     return type(a) is type(b) and a == b
 
 
+_IEEE_RE = re.compile(r"0x[0-9a-f]{16}")
+
 # Wartezeit nach der ersten Geräteliste, bevor der Ausgangszustand ans Notification Center geht
 NC_SETTLE_SECONDS = 20.0
 
@@ -320,6 +331,9 @@ class Z2MManager:
             catalog=NC_CATALOG,
         )
         self.nc.set_state_provider(self._nc_active_state)
+        # Zuordnung Z2M-Gerät -> Home-Assistant-Gerät und Raum (wird bei Registry-Änderungen verworfen)
+        self._ha_cache: dict[str, tuple[str, str, str | None]] | None = None
+        self.problem: dict[str, Any] = {"on": False, "reasons": []}
         self._nc_started = False
         self.nc_settle_seconds: float = NC_SETTLE_SECONDS
         self._nc_ready_at: float | None = None
@@ -349,6 +363,18 @@ class Z2MManager:
         )
 
     @property
+    def stale_hours(self) -> int:
+        return int(self.entry.options.get(CONF_STALE_HOURS, DEFAULT_STALE_HOURS))
+
+    @property
+    def problem_includes_updates(self) -> bool:
+        return bool(self.entry.options.get(CONF_PROBLEM_UPDATES, DEFAULT_PROBLEM_UPDATES))
+
+    @property
+    def problem_includes_stale(self) -> bool:
+        return bool(self.entry.options.get(CONF_PROBLEM_STALE, DEFAULT_PROBLEM_STALE))
+
+    @property
     def fire_events(self) -> bool:
         return bool(self.entry.options.get(CONF_FIRE_EVENTS, DEFAULT_FIRE_EVENTS))
 
@@ -367,6 +393,12 @@ class Z2MManager:
                 self.hass, f"{self.base_topic}/#", self._handle_message
             )
         )
+
+        # Änderungen an Geräten und Räumen in Home Assistant: Zuordnung neu aufbauen
+        for event in (dr.EVENT_DEVICE_REGISTRY_UPDATED, ar.EVENT_AREA_REGISTRY_UPDATED):
+            self._unsubs.append(self.hass.bus.async_listen(event, self._ha_registry_changed))
+        # "Lange nichts gehört" ändert sich auch ohne neue Nachricht
+        self._unsubs.append(async_track_time_interval(self.hass, self._stale_tick, STALE_TICK))
 
         # Zählt die gesendeten Meldungen je Art (Diagnose); speichert keine Inhalte
         self._unsubs.append(self.hass.bus.async_listen(NC_EVENT_REPORT, self._nc_count))
@@ -713,9 +745,19 @@ class Z2MManager:
         if isinstance(dev_icon, str):
             icon = dev_icon
 
+        config = self._device_config(meta)
+        comment = config.get("description")
+        comment = comment.strip() if isinstance(comment, str) and comment.strip() else None
+        ha = self._ha_devices().get(str(meta.get("ieee_address") or "").lower())
+        availability = self._effective_availability(name)
+
         return {
             "ieee": meta.get("ieee_address"),
             "name": name,
+            "comment": comment,
+            "ha_device": ha[1] if ha else None,
+            "area": ha[2] if ha else None,
+            "stale": self._is_stale(last_seen, availability[0]),
             "type": meta.get("type"),
             "vendor": definition.get("vendor"),
             "model": definition.get("model") or meta.get("model_id"),
@@ -732,8 +774,8 @@ class Z2MManager:
             "battery": _num(state.get("battery")),
             "voltage": _num(state.get("voltage")),
             "linkquality": _num(state.get("linkquality")),
-            "available": self._effective_availability(name)[0],
-            "available_source": self._effective_availability(name)[1],
+            "available": availability[0],
+            "available_source": availability[1],
             "last_seen": last_seen,
             "bindings": self._bindings_of(meta),
             "out_clusters": self._output_clusters(meta),
@@ -790,13 +832,17 @@ class Z2MManager:
 
         low_t = self.low_battery_threshold
         crit_t = self.critical_battery_threshold
-        offline = [d for d in devices if d["available"] is False]
-        low = [d for d in devices if d["battery"] is not None and d["battery"] < low_t]
+        # In Zigbee2MQTT deaktivierte Geräte sind gewollt still: sie zählen nicht als Störung
+        active = [d for d in devices if not d["disabled"]]
+        disabled = [d for d in devices if d["disabled"]]
+        offline = [d for d in active if d["available"] is False]
+        low = [d for d in active if d["battery"] is not None and d["battery"] < low_t]
         critical = [
-            d for d in devices if d["battery"] is not None and d["battery"] < crit_t
+            d for d in active if d["battery"] is not None and d["battery"] < crit_t
         ]
-        available = [d for d in devices if d["ota"]["state"] == "available"]
-        updating = [d for d in devices if d["ota"]["state"] == "updating"]
+        available = [d for d in active if d["ota"]["state"] == "available"]
+        updating = [d for d in active if d["ota"]["state"] == "updating"]
+        stale = [d for d in active if d["stale"]]
         groups = sorted(
             (self._serialize_group(g) for g in self._groups.values()),
             key=lambda g: (g["name"] or "").lower(),
@@ -814,7 +860,22 @@ class Z2MManager:
             "offline": [d["name"] for d in offline],
             "low_battery": [d["name"] for d in low],
             "updates_available": [d["name"] for d in available],
+            "critical_battery": [d["name"] for d in critical],
+            "stale": [d["name"] for d in stale],
+            "disabled": [d["name"] for d in disabled],
         }
+        reasons: list[str] = []
+        if self.bridge_online is False:
+            reasons.append("bridge_offline")
+        if offline:
+            reasons.append("offline")
+        if low:
+            reasons.append("battery_critical" if critical else "battery_low")
+        if available and self.problem_includes_updates:
+            reasons.append("update_available")
+        if stale and self.problem_includes_stale:
+            reasons.append("stale")
+        self.problem = {"on": bool(reasons), "reasons": reasons}
         self.data = {
             "bridge": {
                 "online": self.bridge_online,
@@ -836,6 +897,9 @@ class Z2MManager:
                 "critical_battery": len(critical),
                 "updates_available": len(available),
                 "updating": len(updating),
+                "stale": len(stale),
+                "stale_hours": self.stale_hours,
+                "disabled": len(disabled),
                 "groups": len(groups),
                 "low_battery_threshold": low_t,
                 "critical_battery_threshold": crit_t,
@@ -852,7 +916,7 @@ class Z2MManager:
     # Ereignisse (offline / Batterie / Update / beigetreten)
     # ------------------------------------------------------------------
     def _snapshot_sets(self) -> dict[str, set[str]]:
-        devices = self.data["devices"]
+        devices = [d for d in self.data["devices"] if not d["disabled"]]
         low_t = self.low_battery_threshold
         return {
             "offline": {d["name"] for d in devices if d["available"] is False},
@@ -940,6 +1004,8 @@ class Z2MManager:
         for device in self.data.get("devices", []):
             ieee = device.get("ieee")
             if not ieee:
+                continue
+            if device.get("disabled"):
                 continue
             name = device.get("name") or ieee
             subject = {"id": ieee, "name": name, "kind": "device"}
@@ -1141,29 +1207,70 @@ class Z2MManager:
             "entities": self._entities_of(ieee),
         }
 
+    @callback
+    def _ha_registry_changed(self, _event: Any) -> None:
+        self._ha_cache = None
+        self._schedule_update()
+
+    @callback
+    def _stale_tick(self, _now: Any = None) -> None:
+        if self.stale_hours > 0:
+            self._schedule_update()
+
+    def _is_stale(self, last_seen: str | None, available: bool | None) -> bool:
+        """Länger als die eingestellte Zeit keine Nachricht, Z2M meldet das Gerät aber nicht als offline."""
+        hours = self.stale_hours
+        if hours <= 0 or not last_seen or available is False:
+            return False
+        seen = dt_util.parse_datetime(last_seen)
+        if seen is None:
+            return False
+        if seen.tzinfo is None:
+            seen = seen.replace(tzinfo=UTC)
+        return (dt_util.utcnow() - seen).total_seconds() > hours * 3600
+
+    def _ha_devices(self) -> dict[str, tuple[str, str, str | None]]:
+        """IEEE-Adresse -> (Geräte-ID, Name, Raum) der zugehörigen Home-Assistant-Geräte.
+
+        Die Zuordnung läuft über die MQTT-Identifier; die IEEE-Adresse steckt je nach
+        Discovery in unterschiedlich aufgebauten Identifier-Teilen.
+        """
+        if self._ha_cache is not None:
+            return self._ha_cache
+        dev_reg = dr.async_get(self.hass)
+        area_reg = ar.async_get(self.hass)
+        result: dict[str, tuple[str, str, str | None]] = {}
+        for cfg in self.hass.config_entries.async_entries("mqtt"):
+            for device in dr.async_entries_for_config_entry(dev_reg, cfg.entry_id):
+                area = area_reg.async_get_area(device.area_id) if device.area_id else None
+                info = (
+                    device.id,
+                    device.name_by_user or device.name or "",
+                    area.name if area else None,
+                )
+                for ident in device.identifiers:
+                    if len(ident) < 2 or ident[0] != "mqtt":
+                        continue
+                    for part in ident[1:]:
+                        for found in _IEEE_RE.findall(str(part).lower()):
+                            result.setdefault(found, info)
+        self._ha_cache = result
+        return result
+
     def _entities_of(self, ieee: str | None) -> list[dict[str, str]]:
         if not ieee:
             return []
-        dev_reg = dr.async_get(self.hass)
+        ha = self._ha_devices().get(ieee.lower())
+        if not ha:
+            return []
         ent_reg = er.async_get(self.hass)
-        result: list[dict[str, str]] = []
-        for device in dev_reg.devices.values():
-            # Identifier-Tupel haben je nach Discovery 2 oder mehr Teile
-            matches = any(
-                len(ident) >= 2
-                and ident[0] == "mqtt"
-                and any(str(part).lower().endswith(ieee.lower()) for part in ident[1:])
-                for ident in device.identifiers
-            )
-            if not matches:
-                continue
-            for ent in er.async_entries_for_device(ent_reg, device.id):
-                result.append(
-                    {
-                        "entity_id": ent.entity_id,
-                        "name": ent.name or ent.original_name or "",
-                    }
-                )
+        result = [
+            {
+                "entity_id": ent.entity_id,
+                "name": ent.name or ent.original_name or "",
+            }
+            for ent in er.async_entries_for_device(ent_reg, ha[0])
+        ]
         return sorted(result, key=lambda e: e["entity_id"])
 
     # ------------------------------------------------------------------

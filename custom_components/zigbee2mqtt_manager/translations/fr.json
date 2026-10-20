@@ -42,13 +42,19 @@
           "critical_battery_threshold": "Seuil « batterie critique » (%)",
           "fire_events": "Déclencher des événements Home Assistant",
           "nc_enabled": "Envoyer les notifications au Notification Center",
-          "nc_types": "Types de notifications"
+          "nc_types": "Types de notifications",
+          "stale_hours": "« Sans nouvelles » après (heures)",
+          "problem_include_updates": "Les mises à jour comptent comme problème",
+          "problem_include_stale": "« Sans nouvelles » compte comme problème"
         },
         "data_description": {
           "critical_battery_threshold": "Doit être inférieur ou égal au seuil « batterie faible ».",
           "fire_events": "Déclenche p. ex. zigbee2mqtt_manager_device_offline, _battery_low et _update_available – utilisable comme déclencheur d'automatisation.",
           "nc_enabled": "Actif uniquement si l'intégration « Notification Center » est installée. L'interrupteur principal active ou désactive toutes les notifications de ce gestionnaire.",
-          "nc_types": "Choisissez les notifications envoyées. La liste est triée par urgence, les notifications critiques en premier."
+          "nc_types": "Choisissez les notifications envoyées. La liste est triée par urgence, les notifications critiques en premier.",
+          "stale_hours": "Heures sans message après lesquelles un appareil est considéré « sans nouvelles » (0 = désactivé). Les appareils que Zigbee2MQTT signale déjà hors ligne comptent comme hors ligne.",
+          "problem_include_updates": "Le capteur « Problème » s'active aussi lorsqu'une mise à jour du firmware est disponible.",
+          "problem_include_stale": "Le capteur « Problème » s'active aussi lorsqu'un appareil reste silencieux plus longtemps que la durée définie. Prudence avec les appareils qui émettent rarement."
         }
       }
     },
@@ -75,6 +81,11 @@
       },
       "groups": {
         "name": "Groupes"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problème"
       }
     }
   },

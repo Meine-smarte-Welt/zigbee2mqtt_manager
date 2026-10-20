@@ -1,20 +1,28 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 65d9c6230c26ee90d9e1c8db3e4dba6fc2d144af0b451e66c4da0267ca052680
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 0c1cd590e0bfd976d432a2e8a1d909a2a320e0fe9c2b94e2a2dc465cf887d6ce
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.1.1b2"
+VERSION = "1.1.1b3"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
 CONF_CRITICAL_BATTERY = "critical_battery_threshold"
 CONF_FIRE_EVENTS = "fire_events"
+CONF_STALE_HOURS = "stale_hours"
+CONF_PROBLEM_UPDATES = "problem_include_updates"
+CONF_PROBLEM_STALE = "problem_include_stale"
+CONF_WELCOME_SHOWN = "welcome_shown"
 
 DEFAULT_BASE_TOPIC = "zigbee2mqtt"
 DEFAULT_LOW_BATTERY = 20
 DEFAULT_CRITICAL_BATTERY = 10
 DEFAULT_FIRE_EVENTS = True
+# Stunden ohne Nachricht, ab denen ein Gerät als "lange nichts gehört" gilt (0 = aus)
+DEFAULT_STALE_HOURS = 24
+DEFAULT_PROBLEM_UPDATES = True
+DEFAULT_PROBLEM_STALE = False
 
 # Statische Auslieferung der Lovelace-Karte (Ordner "www")
 CARD_URL_BASE = "/zigbee2mqtt_manager_files"
@@ -22,6 +30,9 @@ CARD_FILENAME = "zigbee2mqtt-manager-card.js"
 
 # Zusammenfassung mehrerer schneller MQTT-Nachrichten zu einem Push
 FLUSH_DELAY = 1.0
+
+# Zeitgesteuerte Neuberechnung ("lange nichts gehört" ändert sich ohne neue Nachricht)
+STALE_TICK = timedelta(minutes=5)
 
 # Abstand zwischen OTA-Prüfungen bei "Alle prüfen" (Sekunden)
 OTA_CHECK_SPACING = 1.0

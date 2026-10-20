@@ -42,13 +42,19 @@
           "critical_battery_threshold": "Umbral de «batería crítica» (%)",
           "fire_events": "Disparar eventos de Home Assistant",
           "nc_enabled": "Enviar notificaciones al Notification Center",
-          "nc_types": "Tipos de notificación"
+          "nc_types": "Tipos de notificación",
+          "stale_hours": "«Sin noticias» tras (horas)",
+          "problem_include_updates": "Las actualizaciones cuentan como problema",
+          "problem_include_stale": "«Sin noticias» cuenta como problema"
         },
         "data_description": {
           "critical_battery_threshold": "Debe ser menor o igual que el umbral de «batería baja».",
           "fire_events": "Dispara p. ej. zigbee2mqtt_manager_device_offline, _battery_low y _update_available – utilizable como disparador de automatizaciones.",
           "nc_enabled": "Solo funciona si la integración «Notification Center» está instalada. El interruptor principal activa o desactiva todas las notificaciones de este gestor.",
-          "nc_types": "Elige qué notificaciones se envían. La lista está ordenada por urgencia, primero las críticas."
+          "nc_types": "Elige qué notificaciones se envían. La lista está ordenada por urgencia, primero las críticas.",
+          "stale_hours": "Horas sin mensaje tras las cuales un dispositivo se considera «sin noticias» (0 = desactivado). Los dispositivos que Zigbee2MQTT ya notifica como sin conexión cuentan como sin conexión.",
+          "problem_include_updates": "El sensor «Problema» también se activa cuando hay una actualización de firmware disponible.",
+          "problem_include_stale": "El sensor «Problema» también se activa cuando un dispositivo lleva callado más tiempo del indicado. Cuidado con dispositivos que envían raramente."
         }
       }
     },
@@ -75,6 +81,11 @@
       },
       "groups": {
         "name": "Grupos"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problema"
       }
     }
   },

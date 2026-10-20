@@ -43,6 +43,12 @@ The **Features (expose)** section lists everything Zigbee2MQTT exposes for the d
 
 **Grouping and filters** (Devices, Battery and Updates): the **Group by** selector arranges the list as an accordion by **manufacturer** or **device class** (lights, plugs & switches, heating & climate, blinds & covers, locks, fans, buttons & remotes, sensors, other). Each group shows its count and, if any, its offline devices; the two icons beside the selector expand or collapse all groups. The collapsible **Filters** section narrows the list: status (online / offline), power source (battery only / mains only / low battery), signal (good / medium / weak), network role (router / end device), firmware (update available), last seen (more than 24 hours / 7 days ago), not in any Zigbee group, manufacturer and device class. Several filters apply together; active filters appear as small chips that a tap removes. The integration derives the device class from the device's features (Zigbee2MQTT provides no fixed class); devices without known features end up under "Other". Without Z2M availability enabled, online/offline is derived from "last seen", like the status dot. While grouping is active, `max_rows` does not apply.
 
+**Area, HA device and comment (since 1.1.1b3):** the device list shows the Home Assistant **area** after the model (found through the matching MQTT device; option `show_area`). The popup also shows the name of the **Home Assistant device** and, if set in Zigbee2MQTT, the device **comment** (Z2M setting `description`). With `show_comment: true` the comment appears as a second line in the list. Search covers area, HA device and comment, and **Group by** gains **Area**. If an area or device name changes in Home Assistant, the card follows.
+
+**Disabled devices (since 1.1.1b3, issue #7):** devices disabled in Zigbee2MQTT (`disabled: true`) no longer count as offline. They are left out of "Offline", the sensors, the problem sensor and the Notification Center messages, and get their own status "Disabled" (badge, filter **Status → Disabled**, counter `disabled`).
+
+**Not heard for long (since 1.1.1b3):** if Zigbee2MQTT reports a device as online but it has sent nothing for more than N hours (default 24, adjustable under **Configure**, 0 = off), it gets the orange badge "silent", an orange status dot and the time since its last message in orange. There is also the **Silent** chip (only visible when such devices exist) and the filter **Status → Not heard for long**. The time since the last message ("5 seconds ago", "3 minutes ago") is shown in every row; sort by **Last seen (oldest first)** to put the quietest devices on top. This needs `advanced.last_seen: ISO_8601` in Zigbee2MQTT. The display is informational; it only triggers the problem sensor if you switch that on.
+
 **Copying entities:** the popup section **Entities (for automations)** lists the device's Home Assistant entities with a copy icon per row. The copy icon in the popup header writes all entity names (one per line) to the clipboard, for example to paste into automations and scripts. If the browser denies clipboard access (it requires HTTPS), the text appears selected in a field so you can copy it with Ctrl+C.
 
 Further points:
@@ -72,6 +78,8 @@ Further points:
 Manual: copy the folder `custom_components/zigbee2mqtt_manager` to `<config>/custom_components/`.
 
 HACS shows pre-releases (e.g. `1.1.1b1`) only with the option "Show beta versions".
+
+**Quick links (since 1.1.1b3):** [Add the repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Meine-smarte-Welt&repository=zigbee2mqtt_manager&category=integration) · [Set up the integration](https://my.home-assistant.io/redirect/config_flow_start/?domain=zigbee2mqtt_manager). After setup, Home Assistant shows a one-time notice on how to add the card to a dashboard; a ready-made dashboard template is in `examples/dashboard-zigbee.yaml`. The dashboard is deliberately **not created automatically**: Home Assistant offers integrations no public interface for that.
 
 ## The card
 
@@ -188,6 +196,14 @@ actions:
 
 `Devices`, `Offline devices`, `Devices with low battery`, `Devices with critical battery`, `Available firmware updates` and `Groups`. The sensors for offline, battery and updates carry the device list as an attribute.
 
+### Collective problem sensor (binary sensor "Problem", since 1.1.1b3)
+
+A binary sensor (device class `problem`) sums up the network in one state. It is **on** as soon as the bridge is offline, an active device is offline, a battery is low or critical, or (can be switched off) a firmware update is pending or (can be switched on) a device has not been heard from for long. Disabled devices do not count. It is meant for a small tile on your home page that turns red and opens the Zigbee dashboard on tap (`examples/kachel-leitseite.yaml`).
+
+Attributes: `reasons` (`bridge_offline`, `offline`, `battery_low`, `battery_critical`, `update_available`, `stale`), `bridge_online`, `devices`, `offline`, `low_battery`, `critical_battery`, `updates_available`, `stale`, `disabled`, `stale_hours` and the name lists `offline_devices`, `low_battery_devices`, `critical_battery_devices`, `update_devices`, `stale_devices`, `disabled_devices`.
+
+Under **Configure** you choose whether firmware updates (default: yes) and "not heard for long" (default: no) trigger the problem. The entity ID depends on the language (with an English UI e.g. `binary_sensor.zigbee2mqtt_manager_zigbee2mqtt_problem`); look it up under Settings → Devices & services. An automation that lists the devices is in `examples/sensor-stoerung-automation.yaml`. The counter sensors above also exclude disabled devices.
+
 ## Version display and update notice
 
 The installed version is shown in three places: in the card under **Bridge (cog) → App version**, at the top of the graphical card editor, and in the integration's **Configure** dialog. At startup and every 12 hours the integration asks GitHub (`api.github.com`, latest release, falling back to the highest version tag) whether a newer version was published. If so, it is highlighted: orange frame and notice in the section, an orange "↑" on the cog icon, a warning box in the editor and a note in the Configure dialog. Updating itself works as usual through HACS. **Check now** triggers the query immediately. If GitHub is not reachable, "Check not possible" appears; the card keeps working.
@@ -221,7 +237,7 @@ Privacy: the notifications contain device names and battery levels and stay insi
 
 ## Integration settings
 
-Under **Configure** (showing the installed version): threshold "low battery", threshold "critical battery" (must be smaller or equal) events on/off, notifications to the Notification Center on/off and the choice of notification types. **Reconfigure** changes the base topic.
+Under **Configure** (showing the installed version): threshold "low battery", threshold "critical battery" (must be smaller or equal) events on/off, notifications to the Notification Center on/off and the choice of notification types. **Reconfigure** changes the base topic. Since 1.1.1b3 also: "Not heard for … hours" (0 = off), "Firmware updates trigger the problem" and "Not heard for long triggers the problem".
 
 ## Security
 
@@ -239,6 +255,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 - **New in 1.1.0, test status:** grouping, filters, switches in the features and copying were checked against simulated data and in a headless browser, **not on real hardware** and not in the iOS/Android companion app. Whether Zigbee2MQTT accepts every switch as expected (e.g. on devices with several endpoints) is open.
 - The device class is an approximation derived from the device's features; special cases may end up under "Other" or "Sensors".
 - Switches act immediately without confirmation (including configuration switches such as child lock). The clipboard requires HTTPS.
+- **New in 1.1.1b3, test status:** the problem sensor, area/HA device mapping, comment, disabled devices and "not heard for long" were checked with simulated data and registries (pytest) and in a simulated browser (jsdom), **not on real hardware, not with a real Notification Center and not in browsers or the companion app**. The HA device is matched by the IEEE address in the MQTT identifiers; with unusual discovery, area and HA device stay empty. The comment comes from the Z2M device configuration (`description`); whether your Z2M version includes it in `bridge/info` is unverified. "Not heard for long" is informational and not a Notification Center message type. A dashboard cannot be created automatically (issue #6), only via the template.
 - **New in 1.1.1b2, test status:** the fixes for flicker, scroll jump and keyboard shortcuts were checked in a simulated browser (jsdom), **not in Safari, Chrome, Firefox or the companion app and not with 75 real devices**. As a result, values such as "last seen" and signal refresh at most every 2 seconds.
 - **New in 1.1.1b1, test status:** the Notification Center connection was checked with simulated events and data, **not against a real Notification Center and not on real hardware**. When the bridge restarts, devices may briefly be reported offline and closed again, depending on the Zigbee2MQTT availability setting. HACS shows pre-releases only with the option "Show beta versions".
 
@@ -262,6 +279,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 
 | Version | Changes |
 |---|---|
+| **1.1.1b3** (pre-release) | Fixed (issue #7): **devices disabled** in Zigbee2MQTT no longer count as offline (own status "Disabled", excluded from counters, sensors and Notification Center). Fixed (issue #4): HA devices are matched without the deprecated `device_registry.devices` mapping. New: **collective problem sensor** as a binary sensor (device class `problem`) with all counters and device lists as attributes; **area**, **HA device** and **comment** in list, popup and search, group by **area**; **"not heard for long"** (chip, filter, badge, adjustable hours); setup aids (my.home-assistant.io links, one-time notice after setup, dashboard template in `examples`). Issue #6: an automatically created dashboard is not included. |
 | **1.1.1b2** (pre-release) | Fixed (issue #5): the card **flickered and jumped to the top while scrolling** because it was fully redrawn on every data update (images reloaded, the page briefly got shorter). Now only changed parts are updated: images, rows, accordions and input focus stay in place, nothing is drawn when the content is unchanged, and data-driven redraws happen at most every 2 seconds. Fixed: **typing into the search and other fields on desktop** triggered Home Assistant keyboard shortcuts (e.g. "e" opened the entity search); key events from input fields no longer reach Home Assistant. |
 | **1.1.1b1** (pre-release) | New: **Notification Center connection** (optional, interface schema 1) with seven notification types (bridge offline, battery critical, device offline, battery low, firmware update, new device, device left the network), a main switch and one switch per type in the card and in the Configure dialog. The update check recognizes **pre-releases** (`1.1.1b1` < `1.1.1rc1` < `1.1.1`): if you run a beta you learn about the next beta; if you run a final version you do not see pre-releases. **French and Spanish** added (card, integration, README). Changing the Notification Center switches no longer reloads the integration. Fixed: English leftovers in the German texts (`strings.json`). |
 | **1.1.0** | New: **group** lists by manufacturer or device class (accordion) and **filter** them (status online/offline, power source, signal, network role, firmware, last seen, not in a Zigbee group, manufacturer, device class; active filters as chips). Writable **switches** under "Features (expose)" can be toggled directly. New popup section **Entities (for automations)** and copy buttons for the entity names. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: new `set_expose` action (administrators only, values are validated) and a device class per device. |
@@ -275,14 +293,14 @@ Every `.py`, `.js` and `.yaml` file carries a SHA-256 hash of its content from l
 
 | File | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `030826f739709dc575398ab4142fb7bc81262b419fab3176d6f07e69db352617` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `de86d629e203290c8c213a85f8d8f3094c51be023d06623a0bb5a82b503b6f5f` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `1e8f4f5937dbb64352973c67dd872610781a9540f7f1db4ff10b8ef734682d69` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `6c434b2e5ed8025cc766c7f3afff3fd775c0caf5defb76195c2db67f3a62ffef` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e8ef9b7f09651b6bdd096855de98c6a439c36ab48830bc785c351dd2efb5f5d0` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `12ab5093a5780719fd93b05b7bd645e734e91ce49ca5b1e75d03817029f27226` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `9f0e55a3edbaf1ac86d48750d5f0705b7bbdf57768b37f38bc682801bf1ca9a2` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `1e8f4f5937dbb64352973c67dd872610781a9540f7f1db4ff10b8ef734682d69` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `7c54b7a85802122d88bc3bf80c38e95c0b408fb1892bccc00be92eddaca3586e` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `090cbad22976fa99c197324ca0bb41264b390f192474fb4ed607212f13a6fa0c` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `646089cc42728dfa6bbebb34f8f29ee6903d9ff0879c8836190bc5fbdb59495a` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `015ab2724073bef7a708828cf883e87d020049ba9327b40ee8aaa6af88b86ece` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## License

@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6f37d2837460f073d69f974b838c7120d56aaa1d02cb0972cffc0efec0c906d7
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 3e7633f447a75afe9dc0f2086532d3bafaec62576e08acea4320ac9e32acd471
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -22,10 +22,16 @@ from .const import (
     CONF_CRITICAL_BATTERY,
     CONF_FIRE_EVENTS,
     CONF_LOW_BATTERY,
+    CONF_PROBLEM_STALE,
+    CONF_PROBLEM_UPDATES,
+    CONF_STALE_HOURS,
     DEFAULT_BASE_TOPIC,
     DEFAULT_CRITICAL_BATTERY,
     DEFAULT_FIRE_EVENTS,
     DEFAULT_LOW_BATTERY,
+    DEFAULT_PROBLEM_STALE,
+    DEFAULT_PROBLEM_UPDATES,
+    DEFAULT_STALE_HOURS,
     DOMAIN,
     VERSION,
 )
@@ -34,6 +40,7 @@ from .notification_bridge import OPT_ENABLED as NC_OPT_ENABLED
 from .notification_bridge import OPT_TYPES as NC_OPT_TYPES
 
 _BATTERY_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=1, max=99))
+_STALE_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=0, max=720))
 
 
 def _valid_topic(base: str) -> bool:
@@ -212,6 +219,18 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                     vol.Required(
                         CONF_FIRE_EVENTS,
                         default=opts.get(CONF_FIRE_EVENTS, DEFAULT_FIRE_EVENTS),
+                    ): bool,
+                    vol.Required(
+                        CONF_STALE_HOURS,
+                        default=opts.get(CONF_STALE_HOURS, DEFAULT_STALE_HOURS),
+                    ): _STALE_VALIDATOR,
+                    vol.Required(
+                        CONF_PROBLEM_UPDATES,
+                        default=opts.get(CONF_PROBLEM_UPDATES, DEFAULT_PROBLEM_UPDATES),
+                    ): bool,
+                    vol.Required(
+                        CONF_PROBLEM_STALE,
+                        default=opts.get(CONF_PROBLEM_STALE, DEFAULT_PROBLEM_STALE),
                     ): bool,
                     vol.Required(
                         NC_OPT_ENABLED, default=opts.get(NC_OPT_ENABLED, True)

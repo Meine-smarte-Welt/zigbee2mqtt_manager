@@ -1,0 +1,16 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 729211a54923eb3ebb78d063a7c295daa89dddc5d0cf0fde6ae1144406732b63
+# Meldung aufs Handy, sobald die Sammelstörung auftritt – mit der Liste der betroffenen Geräte.
+alias: Zigbee Störung melden
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.zigbee2mqtt_manager_zigbee2mqtt_problem   # an deine Entität anpassen
+    to: "on"
+    for: "00:05:00"
+actions:
+  - action: notify.mobile_app_handy   # an dein Gerät anpassen
+    data:
+      title: Zigbee-Netz auffällig
+      message: >-
+        Offline: {{ state_attr(trigger.entity_id, 'offline_devices') | join(', ') or '–' }}.
+        Batterie kritisch: {{ state_attr(trigger.entity_id, 'critical_battery_devices') | join(', ') or '–' }}.
+        Batterie niedrig: {{ state_attr(trigger.entity_id, 'low_battery_devices') | join(', ') or '–' }}.

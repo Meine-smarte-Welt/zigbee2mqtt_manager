@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b8e710c97685d6be0b9945d834854c1aa4a524fa780458ce50351a741f8ba5f6
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 69312cb2e242e41cf026bc210eab692cb8ed36b1241dd0e037aa03e2b486c10c
 """Zigbee2MQTT Manager – Verwaltung von Zigbee2MQTT direkt in Home Assistant."""
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from pathlib import Path
 
 import voluptuous as vol
 
+from homeassistant.components import persistent_notification
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
@@ -18,6 +19,7 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
 from .const import (
+    CONF_WELCOME_SHOWN,
     CARD_FILENAME,
     CARD_URL_BASE,
     DOMAIN,
@@ -29,9 +31,43 @@ from .websocket_api import async_register_websocket_api
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+_DASHBOARDS = "https://my.home-assistant.io/redirect/lovelace_dashboards/"
+_WELCOME = {
+    "de": (
+        "Zigbee2MQTT Manager ist eingerichtet",
+        "Die Karte ist schon da: **Dashboard bearbeiten → Karte hinzufügen → „Zigbee2MQTT Manager“**.\n\n"
+        f"[Dashboards öffnen]({_DASHBOARDS}) · Eine fertige Dashboard-Vorlage steht in der README (Ordner `examples`).\n\n"
+        "Für die Leitseite gibt es den Sensor „Störung“ (Binärsensor) mit allen Zählern als Attribute.",
+    ),
+    "en": (
+        "Zigbee2MQTT Manager is set up",
+        "The card is already available: **Edit dashboard → Add card → “Zigbee2MQTT Manager”**.\n\n"
+        f"[Open dashboards]({_DASHBOARDS}) · A ready-made dashboard template is in the README (folder `examples`).\n\n"
+        "For your home page there is the “Problem” binary sensor with all counters as attributes.",
+    ),
+    "nl": (
+        "Zigbee2MQTT Manager is ingesteld",
+        "De kaart is al beschikbaar: **Dashboard bewerken → Kaart toevoegen → „Zigbee2MQTT Manager”**.\n\n"
+        f"[Dashboards openen]({_DASHBOARDS}) · Een kant-en-klare dashboardsjabloon staat in de README (map `examples`).\n\n"
+        "Voor je startpagina is er de binaire sensor „Storing” met alle tellers als attributen.",
+    ),
+    "fr": (
+        "Zigbee2MQTT Manager est configuré",
+        "La carte est déjà disponible : **Modifier le tableau de bord → Ajouter une carte → « Zigbee2MQTT Manager »**.\n\n"
+        f"[Ouvrir les tableaux de bord]({_DASHBOARDS}) · Un modèle de tableau de bord prêt à l'emploi se trouve dans le README (dossier `examples`).\n\n"
+        "Pour ta page d'accueil, il y a le capteur binaire « Problème » avec tous les compteurs en attributs.",
+    ),
+    "es": (
+        "Zigbee2MQTT Manager está configurado",
+        "La tarjeta ya está disponible: **Editar panel → Añadir tarjeta → «Zigbee2MQTT Manager»**.\n\n"
+        f"[Abrir paneles]({_DASHBOARDS}) · Una plantilla de panel lista para usar está en el README (carpeta `examples`).\n\n"
+        "Para tu página de inicio existe el sensor binario «Problema» con todos los contadores como atributos.",
+    ),
+}
 
 _CARD_DIR = Path(__file__).parent / "www"
 _CARD_STATIC_URL = f"{CARD_URL_BASE}/{CARD_FILENAME}"
@@ -202,7 +238,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: Z2MConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+    _async_welcome(hass, entry)
     return True
+
+
+def _async_welcome(hass: HomeAssistant, entry: Z2MConfigEntry) -> None:
+    """Einmalig nach der Einrichtung: Hinweis, wie die Karte ins Dashboard kommt."""
+    if entry.data.get(CONF_WELCOME_SHOWN):
+        return
+    lang = str(hass.config.language)[:2]
+    title, message = _WELCOME.get(lang, _WELCOME["en"])
+    persistent_notification.async_create(
+        hass, message, title=title, notification_id=f"{DOMAIN}_welcome_{entry.entry_id}"
+    )
+    # Reine Datenänderung: lädt die Integration nicht neu (nur Optionen tun das)
+    hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_WELCOME_SHOWN: True})
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: Z2MConfigEntry) -> bool:

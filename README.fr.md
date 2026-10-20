@@ -43,6 +43,12 @@ La section **Fonctions (expose)** affiche toutes les fonctions que Zigbee2MQTT f
 
 **Regrouper et filtrer** (Appareils, Batterie et Mises à jour) : la sélection **Regrouper** présente la liste en accordéon par **fabricant** ou **classe d'appareil** (lampes, prises et interrupteurs, chauffage et climat, volets et stores, serrures, ventilateurs, boutons et télécommandes, capteurs, autres). Chaque groupe indique le nombre d'appareils et, le cas échéant, ceux hors ligne ; les deux icônes à côté de la sélection déplient ou replient tous les groupes. La zone repliable **Filtres** restreint la liste : état (en ligne / hors ligne), alimentation (pile uniquement / secteur uniquement / batterie faible), signal (bon / moyen / faible), rôle réseau (routeur / appareil terminal), firmware (mise à jour disponible), dernière activité (il y a plus de 24 heures / 7 jours), dans aucun groupe Zigbee, fabricant et classe d'appareil. Plusieurs filtres s'appliquent en même temps ; les filtres actifs apparaissent sous forme de petites puces que l'on retire d'un toucher. L'intégration déduit la classe d'appareil des fonctions de l'appareil (Zigbee2MQTT ne fournit pas de classe fixe) ; les appareils sans fonctions connues vont dans « Autres ». Sans disponibilité Z2M active, « en ligne/hors ligne » est déduit de « dernière activité », comme pour le point d'état. `max_rows` ne s'applique pas lorsque le regroupement est actif.
 
+**Pièce, appareil HA et commentaire (depuis 1.1.1b3) :** la liste des appareils affiche après le modèle la **pièce** de Home Assistant (déterminée via l'appareil MQTT correspondant ; option `show_area`). La fenêtre contextuelle indique aussi le nom de l'**appareil Home Assistant** et, s'il est défini dans Zigbee2MQTT, le **commentaire** de l'appareil (réglage Z2M `description`). Avec `show_comment: true`, le commentaire apparaît sur une deuxième ligne dans la liste. La recherche couvre la pièce, l'appareil HA et le commentaire, et **Regrouper** propose en plus **Pièce**. Si une pièce ou un nom d'appareil change dans Home Assistant, la carte suit.
+
+**Appareils désactivés (depuis 1.1.1b3, issue #7) :** les appareils désactivés dans Zigbee2MQTT (`disabled: true`) ne comptent plus comme hors ligne. Ils sont exclus de « Hors ligne », des capteurs, du capteur de problème et des messages vers le Notification Center, et ont leur propre état « Désactivé » (badge, filtre **État → Désactivé**, compteur `disabled`).
+
+**Silencieux depuis longtemps (depuis 1.1.1b3) :** si Zigbee2MQTT signale un appareil en ligne mais qu'il n'envoie plus rien depuis plus de N heures (24 par défaut, réglable sous **Configurer**, 0 = désactivé), il reçoit le badge orange « silencieux », un point d'état orange et le temps écoulé depuis son dernier message en orange. Il y a aussi la puce **Silencieux** (visible seulement si de tels appareils existent) et le filtre **État → Silencieux depuis longtemps**. Le temps écoulé depuis le dernier message (« il y a 5 secondes », « il y a 3 minutes ») figure dans chaque ligne ; le tri **Dernière activité (la plus ancienne d'abord)** place les appareils les plus muets en haut. Nécessite `advanced.last_seen: ISO_8601` dans Zigbee2MQTT. L'affichage est informatif ; il ne déclenche le capteur de problème que si tu l'actives.
+
 **Copier des entités :** la section de la fenêtre **Entités (pour les automatisations)** liste les entités Home Assistant de l'appareil, avec une icône de copie par ligne. L'icône de copie dans l'en-tête de la fenêtre écrit tous les noms d'entités (un par ligne) dans le presse-papiers, par exemple pour les coller dans des automatisations et des scripts. Si le navigateur n'autorise pas le presse-papiers (il exige HTTPS), le texte s'affiche sélectionné dans un champ pour le copier avec Ctrl+C.
 
 Autres points :
@@ -72,6 +78,8 @@ Autres points :
 Manuellement : copier le dossier `custom_components/zigbee2mqtt_manager` dans `<config>/custom_components/`.
 
 Les préversions (par ex. `1.1.1b1`) n'apparaissent dans HACS qu'avec l'option « Afficher les versions bêta ».
+
+**Liens rapides (depuis 1.1.1b3) :** [Ajouter le dépôt dans HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Meine-smarte-Welt&repository=zigbee2mqtt_manager&category=integration) · [Configurer l'intégration](https://my.home-assistant.io/redirect/config_flow_start/?domain=zigbee2mqtt_manager). Après la configuration, Home Assistant affiche une seule fois un message expliquant comment ajouter la carte à un tableau de bord ; un modèle de tableau de bord prêt à l'emploi se trouve dans `examples/dashboard-zigbee.yaml`. Le tableau de bord n'est volontairement **pas créé automatiquement** : Home Assistant n'offre aux intégrations aucune interface publique pour cela.
 
 ## La carte
 
@@ -188,6 +196,14 @@ actions:
 
 `Appareils`, `Appareils hors ligne`, `Appareils à batterie faible`, `Appareils à batterie critique`, `Mises à jour du firmware disponibles` et `Groupes`. Les capteurs pour hors ligne, batterie et mises à jour portent la liste des appareils comme attribut.
 
+### Problème global (capteur binaire « Problème », depuis 1.1.1b3)
+
+Un capteur binaire (classe d'appareil `problem`) résume le réseau en un seul état. Il est **actif** dès que le bridge est hors ligne, qu'un appareil actif est hors ligne, qu'une batterie est faible ou critique, ou (désactivable) qu'une mise à jour du firmware est disponible, resp. (activable) qu'un appareil est silencieux depuis longtemps. Les appareils désactivés ne comptent pas. Il est prévu pour une petite tuile sur ta page d'accueil qui devient rouge et ouvre le tableau de bord Zigbee d'un appui (`examples/kachel-leitseite.yaml`).
+
+Attributs : `reasons` (`bridge_offline`, `offline`, `battery_low`, `battery_critical`, `update_available`, `stale`), `bridge_online`, `devices`, `offline`, `low_battery`, `critical_battery`, `updates_available`, `stale`, `disabled`, `stale_hours` ainsi que les listes de noms `offline_devices`, `low_battery_devices`, `critical_battery_devices`, `update_devices`, `stale_devices`, `disabled_devices`.
+
+Sous **Configurer**, tu choisis si les mises à jour du firmware (par défaut : oui) et « silencieux depuis longtemps » (par défaut : non) déclenchent le problème. L'ID d'entité dépend de la langue (avec une interface anglaise, par ex. `binary_sensor.zigbee2mqtt_manager_zigbee2mqtt_problem`) ; elle figure sous Paramètres → Appareils et services. Une automatisation avec la liste des appareils se trouve dans `examples/sensor-stoerung-automation.yaml`. Les capteurs-compteurs ci-dessus excluent aussi les appareils désactivés.
+
 ## Affichage de la version et avis de mise à jour
 
 La version installée figure à trois endroits : dans la carte sous **Bridge (roue dentée) → Version de l'application**, en haut de l'éditeur graphique de la carte et dans la boîte de dialogue **Configurer** de l'intégration. Au démarrage, puis toutes les 12 heures, l'intégration interroge GitHub (`api.github.com`, dernière version, à défaut le tag de version le plus élevé) pour savoir si une version plus récente a été publiée. S'il y en a une, elle est mise en évidence en couleur : cadre orange et avis dans la section, un « ↑ » orange sur l'icône de la roue dentée, un encadré d'avertissement dans l'éditeur et un avis dans la boîte de dialogue Configurer. La mise à jour elle-même se fait comme d'habitude via HACS. **Vérifier maintenant** déclenche la requête immédiatement. Si GitHub est injoignable, « Vérification impossible » s'affiche ; la carte continue de fonctionner normalement.
@@ -221,7 +237,7 @@ Confidentialité : les notifications contiennent des noms d'appareils et des niv
 
 ## Paramètres de l'intégration
 
-Sous **Configurer** (avec affichage de la version installée) : seuil « batterie faible », seuil « batterie critique » (doit être inférieur ou égal), événements activés/désactivés, notifications vers le Notification Center activées/désactivées et choix des types de notification. **Reconfigurer** permet de modifier le base topic.
+Sous **Configurer** (avec affichage de la version installée) : seuil « batterie faible », seuil « batterie critique » (doit être inférieur ou égal), événements activés/désactivés, notifications vers le Notification Center activées/désactivées et choix des types de notification. **Reconfigurer** permet de modifier le base topic. Depuis 1.1.1b3 aussi : « Silencieux depuis … heures » (0 = désactivé), « Les mises à jour du firmware déclenchent le problème » et « Silencieux depuis longtemps déclenche le problème ».
 
 ## Sécurité
 
@@ -239,6 +255,7 @@ Toutes les actions en écriture (renommer, options, commuter des fonctions, supp
 - **Nouveau dans 1.1.0, état des tests :** le regroupement, les filtres, les interrupteurs dans les fonctions et la copie ont été vérifiés avec des données simulées et dans un navigateur sans interface, **pas sur du matériel réel** ni dans l'application compagnon iOS/Android. On ne sait pas encore si Zigbee2MQTT accepte chaque interrupteur comme prévu (p. ex. pour les appareils à plusieurs endpoints).
 - La classe d'appareil est une approximation à partir des fonctions de l'appareil ; des cas particuliers peuvent atterrir dans « Autres » ou « Capteurs ».
 - Les interrupteurs agissent immédiatement et sans confirmation (y compris les interrupteurs de configuration comme la sécurité enfants). Le presse-papiers exige HTTPS.
+- **Nouveau dans 1.1.1b3, état des tests :** le capteur de problème, l'association pièce/appareil HA, le commentaire, les appareils désactivés et « silencieux depuis longtemps » ont été vérifiés avec des données et des registres simulés (pytest) et dans un navigateur simulé (jsdom), **pas sur du matériel réel, pas avec un vrai Notification Center et pas dans des navigateurs ni dans l'application Companion**. L'appareil HA est trouvé grâce à l'adresse IEEE dans les identifiants MQTT ; avec une discovery inhabituelle, la pièce et l'appareil HA restent vides. Le commentaire provient de la configuration Z2M de l'appareil (`description`) ; il n'est pas vérifié que ta version de Z2M le transmette dans `bridge/info`. « Silencieux depuis longtemps » est informatif et n'est pas un type de message du Notification Center. Un tableau de bord ne peut pas être créé automatiquement (issue #6), seulement via le modèle.
 - **Nouveau dans 1.1.1b2, état des tests :** les corrections du clignotement, du saut de défilement et des raccourcis clavier ont été vérifiées dans un navigateur simulé (jsdom), **pas dans Safari, Chrome, Firefox ou l'application compagnon, ni avec 75 vrais appareils**. Des valeurs comme « dernière activité » et le signal ne sont donc actualisées qu'au plus toutes les 2 secondes.
 - **Nouveau dans 1.1.1b1, état des tests :** la liaison avec le Notification Center a été vérifiée avec des événements et des données simulés, **pas avec un vrai Notification Center ni sur du matériel réel**. Lorsque le bridge redémarre, des appareils peuvent être brièvement signalés hors ligne puis fermés de nouveau, selon le réglage de disponibilité de Zigbee2MQTT. HACS n'affiche les préversions qu'avec l'option « Afficher les versions bêta ».
 
@@ -262,6 +279,7 @@ Toutes les actions en écriture (renommer, options, commuter des fonctions, supp
 
 | Version | Modifications |
 |---|---|
+| **1.1.1b3** (préversion) | Corrigé (issue #7) : les **appareils désactivés** dans Zigbee2MQTT ne comptent plus comme hors ligne (état propre « Désactivé », exclus des compteurs, capteurs et du Notification Center). Corrigé (issue #4) : association des appareils HA sans l'ancien mappage `device_registry.devices`. Nouveau : **problème global** sous forme de capteur binaire (classe `problem`) avec tous les compteurs et listes d'appareils en attributs ; **pièce**, **appareil HA** et **commentaire** dans la liste, la fenêtre contextuelle et la recherche, regroupement par **pièce** ; **« silencieux depuis longtemps »** (puce, filtre, badge, heures réglables) ; aides à la configuration (liens my.home-assistant.io, message unique après la configuration, modèle de tableau de bord dans `examples`). Issue #6 : un tableau de bord créé automatiquement n'est pas inclus. |
 | **1.1.1b2** (préversion) | Corrigé (issue #5) : la carte **clignotait et remontait en haut pendant le défilement**, car elle était entièrement redessinée à chaque mise à jour de données (les images se rechargeaient, la page raccourcissait brièvement). Seules les parties modifiées sont désormais mises à jour : images, lignes, accordéons et focus de saisie restent en place, rien n'est dessiné si le contenu est inchangé, et le redessin piloté par les données a lieu au plus toutes les 2 secondes. Corrigé : **la saisie dans la recherche et les autres champs sur ordinateur** déclenchait les raccourcis clavier de Home Assistant (p. ex. « e » ouvrait la recherche d'entités) ; les événements clavier des champs de saisie n'atteignent plus Home Assistant. |
 | **1.1.1b1** (préversion) | Nouveau : **liaison avec le Notification Center** (optionnelle, interface schéma 1) avec sept types de notification (bridge hors ligne, batterie critique, appareil hors ligne, batterie faible, mise à jour du firmware, nouvel appareil, appareil sorti du réseau), un interrupteur principal et un interrupteur par type dans la carte et dans la boîte de dialogue Configurer. La vérification des mises à jour reconnaît les **préversions** (`1.1.1b1` < `1.1.1rc1` < `1.1.1`) : avec une bêta, tu es informé de la bêta suivante ; avec une version finale, tu ne vois pas de préversions. **Français et espagnol** ajoutés (carte, intégration, README). Modifier les interrupteurs du Notification Center ne recharge plus l'intégration. Corrigé : restes d'anglais dans les textes allemands (`strings.json`). |
 | **1.1.0** | Nouveau : **regrouper** les listes par fabricant ou classe d'appareil (accordéon) et les **filtrer** (état en ligne/hors ligne, alimentation, signal, rôle réseau, firmware, dernière activité, sans groupe Zigbee, fabricant, classe d'appareil ; filtres actifs sous forme de puces). Les **interrupteurs** modifiables sous « Fonctions (expose) » se basculent directement. Nouvelle section de fenêtre **Entités (pour les automatisations)** et boutons de copie pour les noms d'entités. Éditeur : `show_group_by`, `default_group_by`, `show_filters`. Backend : nouvelle action `set_expose` (administrateurs uniquement, valeurs vérifiées) et classe d'appareil par appareil. |
@@ -275,14 +293,14 @@ Chaque fichier `.py`, `.js` et `.yaml` porte en première ligne un hash SHA-256 
 
 | Fichier | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `030826f739709dc575398ab4142fb7bc81262b419fab3176d6f07e69db352617` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `de86d629e203290c8c213a85f8d8f3094c51be023d06623a0bb5a82b503b6f5f` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `1e8f4f5937dbb64352973c67dd872610781a9540f7f1db4ff10b8ef734682d69` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `6c434b2e5ed8025cc766c7f3afff3fd775c0caf5defb76195c2db67f3a62ffef` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e8ef9b7f09651b6bdd096855de98c6a439c36ab48830bc785c351dd2efb5f5d0` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `12ab5093a5780719fd93b05b7bd645e734e91ce49ca5b1e75d03817029f27226` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `9f0e55a3edbaf1ac86d48750d5f0705b7bbdf57768b37f38bc682801bf1ca9a2` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `1e8f4f5937dbb64352973c67dd872610781a9540f7f1db4ff10b8ef734682d69` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `7c54b7a85802122d88bc3bf80c38e95c0b408fb1892bccc00be92eddaca3586e` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `090cbad22976fa99c197324ca0bb41264b390f192474fb4ed607212f13a6fa0c` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `646089cc42728dfa6bbebb34f8f29ee6903d9ff0879c8836190bc5fbdb59495a` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `015ab2724073bef7a708828cf883e87d020049ba9327b40ee8aaa6af88b86ece` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Licence

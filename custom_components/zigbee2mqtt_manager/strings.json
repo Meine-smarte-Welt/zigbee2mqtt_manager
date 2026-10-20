@@ -42,13 +42,19 @@
           "critical_battery_threshold": "Schwelle für „Batterie kritisch“ (%)",
           "fire_events": "Home-Assistant-Ereignisse auslösen",
           "nc_enabled": "Meldungen ans Notification Center senden",
-          "nc_types": "Meldungsarten"
+          "nc_types": "Meldungsarten",
+          "stale_hours": "„Lange nichts gehört“ nach (Stunden)",
+          "problem_include_updates": "Updates zählen als Störung",
+          "problem_include_stale": "„Lange nichts gehört“ zählt als Störung"
         },
         "data_description": {
           "critical_battery_threshold": "Muss kleiner oder gleich der Schwelle für „Batterie niedrig“ sein.",
           "fire_events": "Löst z. B. zigbee2mqtt_manager_device_offline, _battery_low und _update_available aus – nutzbar als Automations-Auslöser.",
           "nc_enabled": "Nur wirksam, wenn die Integration „Notification Center“ installiert ist. Der Hauptschalter schaltet alle Meldungen dieses Managers ein oder aus.",
-          "nc_types": "Auswahl der Meldungen, die gesendet werden. Die Liste ist nach Dringlichkeit sortiert, Kritisches steht oben."
+          "nc_types": "Auswahl der Meldungen, die gesendet werden. Die Liste ist nach Dringlichkeit sortiert, Kritisches steht oben.",
+          "stale_hours": "Stunden ohne Nachricht, ab denen ein Gerät als „lange nichts gehört“ gilt (0 = aus). Geräte, die Zigbee2MQTT schon als offline meldet, zählen unter Offline.",
+          "problem_include_updates": "Der Sensor „Störung“ geht auch an, wenn ein Firmware-Update verfügbar ist.",
+          "problem_include_stale": "Der Sensor „Störung“ geht auch an, wenn ein Gerät länger als die eingestellte Zeit still ist. Vorsicht bei Geräten, die selten senden."
         }
       }
     },
@@ -75,6 +81,11 @@
       },
       "groups": {
         "name": "Gruppen"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Störung"
       }
     }
   },

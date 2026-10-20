@@ -1,0 +1,17 @@
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2c6ebdce82ca7d877ed5784d1f7db985f96b15e95bfec8ce95456d057948ed71
+# Fertiges Dashboard für Zigbee2MQTT Manager.
+# So geht's: Einstellungen → Dashboards → Dashboard hinzufügen (Titel „Zigbee“, URL-Pfad „zigbee“,
+# also /dashboard-zigbee) → Dashboard öffnen → ⋮ → Bearbeiten → ⋮ → Rohkonfigurationseditor →
+# den Inhalt dieser Datei (ohne die Kommentarzeilen) einfügen.
+# Direkt zu den Dashboards: https://my.home-assistant.io/redirect/lovelace_dashboards/
+title: Zigbee
+views:
+  - title: Zigbee
+    path: zigbee
+    icon: mdi:zigbee
+    panel: true
+    cards:
+      - type: custom:zigbee2mqtt-manager-card
+        title: Zigbee2MQTT Manager
+        default_group_by: area
+        show_comment: true

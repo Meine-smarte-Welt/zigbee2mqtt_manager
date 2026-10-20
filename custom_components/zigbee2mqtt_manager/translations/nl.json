@@ -42,13 +42,19 @@
           "critical_battery_threshold": "Drempel voor „batterij kritiek” (%)",
           "fire_events": "Home Assistant-gebeurtenissen activeren",
           "nc_enabled": "Meldingen naar het Notification Center sturen",
-          "nc_types": "Soorten meldingen"
+          "nc_types": "Soorten meldingen",
+          "stale_hours": "„Lang niets gehoord” na (uren)",
+          "problem_include_updates": "Updates tellen als storing",
+          "problem_include_stale": "„Lang niets gehoord” telt als storing"
         },
         "data_description": {
           "critical_battery_threshold": "Moet kleiner dan of gelijk aan de drempel voor „batterij laag” zijn.",
           "fire_events": "Activeert o.a. zigbee2mqtt_manager_device_offline, _battery_low en _update_available – bruikbaar als automatiseringstrigger.",
           "nc_enabled": "Alleen actief als de integratie „Notification Center” is geïnstalleerd. De hoofdschakelaar zet alle meldingen van deze manager aan of uit.",
-          "nc_types": "Kies welke meldingen worden verstuurd. De lijst is op urgentie gesorteerd, kritieke meldingen staan bovenaan."
+          "nc_types": "Kies welke meldingen worden verstuurd. De lijst is op urgentie gesorteerd, kritieke meldingen staan bovenaan.",
+          "stale_hours": "Uren zonder bericht waarna een apparaat als „lang niets gehoord” geldt (0 = uit). Apparaten die Zigbee2MQTT al als offline meldt, tellen onder offline.",
+          "problem_include_updates": "De sensor „Storing” gaat ook aan als er een firmware-update beschikbaar is.",
+          "problem_include_stale": "De sensor „Storing” gaat ook aan als een apparaat langer dan de ingestelde tijd stil is. Pas op bij apparaten die zelden zenden."
         }
       }
     },
@@ -75,6 +81,11 @@
       },
       "groups": {
         "name": "Groepen"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Storing"
       }
     }
   },

@@ -43,6 +43,12 @@ De sectie **Functies (expose)** toont alles wat Zigbee2MQTT voor het apparaat be
 
 **Groeperen en filteren** (Apparaten, Batterij en Updates): de keuze **Groeperen** toont de lijst als accordeon per **fabrikant** of **apparaatklasse** (lampen, stekkers & schakelaars, verwarming & klimaat, rolluiken & zonwering, sloten, ventilatoren, knoppen & afstandsbedieningen, sensoren, overig). Elke groep toont het aantal en, indien aanwezig, de offline-apparaten; met de twee pictogrammen naast de keuze klap je alle groepen uit of in. Het inklapbare gedeelte **Filters** beperkt de lijst: status (online / offline), voeding (alleen batterij / alleen netvoeding / batterij laag), signaal (goed / matig / zwak), netwerkrol (router / eindapparaat), firmware (update beschikbaar), laatst gezien (langer dan 24 uur / 7 dagen geleden), in geen enkele Zigbee-groep, fabrikant en apparaatklasse. Meerdere filters gelden tegelijk; actieve filters verschijnen als kleine chips die je met een tik verwijdert. De apparaatklasse leidt de integratie af uit de functies van het apparaat (Zigbee2MQTT levert geen vaste klasse); apparaten zonder bekende functies komen onder „Overig”. Zonder actieve Z2M-beschikbaarheid wordt online/offline net als bij het statusbolletje afgeleid uit „laatst gezien”. Bij actieve groepering geldt `max_rows` niet.
 
+**Ruimte, HA-apparaat en opmerking (sinds 1.1.1b3):** de apparatenlijst toont achter het model de **ruimte** uit Home Assistant (bepaald via het bijbehorende MQTT-apparaat; optie `show_area`). In de popup staan ook de naam van het **Home Assistant-apparaat** en, indien in Zigbee2MQTT ingesteld, de **opmerking** van het apparaat (Z2M-instelling `description`). Met `show_comment: true` verschijnt de opmerking als tweede regel in de lijst. Zoeken omvat ruimte, HA-apparaat en opmerking, en bij **Groeperen** komt **Ruimte** erbij. Verandert een ruimte of apparaatnaam in Home Assistant, dan volgt de kaart.
+
+**Uitgeschakelde apparaten (sinds 1.1.1b3, issue #7):** in Zigbee2MQTT uitgeschakelde apparaten (`disabled: true`) tellen niet meer als offline. Ze ontbreken bij „Offline”, in de sensoren, in de storingssensor en in de meldingen naar het Notification Center en hebben een eigen status „Uitgeschakeld” (badge, filter **Status → Uitgeschakeld**, teller `disabled`).
+
+**Lang niets gehoord (sinds 1.1.1b3):** meldt Zigbee2MQTT een apparaat als online, maar stuurt het al langer dan N uur niets (standaard 24, instelbaar onder **Configureren**, 0 = uit), dan krijgt het de oranje badge „stil”, een oranje statuspunt en de tijd sinds het laatste bericht in oranje. Er is ook de chip **Stil** (alleen zichtbaar als zulke apparaten bestaan) en het filter **Status → Lang niets gehoord**. De tijd sinds het laatste bericht („5 seconden geleden”, „3 minuten geleden”) staat in elke rij; met de sortering **Laatst gezien (oudste eerst)** staan de stilste apparaten bovenaan. Vereist `advanced.last_seen: ISO_8601` in Zigbee2MQTT. De weergave is informatief; ze activeert de storingssensor alleen als je dat inschakelt.
+
 **Entiteiten kopiëren:** de popupsectie **Entiteiten (voor automatiseringen)** toont de Home Assistant-entiteiten van het apparaat met per rij een kopieerpictogram. Het kopieerpictogram in de popupkop zet alle entiteitsnamen (één per regel) op het klembord, bijvoorbeeld om in automatiseringen en scripts te plakken. Staat de browser het klembord niet toe (dat vereist HTTPS), dan verschijnt de tekst geselecteerd in een veld om met Ctrl+C te kopiëren.
 
 Verdere punten:
@@ -72,6 +78,8 @@ Verdere punten:
 Handmatig: kopieer de map `custom_components/zigbee2mqtt_manager` naar `<config>/custom_components/`.
 
 HACS toont voorlopige versies (bijv. `1.1.1b1`) alleen met de optie „Bètaversies tonen”.
+
+**Snelle links (sinds 1.1.1b3):** [Repository toevoegen in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=Meine-smarte-Welt&repository=zigbee2mqtt_manager&category=integration) · [Integratie instellen](https://my.home-assistant.io/redirect/config_flow_start/?domain=zigbee2mqtt_manager). Na het instellen toont Home Assistant eenmalig een melding over hoe de kaart op een dashboard komt; een kant-en-klare dashboardsjabloon staat in `examples/dashboard-zigbee.yaml`. Het dashboard wordt bewust **niet automatisch aangemaakt**: Home Assistant biedt integraties daarvoor geen openbare interface.
 
 ## De kaart
 
@@ -188,6 +196,14 @@ actions:
 
 `Apparaten`, `Offline apparaten`, `Apparaten met lage batterij`, `Apparaten met kritieke batterij`, `Beschikbare firmware-updates` en `Groepen`. De sensoren voor offline, batterij en updates bevatten de apparatenlijst als attribuut.
 
+### Verzamelstoring (binaire sensor „Storing”, sinds 1.1.1b3)
+
+Een binaire sensor (apparaatklasse `problem`) vat het netwerk samen in één status. Hij staat **aan** zodra de bridge offline is, een actief apparaat offline is, een batterij laag of kritiek is of (uit te schakelen) een firmware-update openstaat resp. (in te schakelen) een apparaat lang niets liet horen. Uitgeschakelde apparaten tellen niet mee. Bedoeld voor een kleine tegel op je startpagina die rood wordt en met een tik het Zigbee-dashboard opent (`examples/kachel-leitseite.yaml`).
+
+Attributen: `reasons` (`bridge_offline`, `offline`, `battery_low`, `battery_critical`, `update_available`, `stale`), `bridge_online`, `devices`, `offline`, `low_battery`, `critical_battery`, `updates_available`, `stale`, `disabled`, `stale_hours` en de namenlijsten `offline_devices`, `low_battery_devices`, `critical_battery_devices`, `update_devices`, `stale_devices`, `disabled_devices`.
+
+Onder **Configureren** kies je of firmware-updates (standaard: ja) en „lang niets gehoord” (standaard: nee) de storing activeren. De entiteits-ID hangt van de taal af (bij Engelse interface bijv. `binary_sensor.zigbee2mqtt_manager_zigbee2mqtt_problem`); zie Instellingen → Apparaten & services. Een automatisering met apparatenlijst staat in `examples/sensor-stoerung-automation.yaml`. De tellersensoren hierboven tellen ook zonder uitgeschakelde apparaten.
+
 ## Versieweergave en updatemelding
 
 De geïnstalleerde versie staat op drie plaatsen: in de kaart onder **Bridge (tandwiel) → App-versie**, bovenaan in de grafische kaarteditor en in het dialoogvenster **Configureren** van de integratie. Bij het starten en daarna elke 12 uur vraagt de integratie bij GitHub (`api.github.com`, nieuwste release, anders de hoogste versietag) of er een nieuwere versie is gepubliceerd. Is dat zo, dan wordt het gekleurd weergegeven: oranje rand en melding in de sectie, een oranje „↑” bij het tandwielpictogram, een waarschuwingsvak in de editor en een melding in het configuratiedialoogvenster. Het bijwerken zelf gaat zoals gewoonlijk via HACS. Met **Nu controleren** start je de controle direct. Is GitHub niet bereikbaar, dan verschijnt „Controle niet mogelijk”; de kaart werkt gewoon door.
@@ -221,7 +237,7 @@ Privacy: de meldingen bevatten apparaatnamen en batterijniveaus en blijven binne
 
 ## Instellingen van de integratie
 
-Onder **Configureren** (met weergave van de geïnstalleerde versie): drempel „batterij laag”, drempel „batterij kritiek” (moet kleiner of gelijk zijn) gebeurtenissen aan/uit, meldingen naar het Notification Center aan/uit en de keuze van de soorten meldingen. Via **Opnieuw configureren** wijzig je het base-topic.
+Onder **Configureren** (met weergave van de geïnstalleerde versie): drempel „batterij laag”, drempel „batterij kritiek” (moet kleiner of gelijk zijn) gebeurtenissen aan/uit, meldingen naar het Notification Center aan/uit en de keuze van de soorten meldingen. Via **Opnieuw configureren** wijzig je het base-topic. Sinds 1.1.1b3 ook: „Lang niets gehoord na … uur” (0 = uit), „Firmware-updates activeren de storing” en „Lang niets gehoord activeert de storing”.
 
 ## Beveiliging
 
@@ -239,6 +255,7 @@ Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware,
 - **Nieuw in 1.1.0, teststatus:** groeperen, filters, schakelaars in de functies en kopiëren zijn getest met gesimuleerde gegevens en in een headless browser, **niet op echte hardware** en niet in de iOS-/Android-companion-app. Of Zigbee2MQTT elke schakelaar zoals verwacht accepteert (bijv. bij apparaten met meerdere endpoints), is open.
 - De apparaatklasse is een benadering uit de functies van het apparaat; bijzondere gevallen kunnen onder „Overig” of „Sensoren” terechtkomen.
 - Schakelaars werken direct en zonder bevestiging (ook configuratieschakelaars zoals het kinderslot). Het klembord vereist HTTPS.
+- **Nieuw in 1.1.1b3, teststatus:** storingssensor, koppeling van ruimte/HA-apparaat, opmerking, uitgeschakelde apparaten en „lang niets gehoord” zijn getest met gesimuleerde gegevens en registers (pytest) en in een gesimuleerde browser (jsdom), **niet op echte hardware, niet met een echt Notification Center en niet in browsers of de companion-app**. Het HA-apparaat wordt gevonden via het IEEE-adres in de MQTT-identifiers; bij ongebruikelijke discovery blijven ruimte en HA-apparaat leeg. De opmerking komt uit de Z2M-apparaatconfiguratie (`description`); of jouw Z2M-versie die in `bridge/info` meestuurt, is niet getest. „Lang niets gehoord” is informatief en geen eigen meldingstype in het Notification Center. Een dashboard kan niet automatisch worden aangemaakt (issue #6), alleen via de sjabloon.
 - **Nieuw in 1.1.1b2, teststatus:** de oplossingen voor flikkeren, scrollsprong en sneltoetsen zijn getest in een gesimuleerde browser (jsdom), **niet in Safari, Chrome, Firefox of de companion-app en niet met 75 echte apparaten**. Waarden zoals „laatst gezien” en signaal worden daardoor hooguit elke 2 seconden ververst.
 - **Nieuw in 1.1.1b1, teststatus:** de koppeling met het Notification Center is getest met gesimuleerde gebeurtenissen en gegevens, **niet tegen een echt Notification Center en niet op echte hardware**. Herstart de bridge, dan kunnen apparaten afhankelijk van de beschikbaarheidsinstelling van Zigbee2MQTT kort als offline worden gemeld en daarna weer worden gesloten. HACS toont voorlopige versies alleen met de optie „Bètaversies tonen”.
 
@@ -262,6 +279,7 @@ Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware,
 
 | Versie | Wijzigingen |
 |---|---|
+| **1.1.1b3** (voorlopige versie) | Opgelost (issue #7): in Zigbee2MQTT **uitgeschakelde apparaten** tellen niet meer als offline (eigen status „Uitgeschakeld”, niet in tellers, sensoren en Notification Center). Opgelost (issue #4): koppeling van HA-apparaten zonder de verouderde `device_registry.devices`-mapping. Nieuw: **verzamelstoring** als binaire sensor (apparaatklasse `problem`) met alle tellers en apparatenlijsten als attributen; **ruimte**, **HA-apparaat** en **opmerking** in lijst, popup en zoeken, groeperen op **ruimte**; **„lang niets gehoord”** (chip, filter, badge, instelbare uren); hulp bij het instellen (my.home-assistant.io-links, eenmalige melding na het instellen, dashboardsjabloon in `examples`). Issue #6: een automatisch aangemaakt dashboard is niet inbegrepen. |
 | **1.1.1b2** (voorlopige versie) | Opgelost (issue #5): de kaart **flikkerde en sprong tijdens het scrollen naar boven**, omdat hij bij elke gegevensupdate volledig opnieuw werd getekend (afbeeldingen laadden opnieuw, de pagina werd kort lager). Nu worden alleen gewijzigde delen bijgewerkt: afbeeldingen, rijen, accordeons en invoerfocus blijven staan, bij ongewijzigde inhoud wordt niets getekend en gegevensgestuurd hertekenen gebeurt hooguit elke 2 seconden. Opgelost: bij **typen in zoekveld en andere velden op de desktop** werden sneltoetsen van Home Assistant geactiveerd (bijv. „e” opende de entiteitenzoeker); toetsgebeurtenissen uit invoervelden bereiken Home Assistant niet meer. |
 | **1.1.1b1** (voorlopige versie) | Nieuw: **koppeling met het Notification Center** (optioneel, interface schema 1) met zeven soorten meldingen (bridge offline, batterij kritiek, apparaat offline, batterij laag, firmware-update, nieuw apparaat, apparaat heeft het netwerk verlaten), een hoofdschakelaar en een schakelaar per soort in de kaart en in het dialoogvenster Configureren. De updatecontrole herkent **voorlopige versies** (`1.1.1b1` < `1.1.1rc1` < `1.1.1`): wie een bèta gebruikt hoort van de volgende bèta; wie een definitieve versie gebruikt ziet geen voorlopige versies. **Frans en Spaans** toegevoegd (kaart, integratie, README). Wijzigingen aan de schakelaars van het Notification Center laden de integratie niet meer opnieuw. Opgelost: Engelse resten in de Duitse teksten (`strings.json`). |
 | **1.1.0** | Nieuw: lijsten **groeperen** per fabrikant of apparaatklasse (accordeon) en **filteren** (status online/offline, voeding, signaal, netwerkrol, firmware, laatst gezien, zonder Zigbee-groep, fabrikant, apparaatklasse; actieve filters als chips). Schrijfbare **schakelaars** onder „Functies (expose)” kun je direct omzetten. Nieuwe popupsectie **Entiteiten (voor automatiseringen)** en kopieerknoppen voor de entiteitsnamen. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: nieuwe actie `set_expose` (alleen beheerders, waarden worden gecontroleerd) en een apparaatklasse per apparaat. |
@@ -275,14 +293,14 @@ Elk `.py`-, `.js`- en `.yaml`-bestand heeft op de eerste regel een SHA-256-hash 
 
 | Bestand | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `030826f739709dc575398ab4142fb7bc81262b419fab3176d6f07e69db352617` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `de86d629e203290c8c213a85f8d8f3094c51be023d06623a0bb5a82b503b6f5f` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `1e8f4f5937dbb64352973c67dd872610781a9540f7f1db4ff10b8ef734682d69` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `6c434b2e5ed8025cc766c7f3afff3fd775c0caf5defb76195c2db67f3a62ffef` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e8ef9b7f09651b6bdd096855de98c6a439c36ab48830bc785c351dd2efb5f5d0` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `12ab5093a5780719fd93b05b7bd645e734e91ce49ca5b1e75d03817029f27226` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `9f0e55a3edbaf1ac86d48750d5f0705b7bbdf57768b37f38bc682801bf1ca9a2` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `1e8f4f5937dbb64352973c67dd872610781a9540f7f1db4ff10b8ef734682d69` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `7c54b7a85802122d88bc3bf80c38e95c0b408fb1892bccc00be92eddaca3586e` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `090cbad22976fa99c197324ca0bb41264b390f192474fb4ed607212f13a6fa0c` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `646089cc42728dfa6bbebb34f8f29ee6903d9ff0879c8836190bc5fbdb59495a` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `015ab2724073bef7a708828cf883e87d020049ba9327b40ee8aaa6af88b86ece` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Licentie

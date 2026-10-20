@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 0fd95d9f896b5602dfdbad2a9215771b8ad8e7c8a181d4dc3a56077fedaba08a
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6cd67ccbed033691fddf12a4a723c82fa5e16feda8b29aa30d8ea7f4530d771b
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -42,7 +42,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.1.1b2";
+const CARD_VERSION = "1.1.1b3";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
@@ -81,6 +81,7 @@ const GROUP_BY_OPTIONS = [
   { value: "none", label: "group_none" },
   { value: "vendor", label: "group_vendor" },
   { value: "class", label: "group_class" },
+  { value: "area", label: "group_area" },
 ];
 // Die Klasse leitet das Backend aus den Expose-Funktionen ab (Reihenfolge = Anzeige).
 const DEVICE_CLASSES = ["light", "switch", "climate", "cover", "lock", "fan", "remote", "sensor", "other"];
@@ -98,7 +99,7 @@ const CLASS_ICON = {
 const UNKNOWN_VENDOR = "__unknown__";
 // Feste Filter (Auswahl: Wert -> Textschlüssel). Hersteller und Klasse werden aus den Daten gebildet.
 const FILTER_FIELDS = [
-  { key: "status", label: "flt_status", options: [["online", "flt_online"], ["offline", "flt_offline"]] },
+  { key: "status", label: "flt_status", options: [["online", "flt_online"], ["offline", "flt_offline"], ["stale", "flt_stale"], ["disabled", "flt_disabled"]] },
   {
     key: "power",
     label: "flt_power",
@@ -201,6 +202,8 @@ const CONFIG_DEFAULTS = {
   show_vendor: true,
   show_ieee: false,
   show_lqi: true,
+  show_area: true,
+  show_comment: false,
   show_battery_value: true,
   show_last_seen: true,
   // Bearbeiten
@@ -322,6 +325,7 @@ const I18N = {
     instance: "Instanz (Stick)",
     // Gruppieren und Filtern (seit 1.1.0)
     group_by: "Gruppieren", group_none: "Keine Gruppierung", group_vendor: "Hersteller", group_class: "Geräteklasse", group_unknown: "Unbekannt",
+    flt_disabled: "Deaktiviert", flt_stale: "Lange nichts gehört", chip_stale: "Lange still", stale_badge: "lange still", status_disabled: "In Zigbee2MQTT deaktiviert", group_area: "Raum", group_no_area: "Ohne Raum", f_area: "Raum", f_ha_device: "HA-Gerät", f_comment: "Kommentar", status_silent: "Online laut Zigbee2MQTT, aber lange nichts gehört – zuletzt gesehen {t}.",
     expand_all: "Alle aufklappen", collapse_all: "Alle zuklappen",
     filters: "Filter", filter_active: "{n} aktiv", filter_reset: "Alle Filter zurücksetzen", filter_remove: "Filter entfernen",
     flt_all: "Alle", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
@@ -425,6 +429,7 @@ const I18N = {
     instance: "Instance (stick)",
     // Grouping and filters (since 1.1.0)
     group_by: "Group by", group_none: "No grouping", group_vendor: "Manufacturer", group_class: "Device class", group_unknown: "Unknown",
+    flt_disabled: "Disabled", flt_stale: "Not heard for long", chip_stale: "Silent", stale_badge: "silent", status_disabled: "Disabled in Zigbee2MQTT", group_area: "Area", group_no_area: "No area", f_area: "Area", f_ha_device: "HA device", f_comment: "Comment", status_silent: "Online according to Zigbee2MQTT, but not heard from in a long time – last seen {t}.",
     expand_all: "Expand all", collapse_all: "Collapse all",
     filters: "Filters", filter_active: "{n} active", filter_reset: "Reset all filters", filter_remove: "Remove filter",
     flt_all: "All", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
@@ -536,6 +541,7 @@ const I18N = {
     instance: "Instantie (stick)",
     // Groeperen en filteren (sinds 1.1.0)
     group_by: "Groeperen", group_none: "Geen groepering", group_vendor: "Fabrikant", group_class: "Apparaatklasse", group_unknown: "Onbekend",
+    flt_disabled: "Uitgeschakeld", flt_stale: "Lang niets gehoord", chip_stale: "Stil", stale_badge: "stil", status_disabled: "Uitgeschakeld in Zigbee2MQTT", group_area: "Ruimte", group_no_area: "Zonder ruimte", f_area: "Ruimte", f_ha_device: "HA-apparaat", f_comment: "Opmerking", status_silent: "Online volgens Zigbee2MQTT, maar lang niets gehoord – laatst gezien {t}.",
     expand_all: "Alles uitklappen", collapse_all: "Alles inklappen",
     filters: "Filters", filter_active: "{n} actief", filter_reset: "Alle filters wissen", filter_remove: "Filter verwijderen",
     flt_all: "Alle", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
@@ -647,6 +653,7 @@ const I18N = {
     instance: "Instance (clé)",
     // Regrouper et filtrer (depuis 1.1.0)
     group_by: "Regrouper", group_none: "Aucun regroupement", group_vendor: "Fabricant", group_class: "Classe d'appareil", group_unknown: "Inconnu",
+    flt_disabled: "Désactivé", flt_stale: "Silencieux depuis longtemps", chip_stale: "Silencieux", stale_badge: "silencieux", status_disabled: "Désactivé dans Zigbee2MQTT", group_area: "Pièce", group_no_area: "Sans pièce", f_area: "Pièce", f_ha_device: "Appareil HA", f_comment: "Commentaire", status_silent: "En ligne selon Zigbee2MQTT, mais sans nouvelles depuis longtemps – dernière activité {t}.",
     expand_all: "Tout déplier", collapse_all: "Tout replier",
     filters: "Filtres", filter_active: "{n} actifs", filter_reset: "Réinitialiser tous les filtres", filter_remove: "Retirer le filtre",
     flt_all: "Tous", flt_status: "État", flt_online: "En ligne", flt_offline: "Hors ligne",
@@ -758,6 +765,7 @@ const I18N = {
     instance: "Instancia (clave)",
     // Agrupar y filtrar (desde 1.1.0)
     group_by: "Agrupar", group_none: "Sin agrupar", group_vendor: "Fabricante", group_class: "Clase de dispositivo", group_unknown: "Desconocido",
+    flt_disabled: "Desactivado", flt_stale: "Sin noticias desde hace tiempo", chip_stale: "Silencioso", stale_badge: "silencioso", status_disabled: "Desactivado en Zigbee2MQTT", group_area: "Área", group_no_area: "Sin área", f_area: "Área", f_ha_device: "Dispositivo HA", f_comment: "Comentario", status_silent: "En línea según Zigbee2MQTT, pero sin noticias desde hace tiempo – última actividad {t}.",
     expand_all: "Desplegar todo", collapse_all: "Plegar todo",
     filters: "Filtros", filter_active: "{n} activos", filter_reset: "Restablecer todos los filtros", filter_remove: "Quitar filtro",
     flt_all: "Todos", flt_status: "Estado", flt_online: "En línea", flt_offline: "Sin conexión",
@@ -1824,7 +1832,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     else if (tab === "bindings") list = list.filter((d) => d.bindings.length);
 
     if (tab === "devices") {
-      if (this._filter === "offline") list = list.filter((d) => d.available === false);
+      if (this._filter === "offline") list = list.filter((d) => this._isOffline(d));
+      else if (this._filter === "stale") list = list.filter((d) => d.stale === true && !d.disabled);
       else if (this._filter === "low") {
         const t = this._data.stats.low_battery_threshold;
         list = list.filter((d) => d.battery !== null && d.battery !== undefined && d.battery < t);
@@ -1836,7 +1845,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const q = this._search;
     if (q) {
       list = list.filter((d) =>
-        [d.name, d.vendor, d.model, d.ieee, d.description].some((v) => String(v || "").toLowerCase().includes(q))
+        [d.name, d.vendor, d.model, d.ieee, d.description, d.comment, d.area, d.ha_device].some((v) => String(v || "").toLowerCase().includes(q))
       );
     }
 
@@ -1853,7 +1862,13 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   }
 
   // Status wie der Statuspunkt: Z2M-Verfügbarkeit hat Vorrang, sonst aus "zuletzt gesehen" abgeleitet.
+  // Deaktivierte Geräte (in Z2M abgeschaltet) sind nicht "offline" – sie werden getrennt geführt.
+  _isOffline(d) {
+    return !d.disabled && d.available === false;
+  }
+
   _statusOf(d) {
+    if (d.disabled) return "disabled";
     if (d.available === true) return "online";
     if (d.available === false) return "offline";
     const ts = d.last_seen ? Date.parse(d.last_seen) : NaN;
@@ -1874,6 +1889,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         const v = flt[k];
         switch (k) {
           case "status":
+            if (v === "stale") return d.stale === true && !d.disabled;
             return this._statusOf(d) === v;
           case "power": {
             const bat = (d.battery !== null && d.battery !== undefined) || /battery/i.test(String(d.power_source || ""));
@@ -1975,6 +1991,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     return `<div class="chips">
       ${chip("all", s.total, this._t("chip_devices"), "")}
       ${chip("offline", s.offline, this._t("chip_offline"), "var(--zmm-color-error)")}
+      ${(s.stale || this._filter === "stale") ? chip("stale", s.stale || 0, this._t("chip_stale"), "var(--zmm-color-warning)") : ""}
       ${chip("low", s.low_battery, this._t("chip_low_battery"), "var(--zmm-color-warning)")}
       ${chip("updates", s.updates_available, this._t("chip_updates"), "var(--zmm-color-info)")}
     </div>`;
@@ -2075,9 +2092,12 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const t = (k, v) => this._t(k, v);
     let cls = "";
     let tip = t("status_unknown");
-    if (d.available === true) {
-      cls = "on";
-      tip = t("status_online");
+    if (d.disabled) {
+      cls = "";
+      tip = t("status_disabled");
+    } else if (d.available === true) {
+      cls = d.stale ? "stale" : "on";
+      tip = d.stale ? t("status_silent", { t: this._relTime(d.last_seen) }) : t("status_online");
     } else if (d.available === false) {
       cls = "off";
       tip = t("status_offline");
@@ -2116,18 +2136,22 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         cfg.show_model ? d.model : "",
         cfg.show_vendor ? d.vendor : "",
         cfg.show_ieee ? d.ieee : "",
+        cfg.show_area ? d.area : "",
       ].filter(Boolean).map((v) => `<span>${esc(v)}</span>`).join("");
       const lqi =
         cfg.show_lqi && d.linkquality !== null && d.linkquality !== undefined
           ? `<span class="pill" style="--c:${this._lqiColor(d.linkquality)}">${esc(d.linkquality)}</span>`
           : "";
       const bat = cfg.show_battery_value && d.battery !== null && d.battery !== undefined ? `<span>${this._batteryBar(d.battery)}</span>` : "";
-      const seen = cfg.show_last_seen ? `<span class="optional">${esc(this._relTime(d.last_seen))}</span>` : "";
+      const seen = cfg.show_last_seen
+        ? `<span class="optional"${d.stale ? ' style="color:var(--zmm-color-warning)"' : ""}>${esc(this._relTime(d.last_seen))}</span>`
+        : "";
       extra = `${lqi}${bat}${seen}`;
     }
 
     const badges = [
-      d.available === false ? `<span class="badge" style="--c:var(--zmm-color-error)">${esc(this._t("offline"))}</span>` : "",
+      this._isOffline(d) ? `<span class="badge" style="--c:var(--zmm-color-error)">${esc(this._t("offline"))}</span>` : "",
+      d.stale && !d.disabled ? `<span class="badge" style="--c:var(--zmm-color-warning)">${esc(this._t("stale_badge"))}</span>` : "",
       d.interviewing ? `<span class="badge" style="--c:var(--zmm-color-warning)">${esc(this._t("interviewing"))}</span>` : "",
       d.disabled ? `<span class="badge">${esc(this._t("disabled"))}</span>` : "",
     ].join("");
@@ -2137,6 +2161,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       <div class="row-main">
         <div class="row-primary"><span class="row-name">${esc(d.name)}</span>${badges}</div>
         <div class="row-secondary">${secondary}</div>
+        ${cfg.show_comment && d.comment ? `<div class="row-secondary row-comment"><span>${esc(d.comment)}</span></div>` : ""}
       </div>
       <div class="row-extra">${extra}</div>
     </div>`;
@@ -2166,7 +2191,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   _renderGrouped(tab, list, mode) {
     const buckets = new Map();
     for (const d of list) {
-      const k = mode === "vendor" ? d.vendor || "" : d.device_class || "other";
+      const k = mode === "vendor" ? d.vendor || "" : mode === "area" ? d.area || "" : d.device_class || "other";
       if (!buckets.has(k)) buckets.set(k, []);
       buckets.get(k).push(d);
     }
@@ -2182,10 +2207,10 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const html = keys
       .map((k) => {
         const items = buckets.get(k);
-        const off = items.filter((d) => d.available === false).length;
+        const off = items.filter((d) => this._isOffline(d)).length;
         const meta = off ? `${items.length} · ${off} ${this._t("offline")}` : String(items.length);
-        const label = mode === "vendor" ? k || this._t("group_unknown") : this._t(`cls_${k}`);
-        const icon = mode === "vendor" ? "mdi:factory" : CLASS_ICON[k] || CLASS_ICON.other;
+        const label = mode === "vendor" ? k || this._t("group_unknown") : mode === "area" ? k || this._t("group_no_area") : this._t(`cls_${k}`);
+        const icon = mode === "vendor" ? "mdi:factory" : mode === "area" ? "mdi:floor-plan" : CLASS_ICON[k] || CLASS_ICON.other;
         const key = `g:${tab}:${mode}:${k}`;
         this._groupKeys.push(key);
         return this._accordion(key, icon, label, `<div class="rows">${items.map((d) => this._deviceRow(d, tab)).join("")}</div>`, {
@@ -2764,6 +2789,9 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       [t("f_vendor"), d.vendor],
       [t("f_model"), d.model],
       [t("f_description"), d.description],
+      [t("f_comment"), d.comment],
+      [t("f_area"), d.area],
+      [t("f_ha_device"), d.ha_device],
       [t("f_type"), d.type ? (I18N[this._lang]?.[`type_${d.type}`] ?? d.type) : null],
       [t("f_ieee"), d.ieee],
       [t("f_nwk"), d.network_address],
@@ -3128,6 +3156,8 @@ const EDITOR_LABELS = {
   show_vendor: "Hersteller anzeigen",
   show_ieee: "IEEE-Adresse anzeigen",
   show_lqi: "Signalqualität anzeigen",
+  show_area: "Raum (aus Home Assistant) anzeigen",
+  show_comment: "Kommentar aus Zigbee2MQTT anzeigen",
   show_battery_value: "Batteriestand anzeigen",
   show_last_seen: "'Zuletzt gesehen' anzeigen",
   read_only: "Nur lesen (alle Bedienelemente zum Ändern ausblenden)",
@@ -3250,6 +3280,8 @@ const EDITOR_SCHEMA = [
           bool("show_vendor"),
           bool("show_ieee"),
           bool("show_lqi"),
+          bool("show_area"),
+          bool("show_comment"),
           bool("show_battery_value"),
           bool("show_last_seen"),
         ],

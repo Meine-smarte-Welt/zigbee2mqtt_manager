@@ -42,13 +42,19 @@
           "critical_battery_threshold": "Threshold for “critical battery” (%)",
           "fire_events": "Fire Home Assistant events",
           "nc_enabled": "Send notifications to the Notification Center",
-          "nc_types": "Notification types"
+          "nc_types": "Notification types",
+          "stale_hours": "“Not heard from” after (hours)",
+          "problem_include_updates": "Updates count as a problem",
+          "problem_include_stale": "“Not heard from” counts as a problem"
         },
         "data_description": {
           "critical_battery_threshold": "Must be less than or equal to the “low battery” threshold.",
           "fire_events": "Fires e.g. zigbee2mqtt_manager_device_offline, _battery_low and _update_available – usable as automation triggers.",
           "nc_enabled": "Only effective if the “Notification Center” integration is installed. The main switch turns all notifications from this manager on or off.",
-          "nc_types": "Choose which notifications are sent. The list is sorted by urgency, critical items first."
+          "nc_types": "Choose which notifications are sent. The list is sorted by urgency, critical items first.",
+          "stale_hours": "Hours without a message after which a device counts as “not heard from” (0 = off). Devices Zigbee2MQTT already reports as offline are counted under offline.",
+          "problem_include_updates": "The “Problem” sensor also turns on when a firmware update is available.",
+          "problem_include_stale": "The “Problem” sensor also turns on when a device has been silent longer than the set time. Be careful with devices that rarely send."
         }
       }
     },
@@ -75,6 +81,11 @@
       },
       "groups": {
         "name": "Groups"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
       }
     }
   },
