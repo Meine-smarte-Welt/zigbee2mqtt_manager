@@ -40,11 +40,15 @@
         "data": {
           "low_battery_threshold": "Drempel voor „batterij laag” (%)",
           "critical_battery_threshold": "Drempel voor „batterij kritiek” (%)",
-          "fire_events": "Home Assistant-gebeurtenissen activeren"
+          "fire_events": "Home Assistant-gebeurtenissen activeren",
+          "nc_enabled": "Meldingen naar het Notification Center sturen",
+          "nc_types": "Soorten meldingen"
         },
         "data_description": {
           "critical_battery_threshold": "Moet kleiner dan of gelijk aan de drempel voor „batterij laag” zijn.",
-          "fire_events": "Activeert o.a. zigbee2mqtt_manager_device_offline, _battery_low en _update_available – bruikbaar als automatiseringstrigger."
+          "fire_events": "Activeert o.a. zigbee2mqtt_manager_device_offline, _battery_low en _update_available – bruikbaar als automatiseringstrigger.",
+          "nc_enabled": "Alleen actief als de integratie „Notification Center” is geïnstalleerd. De hoofdschakelaar zet alle meldingen van deze manager aan of uit.",
+          "nc_types": "Kies welke meldingen worden verstuurd. De lijst is op urgentie gesorteerd, kritieke meldingen staan bovenaan."
         }
       }
     },

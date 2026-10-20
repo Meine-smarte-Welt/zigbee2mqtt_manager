@@ -40,11 +40,15 @@
         "data": {
           "low_battery_threshold": "Threshold for “low battery” (%)",
           "critical_battery_threshold": "Threshold for “critical battery” (%)",
-          "fire_events": "Fire Home Assistant events"
+          "fire_events": "Fire Home Assistant events",
+          "nc_enabled": "Send notifications to the Notification Center",
+          "nc_types": "Notification types"
         },
         "data_description": {
           "critical_battery_threshold": "Must be less than or equal to the “low battery” threshold.",
-          "fire_events": "Fires e.g. zigbee2mqtt_manager_device_offline, _battery_low and _update_available – usable as automation triggers."
+          "fire_events": "Fires e.g. zigbee2mqtt_manager_device_offline, _battery_low and _update_available – usable as automation triggers.",
+          "nc_enabled": "Only effective if the “Notification Center” integration is installed. The main switch turns all notifications from this manager on or off.",
+          "nc_types": "Choose which notifications are sent. The list is sorted by urgency, critical items first."
         }
       }
     },

@@ -1,0 +1,119 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Relie le gestionnaire à ton instance Zigbee2MQTT via l'intégration MQTT.",
+        "data": {
+          "base_topic": "Base topic",
+          "low_battery_threshold": "Seuil « batterie faible » (%)"
+        },
+        "data_description": {
+          "base_topic": "Correspond à `mqtt.base_topic` dans la configuration de Zigbee2MQTT (par défaut : zigbee2mqtt)."
+        }
+      },
+      "reconfigure": {
+        "title": "Modifier le base topic",
+        "data": {
+          "base_topic": "Base topic"
+        },
+        "data_description": {
+          "base_topic": "Doit correspondre à `mqtt.base_topic` dans Zigbee2MQTT."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Base topic invalide (vide ou contenant # ou +).",
+      "topic_overlap": "Les base topics de plusieurs instances ne doivent pas être imbriqués (p. ex. « zigbee2mqtt » et « zigbee2mqtt/stick2 »). Utilise des topics séparés comme « zigbee2mqtt » et « zigbee2mqtt2 »."
+    },
+    "abort": {
+      "already_configured": "Une entrée existe déjà pour ce base topic.",
+      "mqtt_unavailable": "L'intégration MQTT n'est pas configurée ou pas connectée.",
+      "reconfigure_successful": "Le base topic a été modifié."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – paramètres",
+        "description": "Version installée : **{version}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Seuil « batterie faible » (%)",
+          "critical_battery_threshold": "Seuil « batterie critique » (%)",
+          "fire_events": "Déclencher des événements Home Assistant",
+          "nc_enabled": "Envoyer les notifications au Notification Center",
+          "nc_types": "Types de notifications"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Doit être inférieur ou égal au seuil « batterie faible ».",
+          "fire_events": "Déclenche p. ex. zigbee2mqtt_manager_device_offline, _battery_low et _update_available – utilisable comme déclencheur d'automatisation.",
+          "nc_enabled": "Actif uniquement si l'intégration « Notification Center » est installée. L'interrupteur principal active ou désactive toutes les notifications de ce gestionnaire.",
+          "nc_types": "Choisissez les notifications envoyées. La liste est triée par urgence, les notifications critiques en premier."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "Le seuil critique ne doit pas dépasser le seuil « faible »."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Appareils"
+      },
+      "offline": {
+        "name": "Appareils hors ligne"
+      },
+      "low_battery": {
+        "name": "Appareils à batterie faible"
+      },
+      "critical_battery": {
+        "name": "Appareils à batterie critique"
+      },
+      "updates_available": {
+        "name": "Mises à jour du firmware disponibles"
+      },
+      "groups": {
+        "name": "Groupes"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Contrôler l'appairage",
+      "description": "Démarre ou arrête le mode d'appairage du bridge Zigbee2MQTT.",
+      "fields": {
+        "entry_id": {
+          "name": "ID d'entrée",
+          "description": "Nécessaire uniquement avec plusieurs instances."
+        },
+        "enabled": {
+          "name": "Actif",
+          "description": "Active ou désactive l'appairage."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Durée en secondes (10–254)."
+        },
+        "base_topic": {
+          "name": "Base topic",
+          "description": "Nécessaire uniquement avec plusieurs instances. Alternative à l'ID d'entrée."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Rechercher des mises à jour du firmware",
+      "description": "Recherche en arrière-plan des mises à jour pour tous les appareils compatibles OTA.",
+      "fields": {
+        "entry_id": {
+          "name": "ID d'entrée",
+          "description": "Nécessaire uniquement avec plusieurs instances."
+        },
+        "base_topic": {
+          "name": "Base topic",
+          "description": "Nécessaire uniquement avec plusieurs instances. Alternative à l'ID d'entrée."
+        }
+      }
+    }
+  }
+}

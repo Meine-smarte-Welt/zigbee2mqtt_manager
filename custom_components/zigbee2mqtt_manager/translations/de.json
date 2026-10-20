@@ -40,11 +40,15 @@
         "data": {
           "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)",
           "critical_battery_threshold": "Schwelle für „Batterie kritisch“ (%)",
-          "fire_events": "Home-Assistant-Ereignisse auslösen"
+          "fire_events": "Home-Assistant-Ereignisse auslösen",
+          "nc_enabled": "Meldungen ans Notification Center senden",
+          "nc_types": "Meldungsarten"
         },
         "data_description": {
           "critical_battery_threshold": "Muss kleiner oder gleich der Schwelle für „Batterie niedrig“ sein.",
-          "fire_events": "Löst z. B. zigbee2mqtt_manager_device_offline, _battery_low und _update_available aus – nutzbar als Automations-Auslöser."
+          "fire_events": "Löst z. B. zigbee2mqtt_manager_device_offline, _battery_low und _update_available aus – nutzbar als Automations-Auslöser.",
+          "nc_enabled": "Nur wirksam, wenn die Integration „Notification Center“ installiert ist. Der Hauptschalter schaltet alle Meldungen dieses Managers ein oder aus.",
+          "nc_types": "Auswahl der Meldungen, die gesendet werden. Die Liste ist nach Dringlichkeit sortiert, Kritisches steht oben."
         }
       }
     },

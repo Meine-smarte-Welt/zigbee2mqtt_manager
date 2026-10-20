@@ -1,0 +1,119 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Conecta el gestor con tu instancia de Zigbee2MQTT mediante la integración MQTT.",
+        "data": {
+          "base_topic": "Base topic",
+          "low_battery_threshold": "Umbral de «batería baja» (%)"
+        },
+        "data_description": {
+          "base_topic": "Corresponde a `mqtt.base_topic` en la configuración de Zigbee2MQTT (por defecto: zigbee2mqtt)."
+        }
+      },
+      "reconfigure": {
+        "title": "Cambiar el base topic",
+        "data": {
+          "base_topic": "Base topic"
+        },
+        "data_description": {
+          "base_topic": "Debe coincidir con `mqtt.base_topic` en Zigbee2MQTT."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Base topic no válido (vacío o con # o +).",
+      "topic_overlap": "Los base topics de varias instancias no pueden estar anidados (p. ej. «zigbee2mqtt» y «zigbee2mqtt/stick2»). Usa topics separados como «zigbee2mqtt» y «zigbee2mqtt2»."
+    },
+    "abort": {
+      "already_configured": "Ya existe una entrada para este base topic.",
+      "mqtt_unavailable": "La integración MQTT no está configurada o no está conectada.",
+      "reconfigure_successful": "El base topic se ha cambiado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – ajustes",
+        "description": "Versión instalada: **{version}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Umbral de «batería baja» (%)",
+          "critical_battery_threshold": "Umbral de «batería crítica» (%)",
+          "fire_events": "Disparar eventos de Home Assistant",
+          "nc_enabled": "Enviar notificaciones al Notification Center",
+          "nc_types": "Tipos de notificación"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Debe ser menor o igual que el umbral de «batería baja».",
+          "fire_events": "Dispara p. ej. zigbee2mqtt_manager_device_offline, _battery_low y _update_available – utilizable como disparador de automatizaciones.",
+          "nc_enabled": "Solo funciona si la integración «Notification Center» está instalada. El interruptor principal activa o desactiva todas las notificaciones de este gestor.",
+          "nc_types": "Elige qué notificaciones se envían. La lista está ordenada por urgencia, primero las críticas."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "El umbral crítico no puede superar el umbral de «baja»."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Dispositivos"
+      },
+      "offline": {
+        "name": "Dispositivos sin conexión"
+      },
+      "low_battery": {
+        "name": "Dispositivos con batería baja"
+      },
+      "critical_battery": {
+        "name": "Dispositivos con batería crítica"
+      },
+      "updates_available": {
+        "name": "Actualizaciones de firmware disponibles"
+      },
+      "groups": {
+        "name": "Grupos"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Controlar el emparejamiento",
+      "description": "Inicia o detiene el modo de emparejamiento del bridge de Zigbee2MQTT.",
+      "fields": {
+        "entry_id": {
+          "name": "ID de entrada",
+          "description": "Solo necesario con varias instancias."
+        },
+        "enabled": {
+          "name": "Activo",
+          "description": "Activa o desactiva el emparejamiento."
+        },
+        "duration": {
+          "name": "Duración",
+          "description": "Duración en segundos (10–254)."
+        },
+        "base_topic": {
+          "name": "Base topic",
+          "description": "Solo necesario con varias instancias. Alternativa al ID de entrada."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Buscar actualizaciones de firmware",
+      "description": "Busca en segundo plano actualizaciones de todos los dispositivos compatibles con OTA.",
+      "fields": {
+        "entry_id": {
+          "name": "ID de entrada",
+          "description": "Solo necesario con varias instancias."
+        },
+        "base_topic": {
+          "name": "Base topic",
+          "description": "Solo necesario con varias instancias. Alternativa al ID de entrada."
+        }
+      }
+    }
+  }
+}
