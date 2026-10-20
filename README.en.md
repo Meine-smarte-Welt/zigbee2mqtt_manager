@@ -1,4 +1,4 @@
-🇩🇪 [Deutsch](README.md) · 🇬🇧 English · [🇳🇱 Nederlands](README.nl.md)
+[🇩🇪 Deutsch](README.md) · 🇬🇧 English · [🇳🇱 Nederlands](README.nl.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md)
 
 # Zigbee2MQTT Manager for Home Assistant
 
@@ -16,6 +16,7 @@ Manage Zigbee2MQTT without leaving Home Assistant: devices, batteries, firmware 
 - [Events for automations](#events-for-automations)
 - [Sensors](#sensors)
 - [Version display and update notice](#version-display-and-update-notice)
+- [Notification Center (optional)](#notification-center-optional)
 - [Integration settings](#integration-settings)
 - [Security](#security)
 - [Known limitations](#known-limitations)
@@ -34,7 +35,7 @@ The card has six categories in an icon bar (icons only below roughly 480 px card
 | **Updates** | Installed vs. available firmware; "check all" and "install all one after another" as a background job with progress and cancel |
 | **Groups** | Create, rename, delete; add and remove members |
 | **Bindings** | Overview of all device bindings; unbind; bind again in the device popup |
-| **Bridge** (cog) | **App version** (integration and card, colored notice when a new version exists), status, coordinator, pairing, bridge options, restart, event log |
+| **Bridge** (cog) | **App version** (integration and card, colored notice when a new version exists), status, coordinator, pairing, bridge options, restart, event log, **Notification Center** |
 
 **Device popup** (tap a row) with accordion sections: Information · **Features (expose)** · **Entities (for automations)** · Rename (with the list of affected HA entities) · Device options (form from the Z2M option schema) · Firmware · Bindings · Groups · Remove.
 
@@ -51,7 +52,7 @@ Further points:
 - **Two-click confirmation** instead of a browser dialog for risky actions (remove, update, restart, unbind, delete).
 - **Read only:** `read_only: true` hides all controls that change something (wall tablets).
 - **Zoom:** `zoom` scales the whole card.
-- **Languages:** German, English and Dutch (following the Home Assistant language).
+- **Languages:** German, English, Dutch, French and Spanish (following the Home Assistant language).
 - **Diagnostics download** with anonymized names and IEEE addresses.
 
 ## Requirements
@@ -69,6 +70,8 @@ Further points:
 4. Enter the base topic (default `zigbee2mqtt`) and choose the threshold for "low battery"
 
 Manual: copy the folder `custom_components/zigbee2mqtt_manager` to `<config>/custom_components/`.
+
+HACS shows pre-releases (e.g. `1.1.1b1`) only with the option "Show beta versions".
 
 ## The card
 
@@ -189,15 +192,40 @@ actions:
 
 The installed version is shown in three places: in the card under **Bridge (cog) → App version**, at the top of the graphical card editor, and in the integration's **Configure** dialog. At startup and every 12 hours the integration asks GitHub (`api.github.com`, latest release, falling back to the highest version tag) whether a newer version was published. If so, it is highlighted: orange frame and notice in the section, an orange "↑" on the cog icon, a warning box in the editor and a note in the Configure dialog. Updating itself works as usual through HACS. **Check now** triggers the query immediately. If GitHub is not reachable, "Check not possible" appears; the card keeps working.
 
+**Pre-releases:** GitHub's `releases/latest` never returns pre-releases. If you run a pre-release yourself (`b`/`rc`), the integration therefore also checks the list of recent releases and tells you about the next beta (`1.1.1b1` < `1.1.1rc1` < `1.1.1`). With a final version installed, pre-releases are not shown.
+
 If card and integration versions differ (stale browser cache), this is marked orange as well.
+
+## Notification Center (optional)
+
+**New in 1.1.1b1 (pre-release).** If the **Notification Center** integration is installed, Zigbee2MQTT Manager can send its notifications there. The Notification Center collects the notifications of all connected integrations and passes them on (push, voice, etc.). Without it nothing changes: the manager works as before, nothing is sent, and the switches have no effect.
+
+The connection follows the shared interface (schema 1) over the Home Assistant event bus. The manager registers itself at startup and on request and reconciles its starting state. It is **on** by default and can be controlled in two places:
+
+- **Card:** Bridge (gear) → **Notification Center** section with a main switch and one switch per notification type (administrators only, not in read-only mode). The change takes effect immediately, without reloading the integration.
+- **Configure** dialog of the integration: "Send notifications to the Notification Center" and the choice of notification types.
+
+| Notification type | Urgency | When |
+|---|---|---|
+| Bridge offline | critical | Zigbee2MQTT reports the bridge as offline; closed as soon as it is online again |
+| Battery critical | critical | Battery level below the "critical battery" threshold |
+| Device offline | warning | Zigbee2MQTT reports the device as offline |
+| Battery low | warning | Battery level below the "low battery" threshold, but not below "critical" |
+| Firmware update available | info | A firmware update is available for the device |
+| New device | info | A device joined the network (once) |
+| Device left the network | info | A device left the network (once) |
+
+The existing thresholds from the integration options apply; there are no new thresholds. A device below the critical threshold appears only as "battery critical", not additionally as "low". A notification is created exactly once per change; when the condition ends (device back online, battery replaced), the notification is closed automatically. After startup the manager waits about 20 seconds after the device list before reporting the starting state; it is sent to the Notification Center as "initial" and does not cause a flood of push messages. The texts are available in German, English, Dutch, French and Spanish.
+
+Privacy: the notifications contain device names and battery levels and stay inside Home Assistant. Diagnostics and logs contain only counters per notification type, no contents.
 
 ## Integration settings
 
-Under **Configure** (showing the installed version): threshold "low battery", threshold "critical battery" (must be smaller or equal) and events on/off. **Reconfigure** changes the base topic.
+Under **Configure** (showing the installed version): threshold "low battery", threshold "critical battery" (must be smaller or equal) events on/off, notifications to the Notification Center on/off and the choice of notification types. **Reconfigure** changes the base topic.
 
 ## Security
 
-All write actions (rename, options, toggling features, remove, firmware, groups, bindings, pairing, restart, version check) and loading device details are restricted to **administrators** over WebSocket. Input is validated by the backend (duplicate names, unknown options, allowed bridge values). When toggling a feature, the backend also checks that it exists, is writable and that the value is exactly its on or off value. The card escapes all text; color values pass through an allowlist.
+All write actions (rename, options, toggling features, remove, firmware, groups, bindings, pairing, restart, version check, Notification Center settings) and loading device details are restricted to **administrators** over WebSocket. Input is validated by the backend (duplicate names, unknown options, allowed bridge values). When toggling a feature, the backend also checks that it exists, is writable and that the value is exactly its on or off value. The card escapes all text; color values pass through an allowlist.
 
 ## Known limitations
 
@@ -211,6 +239,8 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 - **New in 1.1.0, test status:** grouping, filters, switches in the features and copying were checked against simulated data and in a headless browser, **not on real hardware** and not in the iOS/Android companion app. Whether Zigbee2MQTT accepts every switch as expected (e.g. on devices with several endpoints) is open.
 - The device class is an approximation derived from the device's features; special cases may end up under "Other" or "Sensors".
 - Switches act immediately without confirmation (including configuration switches such as child lock). The clipboard requires HTTPS.
+- **New in 1.1.1b2, test status:** the fixes for flicker, scroll jump and keyboard shortcuts were checked in a simulated browser (jsdom), **not in Safari, Chrome, Firefox or the companion app and not with 75 real devices**. As a result, values such as "last seen" and signal refresh at most every 2 seconds.
+- **New in 1.1.1b1, test status:** the Notification Center connection was checked with simulated events and data, **not against a real Notification Center and not on real hardware**. When the bridge restarts, devices may briefly be reported offline and closed again, depending on the Zigbee2MQTT availability setting. HACS shows pre-releases only with the option "Show beta versions".
 
 ## Troubleshooting
 
@@ -225,12 +255,15 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 - **Bridge banner "version not supported":** Zigbee2MQTT 1.x is not supported.
 - **Copying does not work:** the browser only allows clipboard access over HTTPS (or `localhost`). Otherwise the text appears selected in a field in the popup: copy it with Ctrl+C.
 - **A switch in the features does nothing:** the command goes to `<base_topic>/<device>/set`. Check in Zigbee2MQTT whether the device is reachable; the card shows the value the device reports back.
+- **Nothing arrives in the Notification Center:** is the Notification Center integration installed and loaded? Are the main switch and the notification type turned on (card: Bridge → Notification Center)? After startup the manager waits about 20 seconds before sending the starting state.
 - Logs: set `custom_components.zigbee2mqtt_manager` to `debug`.
 
 ## Version history
 
 | Version | Changes |
 |---|---|
+| **1.1.1b2** (pre-release) | Fixed (issue #5): the card **flickered and jumped to the top while scrolling** because it was fully redrawn on every data update (images reloaded, the page briefly got shorter). Now only changed parts are updated: images, rows, accordions and input focus stay in place, nothing is drawn when the content is unchanged, and data-driven redraws happen at most every 2 seconds. Fixed: **typing into the search and other fields on desktop** triggered Home Assistant keyboard shortcuts (e.g. "e" opened the entity search); key events from input fields no longer reach Home Assistant. |
+| **1.1.1b1** (pre-release) | New: **Notification Center connection** (optional, interface schema 1) with seven notification types (bridge offline, battery critical, device offline, battery low, firmware update, new device, device left the network), a main switch and one switch per type in the card and in the Configure dialog. The update check recognizes **pre-releases** (`1.1.1b1` < `1.1.1rc1` < `1.1.1`): if you run a beta you learn about the next beta; if you run a final version you do not see pre-releases. **French and Spanish** added (card, integration, README). Changing the Notification Center switches no longer reloads the integration. Fixed: English leftovers in the German texts (`strings.json`). |
 | **1.1.0** | New: **group** lists by manufacturer or device class (accordion) and **filter** them (status online/offline, power source, signal, network role, firmware, last seen, not in a Zigbee group, manufacturer, device class; active filters as chips). Writable **switches** under "Features (expose)" can be toggled directly. New popup section **Entities (for automations)** and copy buttons for the entity names. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: new `set_expose` action (administrators only, values are validated) and a device class per device. |
 | 1.0.5 | Fixed: popup and the "Features (expose)" section could not be operated (endless redraw loop, device image flickered). Offline display protected against stale reports. Dutch added (card, integration, README), LICENSE and `examples/` added. Thanks to @pr0xyzer (PR #2): matching HA entities via MQTT identifiers with more than two values (list when renaming). |
 | 1.0.4 | All expose features in the device popup, several sticks (multiple instances), fix for the device options. |
@@ -242,12 +275,14 @@ Every `.py`, `.js` and `.yaml` file carries a SHA-256 hash of its content from l
 
 | File | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `fcc2361d67b5c819026cd0f07fbf5e438b1db6c895875730a97e295c08447c8b` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `714ca6bdd304f051e93e8960410630c361f942eed7ddd89c81969fe13aff9c4d` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `030826f739709dc575398ab4142fb7bc81262b419fab3176d6f07e69db352617` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `2e739f9952d7c56a3062cef2b0a70f58441fb1bb651ca58713cb77fac72f9762` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `a4cc4400d01de88795a97c7644a9a4c89495c99d440eec4b9b476e7784a3c0b4` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `9072d9f52b3f1be151b46c49dc22eb16df2cec81f295841a7c1ca1c2891e634a` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `20ec6ad0e627be9f5ba84d6fa2520550d64d5256ca97e4cfc51f6ed1149b9467` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `b95be5163fc86774997d79f2907b0041723ca96962760bdbeae9e3587eda29a3` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `6c434b2e5ed8025cc766c7f3afff3fd775c0caf5defb76195c2db67f3a62ffef` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e8ef9b7f09651b6bdd096855de98c6a439c36ab48830bc785c351dd2efb5f5d0` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `12ab5093a5780719fd93b05b7bd645e734e91ce49ca5b1e75d03817029f27226` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `9f0e55a3edbaf1ac86d48750d5f0705b7bbdf57768b37f38bc682801bf1ca9a2` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## License
