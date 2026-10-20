@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 791a6f15fafbc74f6ba8c64ffd0fd41a2ee4dd4711bb03ff52cf7f2e83180b3d
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 71cfbd6edee5f96ac8c36b53e8b9d748ae511e64f1bb592971c8566689c92547
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -46,6 +46,18 @@ from .const import (
     STORAGE_SAVE_DELAY,
     STORAGE_VERSION,
     VERSION,
+)
+from .nc_catalog import (
+    NC_CATALOG,
+    NC_SOURCE_ICON,
+    NC_STATE_TYPES,
+    NC_TYPE_IDS,
+)
+from .notification_bridge import (
+    EVENT_REPORT as NC_EVENT_REPORT,
+    OPT_ENABLED as NC_OPT_ENABLED,
+    OPT_TYPES as NC_OPT_TYPES,
+    NotificationBridge,
 )
 from .update_check import async_fetch_latest, is_newer
 
@@ -244,6 +256,10 @@ def _same_value(a: Any, b: Any) -> bool:
     return type(a) is type(b) and a == b
 
 
+# Wartezeit nach der ersten Geräteliste, bevor der Ausgangszustand ans Notification Center geht
+NC_SETTLE_SECONDS = 20.0
+
+
 class Z2MManager:
     """Zustand + Befehle für eine Zigbee2MQTT-Instanz."""
 
@@ -293,6 +309,28 @@ class Z2MManager:
         # Für Ereignis-Erkennung (erster Durchlauf setzt nur die Basislinie)
         self._baseline: dict[str, set[str]] | None = None
 
+        # Optionale Anbindung an das Notification Center (Schnittstelle Schema 1)
+        self.nc = NotificationBridge(
+            hass,
+            entry,
+            source=DOMAIN,
+            name=entry.title,
+            version=VERSION,
+            icon=NC_SOURCE_ICON,
+            catalog=NC_CATALOG,
+        )
+        self.nc.set_state_provider(self._nc_active_state)
+        self._nc_started = False
+        self.nc_settle_seconds: float = NC_SETTLE_SECONDS
+        self._nc_ready_at: float | None = None
+        self._nc_timer_set = False
+        # Zuletzt gemeldete aktive Zustände je auflösbarer Art: {type: {key: Eintrag}}
+        self._nc_prev: dict[str, dict[str, dict[str, Any]]] = {}
+        # Anzahl gesendeter Meldungen je Art (nur Zahlen, für die Diagnose)
+        self.nc_sent: dict[str, int] = {}
+        # Optionen ohne die Notification-Center-Schalter: nur deren Änderung lädt neu
+        self._core_options = self._core_of(entry.options)
+
         self.data: dict[str, Any] = {}
         self.details: dict[str, list[str]] = {}
         self._rebuild()
@@ -329,6 +367,9 @@ class Z2MManager:
                 self.hass, f"{self.base_topic}/#", self._handle_message
             )
         )
+
+        # Zählt die gesendeten Meldungen je Art (Diagnose); speichert keine Inhalte
+        self._unsubs.append(self.hass.bus.async_listen(NC_EVENT_REPORT, self._nc_count))
 
         # Beim Start und danach regelmäßig auf eine neue App-Version prüfen
         self._unsubs.append(
@@ -382,6 +423,7 @@ class Z2MManager:
         self._flush_unsub = None
         self._rebuild()
         self._detect_changes()
+        self._nc_detect()
         self._notify("update", self.data)
         self._store.async_delay_save(self._cache_data, STORAGE_SAVE_DELAY)
 
@@ -470,8 +512,10 @@ class Z2MManager:
         self._log(kind, name, detail)
         if kind == "device_joined":
             self._fire(EVENT_DEVICE_JOINED, {"name": name, "ieee": data.get("ieee_address")})
+            self._nc_once("device_joined", data.get("ieee_address"), name)
         elif kind == "device_leave":
             self._fire(EVENT_DEVICE_LEFT, {"name": name, "ieee": data.get("ieee_address")})
+            self._nc_once("device_left", data.get("ieee_address"), name)
         self._schedule_update()
 
     def _log(self, kind: str, name: str, detail: str | None = None) -> None:
@@ -798,6 +842,7 @@ class Z2MManager:
             },
             "jobs": dict(self.jobs),
             "app": dict(self.app),
+            "nc": self.nc.snapshot(),
             "events": list(self._events),
             "groups": groups,
             "devices": devices,
@@ -861,6 +906,177 @@ class Z2MManager:
                     "latest": ota.get("latest"),
                 },
             )
+
+    # ------------------------------------------------------------------
+    # Notification Center (optional, Schnittstelle Schema 1)
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _core_of(options: Any) -> dict[str, Any]:
+        return {
+            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES)
+        }
+
+    def core_options_changed(self) -> bool:
+        """True, wenn sich andere Optionen als die Notification-Center-Schalter geändert haben."""
+        return self._core_of(self.entry.options) != self._core_options
+
+    def _nc_active_state(self) -> dict[str, list[dict[str, Any]]]:
+        """Aktive Zustände je auflösbarer Meldungsart, abgeleitet aus dem Datenmodell.
+
+        Es gelten die vorhandenen Schwellen aus den Optionen (keine neuen). Ein Gerät unter der
+        kritischen Schwelle erscheint nur als "Batterie kritisch", nicht zusätzlich als "niedrig".
+        """
+        state: dict[str, list[dict[str, Any]]] = {t: [] for t in NC_STATE_TYPES}
+        if self.bridge_online is False:
+            state["bridge_offline"].append(
+                {
+                    "key": self.base_topic,
+                    "subject": {"id": self.base_topic, "name": self.base_topic, "kind": "system"},
+                    "placeholders": {"bridge": self.base_topic},
+                }
+            )
+        low_t = self.low_battery_threshold
+        crit_t = self.critical_battery_threshold
+        for device in self.data.get("devices", []):
+            ieee = device.get("ieee")
+            if not ieee:
+                continue
+            name = device.get("name") or ieee
+            subject = {"id": ieee, "name": name, "kind": "device"}
+            if device["available"] is False:
+                state["device_offline"].append(
+                    {"key": ieee, "subject": subject, "placeholders": {"name": name}}
+                )
+            battery = device["battery"]
+            if battery is not None:
+                entry = {
+                    "key": ieee,
+                    "subject": subject,
+                    "placeholders": {"name": name, "battery": battery},
+                }
+                if battery < crit_t:
+                    state["battery_critical"].append(entry)
+                elif battery < low_t:
+                    state["battery_low"].append(entry)
+            if device["ota"]["state"] == "available":
+                state["update_available"].append(
+                    {"key": ieee, "subject": subject, "placeholders": {"name": name}}
+                )
+        return state
+
+    @callback
+    def _nc_detect(self) -> None:
+        """Zustandswechsel ans Notification Center melden (genau eine Meldung je Wechsel).
+
+        Gestartet wird erst, wenn die Geräteliste bekannt ist: Register, Ausgangszustand
+        (initial, ohne Push) und Sync. Danach folgt je Eintritt ein "active" und je Ende ein
+        "resolved". Wiederholungen werden nicht gesendet.
+        """
+        if not self._meta:
+            return
+        if not self._nc_started:
+            # Kurz warten: nach dem Start treffen Zustände und Verfügbarkeit noch nach der
+            # Geräteliste ein. Was dabei auftaucht, gehört zum Ausgangszustand (initial),
+            # nicht zu Meldungen, die das Notification Center als neu ausliefern würde.
+            loop_time = self.hass.loop.time()
+            if self._nc_ready_at is None:
+                self._nc_ready_at = loop_time + self.nc_settle_seconds
+            if loop_time < self._nc_ready_at:
+                if not self._nc_timer_set:
+                    self._nc_timer_set = True
+                    self._unsubs.append(
+                        async_call_later(
+                            self.hass, self._nc_ready_at - loop_time + 0.1, self._nc_settled
+                        )
+                    )
+                return
+        current = self._nc_active_state()
+        if not self._nc_started:
+            self._nc_started = True
+            self._nc_prev = {t: {e["key"]: e for e in items} for t, items in current.items()}
+            self.nc.async_start()
+            return
+        for type_ in NC_STATE_TYPES:
+            now = {e["key"]: e for e in current.get(type_, [])}
+            before = self._nc_prev.get(type_, {})
+            for key, entry in now.items():
+                if key not in before:
+                    self.nc.report(
+                        type_,
+                        key,
+                        "active",
+                        subject=entry["subject"],
+                        placeholders=entry["placeholders"],
+                    )
+            for key, entry in before.items():
+                if key not in now:
+                    self.nc.report(
+                        type_,
+                        key,
+                        "resolved",
+                        subject=entry["subject"],
+                        placeholders=entry["placeholders"],
+                    )
+            self._nc_prev[type_] = now
+
+    @callback
+    def _nc_settled(self, _now: Any = None) -> None:
+        self._schedule_update()
+
+    @callback
+    def _nc_once(self, type_: str, ieee: Any, name: str) -> None:
+        """Einmalige Meldung (Gerät beigetreten / hat das Netz verlassen), bleibt bis zum Quittieren."""
+        key = str(ieee or name or "")
+        if not key:
+            return
+        label = name or key
+        self.nc.report(
+            type_,
+            key,
+            "active",
+            subject={"id": key, "name": label, "kind": "device"},
+            placeholders={"name": label},
+        )
+
+    @callback
+    def _nc_count(self, event: Any) -> None:
+        """Zählt eigene Meldungen je Art. Nur Zahlen, keine Inhalte."""
+        data = event.data
+        if data.get("source") != DOMAIN or data.get("entry_id") != self.entry.entry_id:
+            return
+        type_ = str(data.get("type"))
+        self.nc_sent[type_] = self.nc_sent.get(type_, 0) + 1
+
+    @callback
+    def async_nc_options_changed(self) -> None:
+        """Schalter geändert: Katalog und Zustand neu anmelden, Karte sofort aktualisieren."""
+        if self._nc_started:
+            self.nc.async_options_changed()
+        self._rebuild()
+        self._notify("update", self.data)
+
+    def _nc_write_options(self, master: bool | None, types: dict[str, bool] | None) -> None:
+        options = dict(self.entry.options)
+        if master is not None:
+            options[NC_OPT_ENABLED] = master
+        if types is not None:
+            current = options.get(NC_OPT_TYPES)
+            merged = dict(current) if isinstance(current, dict) else {}
+            merged.update(types)
+            options[NC_OPT_TYPES] = merged
+        self.hass.config_entries.async_update_entry(self.entry, options=options)
+
+    async def async_nc_set_master(self, enabled: Any) -> None:
+        if not isinstance(enabled, bool):
+            raise ValueError("Ungültiger Wert für den Hauptschalter")
+        self._nc_write_options(enabled, None)
+
+    async def async_nc_set_type(self, nc_type: Any, enabled: Any) -> None:
+        if nc_type not in NC_TYPE_IDS:
+            raise ValueError(f"Unbekannte Meldungsart: {nc_type}")
+        if not isinstance(enabled, bool):
+            raise ValueError("Ungültiger Wert für die Meldungsart")
+        self._nc_write_options(None, {nc_type: enabled})
 
     # ------------------------------------------------------------------
     # Details auf Anforderung (Optionen-Schema, Entitäten)

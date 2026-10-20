@@ -24,7 +24,7 @@
     },
     "error": {
       "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. +).",
-      "topic_overlap": "Base topics of several instances must not be nested (e.g. “zigbee2mqtt” and “zigbee2mqtt/stick2”). Use separate ones such as “zigbee2mqtt” and “zigbee2mqtt2”."
+      "topic_overlap": "Base-Topics mehrerer Instanzen dürfen nicht ineinander liegen (z. B. „zigbee2mqtt“ und „zigbee2mqtt/stick2“). Nimm getrennte wie „zigbee2mqtt“ und „zigbee2mqtt2“."
     },
     "abort": {
       "already_configured": "Für dieses Base-Topic existiert bereits ein Eintrag.",
@@ -40,11 +40,15 @@
         "data": {
           "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)",
           "critical_battery_threshold": "Schwelle für „Batterie kritisch“ (%)",
-          "fire_events": "Home-Assistant-Ereignisse auslösen"
+          "fire_events": "Home-Assistant-Ereignisse auslösen",
+          "nc_enabled": "Meldungen ans Notification Center senden",
+          "nc_types": "Meldungsarten"
         },
         "data_description": {
           "critical_battery_threshold": "Muss kleiner oder gleich der Schwelle für „Batterie niedrig“ sein.",
-          "fire_events": "Löst z. B. zigbee2mqtt_manager_device_offline, _battery_low und _update_available aus – nutzbar als Automations-Auslöser."
+          "fire_events": "Löst z. B. zigbee2mqtt_manager_device_offline, _battery_low und _update_available aus – nutzbar als Automations-Auslöser.",
+          "nc_enabled": "Nur wirksam, wenn die Integration „Notification Center“ installiert ist. Der Hauptschalter schaltet alle Meldungen dieses Managers ein oder aus.",
+          "nc_types": "Auswahl der Meldungen, die gesendet werden. Die Liste ist nach Dringlichkeit sortiert, Kritisches steht oben."
         }
       }
     },
@@ -92,8 +96,8 @@
           "description": "Dauer in Sekunden (10–254)."
         },
         "base_topic": {
-          "name": "Base topic",
-          "description": "Only needed with several instances. Alternative to the entry ID."
+          "name": "Base-Topic",
+          "description": "Nur bei mehreren Instanzen nötig. Alternative zur Eintrags-ID."
         }
       }
     },
@@ -106,8 +110,8 @@
           "description": "Nur bei mehreren Instanzen nötig."
         },
         "base_topic": {
-          "name": "Base topic",
-          "description": "Only needed with several instances. Alternative to the entry ID."
+          "name": "Base-Topic",
+          "description": "Nur bei mehreren Instanzen nötig. Alternative zur Eintrags-ID."
         }
       }
     }

@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b8ed42a83f5e400ebfcf84042274e69d0ded6cb879ca5b25b2a8cb550d1ecc50
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 65d9c6230c26ee90d9e1c8db3e4dba6fc2d144af0b451e66c4da0267ca052680
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.1.0"
+VERSION = "1.1.1b2"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
@@ -54,6 +54,7 @@ SERVICE_CHECK_UPDATES = "check_updates"
 # Prüfung auf neue Versionen der App (GitHub-Releases)
 GITHUB_REPO = "Meine-smarte-Welt/zigbee2mqtt_manager"
 GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+GITHUB_API_RELEASES = f"https://api.github.com/repos/{GITHUB_REPO}/releases?per_page=5"
 GITHUB_API_TAGS = f"https://api.github.com/repos/{GITHUB_REPO}/tags?per_page=30"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases"
 APP_UPDATE_CHECK_INTERVAL = timedelta(hours=12)

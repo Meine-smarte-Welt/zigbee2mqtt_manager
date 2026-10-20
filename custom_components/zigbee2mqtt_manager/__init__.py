@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 9f5ac894c5ff2f6534159c0e6e691d24798baa1324f48b740343233cc96a5124
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b8e710c97685d6be0b9945d834854c1aa4a524fa780458ce50351a741f8ba5f6
 """Zigbee2MQTT Manager – Verwaltung von Zigbee2MQTT direkt in Home Assistant."""
 
 from __future__ import annotations
@@ -201,7 +201,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: Z2MConfigEntry) -> bool:
     entry.runtime_data = manager
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    entry.async_on_unload(entry.add_update_listener(_async_reload_on_options))
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
 
 
@@ -212,5 +212,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: Z2MConfigEntry) -> bool
     return unloaded
 
 
-async def _async_reload_on_options(hass: HomeAssistant, entry: Z2MConfigEntry) -> None:
-    await hass.config_entries.async_reload(entry.entry_id)
+async def _async_options_updated(hass: HomeAssistant, entry: Z2MConfigEntry) -> None:
+    """Optionen geändert: bei Schaltern des Notification Centers nur neu anmelden, sonst neu laden."""
+    manager = entry.runtime_data
+    if manager.core_options_changed():
+        await hass.config_entries.async_reload(entry.entry_id)
+    else:
+        manager.async_nc_options_changed()

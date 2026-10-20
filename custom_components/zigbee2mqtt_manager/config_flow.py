@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): fa8712fdb6a02b741eabe066a16acbdff8388ba339dd29c6f658c790363dc044
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6f37d2837460f073d69f974b838c7120d56aaa1d02cb0972cffc0efec0c906d7
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import config_validation as cv
 
 from .const import (
     CONF_BASE_TOPIC,
@@ -28,6 +29,9 @@ from .const import (
     DOMAIN,
     VERSION,
 )
+from .nc_catalog import NC_TYPE_IDS, nc_type_labels
+from .notification_bridge import OPT_ENABLED as NC_OPT_ENABLED
+from .notification_bridge import OPT_TYPES as NC_OPT_TYPES
 
 _BATTERY_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=1, max=99))
 
@@ -144,7 +148,7 @@ class Z2MManagerConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class Z2MManagerOptionsFlow(OptionsFlow):
-    """Nachträglich änderbar: Batterie-Schwellen und Ereignisse."""
+    """Nachträglich änderbar: Batterie-Schwellen, Ereignisse und Notification Center."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -154,7 +158,14 @@ class Z2MManagerOptionsFlow(OptionsFlow):
             if user_input[CONF_CRITICAL_BATTERY] > user_input[CONF_LOW_BATTERY]:
                 errors[CONF_CRITICAL_BATTERY] = "critical_above_low"
             else:
-                return self.async_create_entry(data=user_input)
+                chosen = set(user_input.get(NC_OPT_TYPES, []))
+                # Bestehende Optionen bleiben erhalten; die Meldungsarten werden als {Art: an/aus} gespeichert
+                data = {
+                    **self.config_entry.options,
+                    **user_input,
+                    NC_OPT_TYPES: {t: t in chosen for t in NC_TYPE_IDS},
+                }
+                return self.async_create_entry(data=data)
 
         opts = self.config_entry.options
         manager = getattr(self.config_entry, "runtime_data", None)
@@ -166,11 +177,20 @@ class Z2MManagerOptionsFlow(OptionsFlow):
             update_info = {
                 "de": f"⚠️ Neue Version verfügbar: **{latest}** – {link}",
                 "nl": f"⚠️ Nieuwe versie beschikbaar: **{latest}** – {link}",
+                "fr": f"⚠️ Nouvelle version disponible : **{latest}** – {link}",
+                "es": f"⚠️ Nueva versión disponible: **{latest}** – {link}",
             }.get(lang, f"⚠️ New version available: **{latest}** – {link}")
         elif latest:
-            update_info = {"de": "✅ Aktuell", "nl": "✅ Actueel"}.get(lang, "✅ Up to date")
+            update_info = {
+                "de": "✅ Aktuell",
+                "nl": "✅ Actueel",
+                "fr": "✅ À jour",
+                "es": "✅ Actualizado",
+            }.get(lang, "✅ Up to date")
         else:
             update_info = ""
+        nc_chosen = opts.get(NC_OPT_TYPES, {})
+        nc_chosen = nc_chosen if isinstance(nc_chosen, dict) else {}
         return self.async_show_form(
             step_id="init",
             description_placeholders={
@@ -193,6 +213,14 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                         CONF_FIRE_EVENTS,
                         default=opts.get(CONF_FIRE_EVENTS, DEFAULT_FIRE_EVENTS),
                     ): bool,
+                    vol.Required(
+                        NC_OPT_ENABLED, default=opts.get(NC_OPT_ENABLED, True)
+                    ): bool,
+                    # Reihenfolge der Auswahl: nach Dringlichkeit (kritisch zuerst)
+                    vol.Required(
+                        NC_OPT_TYPES,
+                        default=[t for t in NC_TYPE_IDS if nc_chosen.get(t, True)],
+                    ): cv.multi_select(nc_type_labels(str(self.hass.config.language))),
                 }
             ),
             errors=errors,

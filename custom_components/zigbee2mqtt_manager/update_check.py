@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 0e0a1d1891f5e1336eedfea8cd9cb66fc3933ad1c0072a284da0150a96d43b31
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): c9ac470f2d48671103365dfc6b2e76ae857fa6b34f78abbe3142323faa1e17f3
 """Prüft auf GitHub, ob eine neuere Version der Integration veröffentlicht wurde."""
 
 from __future__ import annotations
@@ -16,14 +16,23 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import (
     DOMAIN,
     GITHUB_API_LATEST,
+    GITHUB_API_RELEASES,
     GITHUB_API_TAGS,
     GITHUB_RELEASES_URL,
     GITHUB_REPO,
+    VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-_VERSION_RE = re.compile(r"^[vV]?(\d+(?:\.\d+)*)")
+# 1.2.3, optional mit Vorabversion: 1.2.3b1, 1.2.3rc2 (auch a/alpha/beta, mit . - _ als Trenner)
+_VERSION_RE = re.compile(
+    r"^[vV]?(\d+(?:\.\d+)*)(?:[.\-_]?(alpha|beta|rc|a|b|c)[.\-_]?(\d*))?",
+    re.IGNORECASE,
+)
+# Rang der Vorabstufen; eine fertige Version steht über allen (1.1.1b1 < 1.1.1rc1 < 1.1.1)
+_STAGE_RANK = {"a": 0, "alpha": 0, "b": 1, "beta": 1, "rc": 2, "c": 2}
+_FINAL_RANK = 3
 _TIMEOUT = aiohttp.ClientTimeout(total=15)
 _HEADERS = {
     "Accept": "application/vnd.github+json",
@@ -32,14 +41,28 @@ _HEADERS = {
 
 
 def parse_version(text: Any) -> tuple[int, ...] | None:
-    """\"v1.2.3\" -> (1, 2, 3); auf drei Stellen aufgefüllt, damit 1.0 == 1.0.0."""
+    """\"v1.2.3\" -> (1, 2, 3, 3, 0); \"1.2.3b1\" -> (1, 2, 3, 1, 1).
+
+    Auf drei Stellen aufgefüllt (1.0 == 1.0.0), danach Rang der Vorabstufe und deren Nummer.
+    Eine fertige Version ist größer als jede Vorabversion derselben Nummer.
+    """
     if not isinstance(text, str):
         return None
     match = _VERSION_RE.match(text.strip())
     if not match:
         return None
     parts = tuple(int(p) for p in match.group(1).split("."))
-    return parts + (0,) * max(0, 3 - len(parts))
+    parts = parts + (0,) * max(0, 3 - len(parts))
+    stage = match.group(2)
+    if stage is None:
+        return parts + (_FINAL_RANK, 0)
+    return parts + (_STAGE_RANK[stage.lower()], int(match.group(3) or 0))
+
+
+def is_prerelease(text: Any) -> bool:
+    """True bei Vorabversionen wie 1.1.1b1 oder 1.1.1rc1."""
+    parsed = parse_version(text)
+    return parsed is not None and parsed[3] != _FINAL_RANK
 
 
 def is_newer(latest: str | None, current: str | None) -> bool:
@@ -65,26 +88,76 @@ async def async_fetch_latest(
     return result
 
 
+def _best(candidates: list[dict[str, str]]) -> dict[str, str] | None:
+    """Höchste Version aus {\"version\", \"url\"}-Einträgen."""
+    if not candidates:
+        return None
+    return max(candidates, key=lambda c: parse_version(c["version"]) or ())
+
+
 async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
-    """Neueste veröffentlichte Version holen: {\"version\", \"url\"} oder None bei Fehler."""
+    """Neueste veröffentlichte Version holen: {\"version\", \"url\"} oder None bei Fehler.
+
+    `releases/latest` liefert nie Vorabversionen (Pre-releases). Ist die installierte Version
+    selbst eine Vorabversion (b/rc), wird deshalb zusätzlich die Liste der letzten Releases
+    geprüft, sonst erführe ein Beta-Nutzer nie von der nächsten Beta. Nutzer einer fertigen
+    Version sehen Vorabversionen nicht.
+    """
     session = async_get_clientsession(hass)
+    include_pre = is_prerelease(VERSION)
+    candidates: list[dict[str, str]] = []
+    reachable = False
+
     try:
         async with session.get(
             GITHUB_API_LATEST, headers=_HEADERS, timeout=_TIMEOUT
         ) as resp:
             if resp.status == 200:
+                reachable = True
                 data = await resp.json()
                 tag = data.get("tag_name") if isinstance(data, dict) else None
                 if parse_version(tag):
-                    return {
-                        "version": str(tag).lstrip("vV"),
-                        "url": data.get("html_url") or GITHUB_RELEASES_URL,
-                    }
-            elif resp.status != 404:
+                    candidates.append(
+                        {
+                            "version": str(tag).lstrip("vV"),
+                            "url": data.get("html_url") or GITHUB_RELEASES_URL,
+                        }
+                    )
+            elif resp.status == 404:
+                reachable = True
+            else:
                 _LOGGER.debug("GitHub-Release-Abfrage: HTTP %s", resp.status)
-                return None
+                if not include_pre:
+                    return None
 
-        # Noch kein Release veröffentlicht: höchstes Versions-Tag verwenden
+        if include_pre:
+            async with session.get(
+                GITHUB_API_RELEASES, headers=_HEADERS, timeout=_TIMEOUT
+            ) as resp:
+                if resp.status == 200:
+                    reachable = True
+                    releases = await resp.json()
+                    for rel in releases if isinstance(releases, list) else []:
+                        if not isinstance(rel, dict) or rel.get("draft"):
+                            continue
+                        tag = rel.get("tag_name")
+                        if parse_version(tag):
+                            candidates.append(
+                                {
+                                    "version": str(tag).lstrip("vV"),
+                                    "url": rel.get("html_url") or GITHUB_RELEASES_URL,
+                                }
+                            )
+                else:
+                    _LOGGER.debug("GitHub-Release-Liste: HTTP %s", resp.status)
+
+        best = _best(candidates)
+        if best is not None:
+            return best
+        if not reachable:
+            return None
+
+        # Noch kein passendes Release veröffentlicht: höchstes Versions-Tag verwenden
         async with session.get(
             GITHUB_API_TAGS, headers=_HEADERS, timeout=_TIMEOUT
         ) as resp:
@@ -95,15 +168,17 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
         _LOGGER.debug("Prüfung auf neue App-Version fehlgeschlagen: %s", err)
         return None
 
-    candidates = [
+    names = [
         t["name"]
         for t in (tags if isinstance(tags, list) else [])
-        if isinstance(t, dict) and parse_version(t.get("name"))
+        if isinstance(t, dict)
+        and parse_version(t.get("name"))
+        and (include_pre or not is_prerelease(t.get("name")))
     ]
-    if not candidates:
+    if not names:
         return None
-    best = max(candidates, key=lambda n: parse_version(n) or ())
+    best_name = max(names, key=lambda n: parse_version(n) or ())
     return {
-        "version": best.lstrip("vV"),
-        "url": f"https://github.com/{GITHUB_REPO}/releases/tag/{best}",
+        "version": best_name.lstrip("vV"),
+        "url": f"https://github.com/{GITHUB_REPO}/releases/tag/{best_name}",
     }

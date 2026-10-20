@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 3b458118a4d57b80dcc6511cc2fd0971a8f5e26812b8f6063a3cfde9b8e82c8b
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6ce1ca780fda179668e1f11cc96604091a0325172c5d17c5689afa2f50dc687d
 """Diagnose-Download (IEEE-Adressen und Namen werden geschwärzt)."""
 
 from __future__ import annotations
@@ -46,5 +46,18 @@ async def async_get_config_entry_diagnostics(
         "stats": data["stats"],
         "groups": len(data["groups"]),
         "app": data["app"],
+        # Nur Schalterstand und Anzahl gesendeter Meldungen je Art, keine Namen oder Texte
+        "notification_center": {
+            "available": data["nc"]["available"],
+            "enabled": data["nc"]["enabled"],
+            "types": {
+                t["type"]: {
+                    "severity": t["severity"],
+                    "enabled": t["enabled"],
+                    "sent": manager.nc_sent.get(t["type"], 0),
+                }
+                for t in data["nc"]["types"]
+            },
+        },
         "devices": devices,
     }
