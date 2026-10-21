@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 02aca7cf2cad9ef32d87ad80203ebda154696071fbadb4813dfd5c737a890762
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 72b225b512eb3607a366ff7cda4c1e36a9238835089ca0b7b7c172ccc3cfd8c3
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -193,7 +193,8 @@ class Z2MManagerOptionsFlow(OptionsFlow):
         opts = self.config_entry.options
         manager = getattr(self.config_entry, "runtime_data", None)
         app = getattr(manager, "app", None) or {}
-        lang = str(self.hass.config.language)[:2]
+        raw_lang = str(self.hass.config.language)
+        lang = "sr-Latn" if raw_lang.lower().replace("_", "-").startswith("sr-latn") else raw_lang[:2]
         latest = app.get("latest_version")
         link = app.get("release_url")
         if app.get("update_available"):
@@ -203,6 +204,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "fr": f"⚠️ Nouvelle version disponible : **{latest}** – {link}",
                 "es": f"⚠️ Nueva versión disponible: **{latest}** – {link}",
                 "sr": f"⚠️ Доступна је нова верзија: **{latest}** – {link}",
+                "sr-Latn": f"⚠️ Dostupna je nova verzija: **{latest}** – {link}",
             }.get(lang, f"⚠️ New version available: **{latest}** – {link}")
         elif latest:
             update_info = {
@@ -211,6 +213,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "fr": "✅ À jour",
                 "es": "✅ Actualizado",
                 "sr": "✅ Ажурно",
+                "sr-Latn": "✅ Ažurno",
             }.get(lang, "✅ Up to date")
         else:
             update_info = ""

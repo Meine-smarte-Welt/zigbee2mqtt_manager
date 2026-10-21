@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): deb9f91d75d6efc12007f4c456bcb145e83ee46a1cf7053d0dc391c4fe921c29
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 4a345f2ac6232826d876052447cdf2dde2292a0ec25c0b34d7ac9899bc54ede6
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -46,12 +46,12 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.2.1";
+const CARD_VERSION = "1.2.2";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
 
-const TAB_ORDER = ["devices", "battery", "updates", "groups", "bindings", "bridge"];
+const TAB_ORDER = ["devices", "battery", "updates", "groups", "bindings", "network", "bridge"];
 
 const TAB_META = {
   devices: { icon: "mdi:zigbee", label: "tab_devices" },
@@ -59,6 +59,7 @@ const TAB_META = {
   updates: { icon: "mdi:update", label: "tab_updates" },
   groups: { icon: "mdi:group", label: "tab_groups" },
   bindings: { icon: "mdi:link-variant", label: "tab_bindings" },
+  network: { icon: "mdi:graph-outline", label: "network" },
   bridge: { icon: "mdi:cog", label: "tab_bridge" },
 };
 
@@ -205,6 +206,7 @@ const CONFIG_DEFAULTS = {
   show_groups: true,
   show_bindings: true,
   show_bridge: true,
+  show_network: true,
   default_tab: "devices",
   // Darstellung
   max_rows: 0, // 0 = alle Zeilen
@@ -246,6 +248,7 @@ const CONFIG_DEFAULTS = {
   color_icon_updates: "",
   color_icon_groups: "",
   color_icon_bindings: "",
+  color_icon_network: "",
   color_icon_bridge: "",
 };
 
@@ -336,6 +339,7 @@ const I18N = {
     f_power: "Stromversorgung", f_firmware: "Firmware-Build", f_lqi: "Signalqualität", f_battery: "Batterie", f_voltage: "Spannung",
     f_available: "Erreichbar", f_last_seen: "Zuletzt gesehen",
     flt_missing: "Fehlt in Zigbee2MQTT", chip_missing: "Fehlt", status_missing: "Fehlt in Zigbee2MQTT (zuletzt bekanntes Gerät)", missing_badge: "fehlt", missing_hint: "Diese Geräte waren bekannt, fehlen aber aktuell in der Zigbee2MQTT-Geräteliste. Sie verschwinden von selbst, sobald sie zurückkehren.", missing_popup_hint: "Dieses Gerät steht nicht mehr in der Geräteliste von Zigbee2MQTT. Angezeigt werden die zuletzt bekannten Daten. Kommt es zurück, verschwindet die Markierung von selbst; mit „Vergessen“ entfernst du es aus dieser Liste.", forget: "Vergessen", forget_all: "Alle fehlenden vergessen", f_missing_since: "Fehlt seit", network: "Netzwerk", network_open: "Zigbee2MQTT-Netzwerkkarte öffnen", open_entity: "Entität in Home Assistant öffnen", open_device: "Gerät in Home Assistant öffnen", ev_device_missing: "Fehlt in Zigbee2MQTT", ev_device_back: "Wieder in der Geräteliste",
+    network_tab_hint: "Öffnet die Zigbee2MQTT-Netzwerkkarte (Topologie) in Home Assistant bzw. in einem neuen Tab.", network_no_url: "Noch keine Adresse der Netzwerkkarte bekannt. Trage sie unter Einstellungen → Geräte & Dienste → Zigbee2MQTT Manager → Konfigurieren als „Adresse der Netzwerkkarte“ ein (z. B. http://192.168.1.10:8080/#/network oder /a0d7b954_zigbee2mqtt), oder setze in der Karte `network_url`.",
     avail_activity: "ja (kürzlich Nachricht empfangen, trotz Offline-Meldung)",
     type_Router: "Router", type_EndDevice: "Endgerät",
     // Expose-Funktionen (Popup)
@@ -444,6 +448,7 @@ const I18N = {
     f_power: "Power source", f_firmware: "Firmware build", f_lqi: "Link quality", f_battery: "Battery", f_voltage: "Voltage",
     f_available: "Reachable", f_last_seen: "Last seen",
     flt_missing: "Missing in Zigbee2MQTT", chip_missing: "Missing", status_missing: "Missing in Zigbee2MQTT (last known device)", missing_badge: "missing", missing_hint: "These devices were known but are currently missing from the Zigbee2MQTT device list. They disappear from here by themselves once they return.", missing_popup_hint: "This device is no longer in the Zigbee2MQTT device list. The last known data is shown. If it comes back, the marker disappears by itself; use \"Forget\" to remove it from this list.", forget: "Forget", forget_all: "Forget all missing", f_missing_since: "Missing since", network: "Network", network_open: "Open the Zigbee2MQTT network map", open_entity: "Open entity in Home Assistant", open_device: "Open device in Home Assistant", ev_device_missing: "Missing in Zigbee2MQTT", ev_device_back: "Back in the device list",
+    network_tab_hint: "Opens the Zigbee2MQTT network map (topology) in Home Assistant or in a new tab.", network_no_url: "No network map address known yet. Enter it under Settings → Devices & services → Zigbee2MQTT Manager → Configure as \"Network map address\" (e.g. http://192.168.1.10:8080/#/network or /a0d7b954_zigbee2mqtt), or set `network_url` in the card.",
     avail_activity: "yes (message received recently, despite offline report)",
     type_Router: "Router", type_EndDevice: "End device",
     sec_exposes: "Features (exposes)", no_exposes: "This device reports no features.",
@@ -556,6 +561,7 @@ const I18N = {
     f_power: "Voeding", f_firmware: "Firmware-build", f_lqi: "Signaalkwaliteit", f_battery: "Batterij", f_voltage: "Spanning",
     f_available: "Bereikbaar", f_last_seen: "Laatst gezien",
     flt_missing: "Ontbreekt in Zigbee2MQTT", chip_missing: "Ontbreekt", status_missing: "Ontbreekt in Zigbee2MQTT (laatst bekend apparaat)", missing_badge: "ontbreekt", missing_hint: "Deze apparaten waren bekend, maar ontbreken nu in de apparatenlijst van Zigbee2MQTT. Ze verdwijnen vanzelf zodra ze terugkomen.", missing_popup_hint: "Dit apparaat staat niet meer in de apparatenlijst van Zigbee2MQTT. De laatst bekende gegevens worden getoond. Komt het terug, dan verdwijnt de markering vanzelf; met „Vergeten” haal je het uit deze lijst.", forget: "Vergeten", forget_all: "Alle ontbrekende vergeten", f_missing_since: "Ontbreekt sinds", network: "Netwerk", network_open: "Zigbee2MQTT-netwerkkaart openen", open_entity: "Entiteit openen in Home Assistant", open_device: "Apparaat openen in Home Assistant", ev_device_missing: "Ontbreekt in Zigbee2MQTT", ev_device_back: "Weer in de apparatenlijst",
+    network_tab_hint: "Opent de Zigbee2MQTT-netwerkkaart (topologie) in Home Assistant of in een nieuw tabblad.", network_no_url: "Nog geen adres van de netwerkkaart bekend. Vul het in onder Instellingen → Apparaten & services → Zigbee2MQTT Manager → Configureren als „Adres van de netwerkkaart” (bijv. http://192.168.1.10:8080/#/network of /a0d7b954_zigbee2mqtt), of stel `network_url` in de kaart in.",
     avail_activity: "ja (recent bericht ontvangen, ondanks offline-melding)",
     type_Router: "Router", type_EndDevice: "Eindapparaat",
     // Expose-functies (popup)
@@ -670,6 +676,7 @@ const I18N = {
     f_power: "Alimentation", f_firmware: "Build du firmware", f_lqi: "Qualité du signal", f_battery: "Batterie", f_voltage: "Tension",
     f_available: "Joignable", f_last_seen: "Dernière activité",
     flt_missing: "Absent de Zigbee2MQTT", chip_missing: "Absents", status_missing: "Absent de Zigbee2MQTT (dernier appareil connu)", missing_badge: "absent", missing_hint: "Ces appareils étaient connus mais manquent actuellement dans la liste d'appareils de Zigbee2MQTT. Ils disparaissent d'ici dès qu'ils reviennent.", missing_popup_hint: "Cet appareil ne figure plus dans la liste d'appareils de Zigbee2MQTT. Les dernières données connues sont affichées. S'il revient, le repère disparaît de lui-même ; avec « Oublier », tu le retires de cette liste.", forget: "Oublier", forget_all: "Oublier tous les absents", f_missing_since: "Absent depuis", network: "Réseau", network_open: "Ouvrir la carte du réseau Zigbee2MQTT", open_entity: "Ouvrir l'entité dans Home Assistant", open_device: "Ouvrir l'appareil dans Home Assistant", ev_device_missing: "Absent de Zigbee2MQTT", ev_device_back: "De retour dans la liste",
+    network_tab_hint: "Ouvre la carte du réseau Zigbee2MQTT (topologie) dans Home Assistant ou dans un nouvel onglet.", network_no_url: "Aucune adresse de la carte du réseau connue. Saisis-la sous Paramètres → Appareils et services → Zigbee2MQTT Manager → Configurer comme « Adresse de la carte du réseau » (p. ex. http://192.168.1.10:8080/#/network ou /a0d7b954_zigbee2mqtt), ou définis `network_url` dans la carte.",
     avail_activity: "oui (message reçu récemment, malgré le signalement hors ligne)",
     type_Router: "Routeur", type_EndDevice: "Appareil terminal",
     // Fonctions expose (popup)
@@ -784,6 +791,7 @@ const I18N = {
     f_power: "Alimentación", f_firmware: "Build del firmware", f_lqi: "Calidad de señal", f_battery: "Batería", f_voltage: "Tensión",
     f_available: "Accesible", f_last_seen: "Última actividad",
     flt_missing: "Falta en Zigbee2MQTT", chip_missing: "Ausentes", status_missing: "Falta en Zigbee2MQTT (último dispositivo conocido)", missing_badge: "ausente", missing_hint: "Estos dispositivos eran conocidos, pero ahora faltan en la lista de dispositivos de Zigbee2MQTT. Desaparecen de aquí solos en cuanto vuelven.", missing_popup_hint: "Este dispositivo ya no está en la lista de dispositivos de Zigbee2MQTT. Se muestran los últimos datos conocidos. Si vuelve, la marca desaparece sola; con «Olvidar» lo quitas de esta lista.", forget: "Olvidar", forget_all: "Olvidar todos los ausentes", f_missing_since: "Ausente desde", network: "Red", network_open: "Abrir el mapa de red de Zigbee2MQTT", open_entity: "Abrir la entidad en Home Assistant", open_device: "Abrir el dispositivo en Home Assistant", ev_device_missing: "Falta en Zigbee2MQTT", ev_device_back: "De nuevo en la lista",
+    network_tab_hint: "Abre el mapa de red de Zigbee2MQTT (topología) en Home Assistant o en una pestaña nueva.", network_no_url: "Aún no se conoce la dirección del mapa de red. Indícala en Ajustes → Dispositivos y servicios → Zigbee2MQTT Manager → Configurar como «Dirección del mapa de red» (p. ej. http://192.168.1.10:8080/#/network o /a0d7b954_zigbee2mqtt), o define `network_url` en la tarjeta.",
     avail_activity: "sí (mensaje reciente, a pesar de figurar sin conexión)",
     type_Router: "Router", type_EndDevice: "Dispositivo final",
     // Funciones expose (ventana)
@@ -857,6 +865,39 @@ const I18N = {
     network: "Мрежа", network_open: "Отвори мрежну мапу Zigbee2MQTT",
     open_entity: "Отвори ентитет у Home Assistant-у", open_device: "Отвори уређај у Home Assistant-у",
     ev_device_missing: "Недостаје у Zigbee2MQTT", ev_device_back: "Поново на листи уређаја",
+    network_tab_hint: "Отвара мрежну мапу Zigbee2MQTT (топологију) у Home Assistant-у или у новој картици.", network_no_url: "Адреса мапе мреже још није позната. Унеси је у Подешавања → Уређаји и услуге → Zigbee2MQTT Manager → Конфигуриши као „Адреса мапе мреже“ (нпр. http://192.168.1.10:8080/#/network) или постави `network_url` у картици.",
+  },
+  // Srpski (latinica): automatski iz ćiriličnog bloka prevedena slova, isti ključevi
+  "sr-Latn": {
+    connecting: "Povezivanje …",
+    error_generic: "Radnja nije uspela.",
+    tab_devices: "Uređaji", tab_battery: "Baterija", tab_updates: "Ažuriranja",
+    tab_groups: "Grupe", tab_bindings: "Povezivanja", tab_bridge: "Most",
+    chip_devices: "Uređaji", chip_offline: "Van mreže", chip_low_battery: "Slaba baterija", chip_updates: "Ažuriranja",
+    search: "Pretraži po imenu, modelu ili IEEE", sort: "Sortiranje",
+    sort_name_asc: "Ime A–Š", sort_name_desc: "Ime Š–A",
+    no_data: "Još nema podataka iz Zigbee2MQTT. Da li most radi?", no_results: "Nema rezultata.",
+    show_more: "Prikaži još {n}",
+    offline: "van mreže", online: "na mreži", unknown: "nepoznato", inactive: "neaktivno", disabled: "isključen",
+    never: "nikad", yes: "da", no: "ne", close: "Zatvori", save: "Sačuvaj", add: "Dodaj", cancel: "Otkaži",
+    confirm: "Sigurno?", loading: "Učitavanje …", details: "Detalji", remove: "Ukloni uređaj", rename: "Preimenuj",
+    group: "Grupa",
+    pairing_active: "Uparivanje aktivno", pairing_start: "Pokreni uparivanje", pairing_stop: "Završi uparivanje",
+    check_all: "Proveri sva ažuriranja", install: "Instaliraj",
+    ota_available: "Ažuriranje dostupno", ota_idle: "Ažurno",
+    sec_info: "Info", sec_status: "Stanje", sec_entities: "Entiteti (za automatizacije)",
+    f_vendor: "Proizvođač", f_model: "Model", f_area: "Prostorija", f_ieee: "IEEE", f_lqi: "Kvalitet signala",
+    f_battery: "Baterija", f_last_seen: "Poslednji put viđen", f_version: "Verzija", f_base_topic: "Osnovna tema (base topic)",
+    copy: "Kopiraj u privremenu memoriju", copy_all: "Kopiraj sve",
+    flt_missing: "Nedostaje u Zigbee2MQTT", chip_missing: "Nedostaje", status_missing: "Nedostaje u Zigbee2MQTT (poslednji poznati uređaj)",
+    missing_badge: "nedostaje",
+    missing_hint: "Ovi uređaji su bili poznati, ali trenutno nedostaju na listi uređaja Zigbee2MQTT. Nestaju odavde sami čim se vrate.",
+    missing_popup_hint: "Ovog uređaja više nema na listi uređaja Zigbee2MQTT. Prikazani su poslednji poznati podaci. Ako se vrati, oznaka nestaje sama; pomoću „Zaboravi“ ga uklanjaš sa ove liste.",
+    forget: "Zaboravi", forget_all: "Zaboravi sve koji nedostaju", f_missing_since: "Nedostaje od",
+    network: "Mreža", network_open: "Otvori mrežnu mapu Zigbee2MQTT",
+    open_entity: "Otvori entitet u Home Assistant-u", open_device: "Otvori uređaj u Home Assistant-u",
+    ev_device_missing: "Nedostaje u Zigbee2MQTT", ev_device_back: "Ponovo na listi uređaja",
+    network_tab_hint: "Otvara mrežnu mapu Zigbee2MQTT (topologiju) u Home Assistant-u ili u novoj kartici.", network_no_url: "Adresa mape mreže još nije poznata. Unesi je u Podešavanja → Uređaji i usluge → Zigbee2MQTT Manager → Konfiguriši kao „Adresa mape mreže“ (npr. http://192.168.1.10:8080/#/network) ili postavi `network_url` u kartici.",
   },
 };
 
@@ -1349,7 +1390,10 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   // ----------------------------------------------------------------- Texte
   get _lang() {
-    return (this._hass?.language || "en").slice(0, 2);
+    const raw = String(this._hass?.language || "en");
+    // Serbisch (lateinisch): Home Assistant meldet "sr-Latn"; eigener Textblock statt Rückfall auf Kyrillisch
+    if (/^sr[-_]latn/i.test(raw)) return "sr-Latn";
+    return raw.slice(0, 2);
   }
 
   _t(key, vars) {
@@ -1861,6 +1905,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         return this._renderGroups();
       case "bindings":
         return this._renderBindings();
+      case "network":
+        return this._renderNetworkTab();
       case "bridge":
         return this._renderBridge();
       default:
@@ -2323,7 +2369,6 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   // Ziel des Knopfes "Netzwerk": 1. network_url der Karte, 2. Adresse der Integration (Option oder
   // Z2M-Konfiguration), 3. die Zigbee2MQTT-App in der Seitenleiste (Supervisor-Ingress-Panel).
   _networkTarget() {
-    if (this._config.show_network_link === false) return "";
     const own = safeLink(this._config.network_url);
     if (own) return own;
     const fromBackend = safeLink(this._data?.bridge?.network_url);
@@ -2337,8 +2382,20 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   }
 
   _networkButton(cls = "btn") {
-    if (!this._networkTarget()) return "";
+    if (this._config.show_network_link === false || !this._networkTarget()) return "";
     return `<button class="${cls}" data-act="open_network" title="${esc(this._t("network_open"))}"><ha-icon icon="mdi:graph-outline"></ha-icon>${esc(this._t("network"))}</button>`;
+  }
+
+  // Kategorie "Netzwerk": immer sichtbar; ohne bekannte Adresse erklärt sie, wie man sie festlegt
+  _renderNetworkTab() {
+    const t = (k) => this._t(k);
+    const target = this._networkTarget();
+    if (!target) {
+      return `<div class="settings-view"><div class="hint">${esc(t("network_no_url"))}</div></div>`;
+    }
+    return `<div class="settings-view"><div class="hint">${esc(t("network_tab_hint"))}</div>
+      <div class="toolbar"><button class="btn primary" data-act="open_network"><ha-icon icon="mdi:graph-outline"></ha-icon>${esc(t("network_open"))}</button></div>
+      <div class="hint"><code>${esc(target)}</code></div></div>`;
   }
 
   _navigate(path) {
@@ -3350,6 +3407,7 @@ const EDITOR_LABELS = {
   show_groups: "Kategorie 'Gruppen' anzeigen",
   show_bindings: "Kategorie 'Bindings' anzeigen",
   show_bridge: "Kategorie 'Bridge' anzeigen",
+  show_network: "Kategorie 'Netzwerk' anzeigen",
   default_tab: "Beim Öffnen anzeigen",
   max_rows: "Max. Zeilen je Liste (0 = alle)",
   zoom: "Zoomfaktor der Karte (z. B. für Wandtablets)",
@@ -3433,6 +3491,7 @@ const EDITOR_SCHEMA = [
       bool("show_updates"),
       bool("show_groups"),
       bool("show_bindings"),
+      bool("show_network"),
       bool("show_bridge"),
       {
         name: "default_tab",

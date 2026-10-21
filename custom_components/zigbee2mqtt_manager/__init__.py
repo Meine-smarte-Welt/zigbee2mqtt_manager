@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2117441ac8566f1c57af1c1743c0f4d03fb6c055917153d43cbac065612dc8d9
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): e12809a5f29cb9858bbf1395f397f02cfb79e2e3b04f81e56663c39d1e99f752
 """Zigbee2MQTT Manager – Verwaltung von Zigbee2MQTT direkt in Home Assistant."""
 
 from __future__ import annotations
@@ -82,6 +82,12 @@ _WELCOME = {
         f"[Отвори контролне табле]({_DASHBOARDS}) · Готов шаблон табле налази се у README (фолдер `examples`).\n\n"
         "За почетну страницу постоји бинарни сензор „Сметња“ са свим бројачима као атрибутима.",
     ),
+    "sr-Latn": (
+        "Zigbee2MQTT Manager je podešen",
+        "Kartica je odmah dostupna u bočnoj traci pod nazivom **{title}** (naziv i prikaz se menjaju u *Podešavanja*). Za sopstvenu kontrolnu tablu: **Uredi tablu → Dodaj karticu → „Zigbee2MQTT Manager“**.\n\n"
+        f"[Otvori kontrolne table]({_DASHBOARDS}) · Gotov šablon table nalazi se u README (folder `examples`).\n\n"
+        "Za početnu stranicu postoji binarni senzor „Smetnja“ sa svim brojačima kao atributima.",
+    ),
 }
 
 _CARD_DIR = Path(__file__).parent / "www"
@@ -89,6 +95,12 @@ _CARD_STATIC_URL = f"{CARD_URL_BASE}/{CARD_FILENAME}"
 _FRONTEND_KEY = f"{DOMAIN}_frontend_registered"
 _PANEL_KEY = f"{DOMAIN}_panel_registered"
 _PANEL_TITLE_KEY = f"{DOMAIN}_panel_title"
+
+
+def _language_key(hass: HomeAssistant) -> str:
+    """Sprachschlüssel der eigenen Texte: "sr-Latn" bleibt erhalten, sonst nur der Sprachteil."""
+    raw = str(hass.config.language)
+    return "sr-Latn" if raw.lower().replace("_", "-").startswith("sr-latn") else raw[:2]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -328,7 +340,7 @@ def _async_welcome(hass: HomeAssistant, entry: Z2MConfigEntry) -> None:
     """Einmalig nach der Einrichtung: Hinweis, wie die Karte ins Dashboard kommt."""
     if entry.data.get(CONF_WELCOME_SHOWN):
         return
-    lang = str(hass.config.language)[:2]
+    lang = _language_key(hass)
     title, message = _WELCOME.get(lang, _WELCOME["en"])
     panel_title = clean_title(
         entry.options.get(CONF_SIDEBAR_TITLE), DEFAULT_SIDEBAR_TITLE, MAX_SIDEBAR_TITLE
