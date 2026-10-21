@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2c99f2bfe3449f44f3a6b8474e9fd6692c6e0b069f899875b74fc027e315d41d
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): deb9f91d75d6efc12007f4c456bcb145e83ee46a1cf7053d0dc391c4fe921c29
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -2511,6 +2511,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const b = this._data.bridge;
     const s = this._data.stats;
     const ro = this._readOnly;
+    const networkBtn = this._networkButton();
     const status = b.online === true ? `<span class="pill" style="--c:var(--zmm-color-success)">${esc(this._t("online"))}</span>` : b.online === false ? `<span class="pill" style="--c:var(--zmm-color-error)">${esc(this._t("offline"))}</span>` : esc(this._t("unknown"));
     const coordinator = [b.coordinator_type, b.coordinator_revision].filter(Boolean).join(" · ");
     const info = [
@@ -2523,7 +2524,6 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       s.missing ? this._line(this._t("chip_missing"), esc(s.missing)) : "",
     ].join("") + (networkBtn ? `<div class="toolbar">${networkBtn}</div>` : "");
 
-    const networkBtn = this._networkButton();
     const pj = b.permit_join;
     const pairing = `${this._line(this._t("f_pairing"), esc(pj ? `${this._t("pairing_active")} ${this._permitUntil(b.permit_join_end)}` : this._t("inactive")))}${
       ro ? "" : `<div class="toolbar"><button class="btn ${pj ? "" : "primary"}" data-act="pair" data-value="${pj ? 0 : 1}"><ha-icon icon="mdi:link-plus"></ha-icon>${esc(this._t(pj ? "pairing_stop" : "pairing_start"))}</button></div>`
