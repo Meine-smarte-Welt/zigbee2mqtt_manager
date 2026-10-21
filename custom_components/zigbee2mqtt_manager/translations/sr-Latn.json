@@ -1,0 +1,135 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Povezuje menadžer sa vašom Zigbee2MQTT instancom preko MQTT integracije.",
+        "data": {
+          "base_topic": "Osnovna tema base_topic",
+          "low_battery_threshold": "Prag za nizak nivo baterije (%)"
+        },
+        "data_description": {
+          "base_topic": "Mora da se poklapa sa mqtt.base_topic u Zigbee2MQTT konfiguraciji (podrazumevano: zigbee2mqtt)."
+        }
+      },
+      "reconfigure": {
+        "title": "Promena osnovne teme",
+        "data": {
+          "base_topic": "Osnovna tema base_topic"
+        },
+        "data_description": {
+          "base_topic": "Mora da se poklapa sa mqtt.base_topic u Zigbee2MQTT."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Nevažeća osnovna tema (prazna je ili sadrži znake # ili +).",
+      "topic_overlap": "Osnovne teme za više instanci ne smeju biti ugnežđene (npr. zigbee2mqtt i zigbee2mqtt/stick2). Koristite zasebne teme kao što su zigbee2mqtt i zigbee2mqtt2."
+    },
+    "abort": {
+      "already_configured": "Unos za ovu osnovnu cenu već postoji.",
+      "mqtt_unavailable": "MQTT integracija nije podešena ili nije povezana.",
+      "reconfigure_successful": "Osnovna tema je uspešno promenjena."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – podešavanja",
+        "description": "Instalirana verzija: **{version}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Prag za nizak nivo baterije (%)",
+          "critical_battery_threshold": "Prag za kritičan nivo baterije (%)",
+          "fire_events": "Pokreni Home Assistant događaje",
+          "nc_enabled": "Šalji obaveštenja u Centar za obaveštenja",
+          "nc_types": "Vrste obaveštenja",
+          "stale_hours": "Nema odziva nakon (sati)",
+          "problem_include_updates": "Ažuriranja se računaju kao problem",
+          "problem_include_stale": "Nema odziva se računa kao problem",
+          "sidebar_panel": "Unos u bočnoj traci"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Mora biti manji ili jednak pragu za nizak nivo baterije.",
+          "fire_events": "Pokreće događaje kao što su zigbee2mqtt_manager_device_offline, _battery_low i _update_available – koji se mogu koristiti kao pokretači za automatizacije.",
+          "nc_enabled": "Ima efekta samo ako je instalirana integracija Notification Center. Glavni prekidač uključuje ili isključuje sva obaveštenja iz ovog menadžera.",
+          "nc_types": "Izaberite koja obaveštenja se šalju. Lista je sortirana po hitnosti, tako da su kritične stavke na prvom mestu.",
+          "stale_hours": "Broj sati bez poruke nakon kojih se uređaj računa kao uređaj od kog nema odziVa (0 = isključeno). Uređaji koje Zigbee2MQTT već prijavljuje kao oflajn ubrajaju se pod oflajn.",
+          "problem_include_updates": "Senzor Problem se takođe uključuje kada je dostupno ažuriranje firmvera.",
+          "problem_include_stale": "Senzor Problem se takođe uključuje kada uređaj ćuti duže od podešenog vremena. Budite oprezni sa uređajima koji retko šalju podatke.",
+          "sidebar_panel": "Prikazuje karticu kao zasebnu stranicu Zigbee2MQTT u bočnoj traci (samo za administratore), tako da nema potrebe za pravljenjem kontrolne table."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "Kritični prag ne sme biti veći od praga za nizak nivo baterije."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Uređaji"
+      },
+      "offline": {
+        "name": "Oflajn uređaji"
+      },
+      "low_battery": {
+        "name": "Uređaji sa niskim nivoom baterije"
+      },
+      "critical_battery": {
+        "name": "Uređaji sa kritičnim nivoom baterije"
+      },
+      "disabled": {
+        "name": "Onemogućeni uređaji"
+      },
+      "updates_available": {
+        "name": "Dostupna ažuriranja firmvera"
+      },
+      "groups": {
+        "name": "Grupe"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problem"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Kontrola uparivanja",
+      "description": "Pokreće ili zaustavlja režim uparivanja na Zigbee2MQTT mostu.",
+      "fields": {
+        "entry_id": {
+          "name": "ID unosa Entry ID",
+          "description": "Potrebno je samo u slučaju kada postoji više instanci."
+        },
+        "enabled": {
+          "name": "Omogućeno",
+          "description": "Uključite ili isključite uparivanje."
+        },
+        "duration": {
+          "name": "Trajanje",
+          "description": "Trajanje u sekundama (10–254)."
+        },
+        "base_topic": {
+          "name": "Osnovna tema base_topic",
+          "description": "Potrebno je samo u slučaju kada postoji više instanci. Alternativa za ID unosa."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Provera ažuriranja firmvera",
+      "description": "U pozadini proverava da li postoje ažuriranja za sve uređaje koji podržavaju OTA ažuriranje.",
+      "fields": {
+        "entry_id": {
+          "name": "ID unosa Entry ID",
+          "description": "Potrebno je samo u slučaju kada postoji više instanci."
+        },
+        "base_topic": {
+          "name": "Osnovna tema base_topic",
+          "description": "Potrebno je samo u slučaju kada postoji više instanci. Alternativa za ID unosa."
+        }
+      }
+    }
+  }
+}
