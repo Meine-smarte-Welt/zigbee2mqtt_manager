@@ -1,12 +1,19 @@
-[🇩🇪 Deutsch](README.md) · 🇬🇧 English · [🇳🇱 Nederlands](README.nl.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md)
+| [🇩🇪<br>**Deutsch**](README.md) | 🇬🇧<br>**English** | [🇳🇱<br>**Nederlands**](README.nl.md) | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | [🇷🇸<br>**Српски**](README.sr.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+
+![Zigbee2MQTT Manager – banner](docs/images/zigbee2mqtt_manager.webp)
 
 # Zigbee2MQTT Manager for Home Assistant
+
+📖 **Detailed guide with background (German):** [Zigbee2MQTT Manager for Home Assistant on meinesmartewelt.de](https://meinesmartewelt.de/zigbee2mqtt-manager-home-assistant/)
 
 Manage Zigbee2MQTT without leaving Home Assistant: devices, batteries, firmware updates, groups, bindings and the bridge in one dashboard card – as a HACS integration. Layout and design follow the card of [FRITZ!Box Anrufe](https://github.com/Meine-smarte-Welt/fritzbox_anrufe): icon categories, row lists, detail popup, accordion sections, graphical editor and freely adjustable colors.
 
 ## Contents
 
 - [Features](#features)
+- [New in 1.2.1](#new-in-121)
+- [Screenshots](#screenshots)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [The card](#the-card)
@@ -60,6 +67,28 @@ Further points:
 - **Zoom:** `zoom` scales the whole card.
 - **Languages:** German, English, Dutch, French and Spanish (following the Home Assistant language).
 - **Diagnostics download** with anonymized names and IEEE addresses.
+
+## New in 1.2.1
+
+- **Network from the main view:** The device list and **Bridge → Status** have a **Network** button that opens the Zigbee2MQTT network map. The address comes from (1) the card key `network_url`, (2) the integration option **Network map address**, (3) the Z2M setting `frontend.url` (with `/#/network` appended) or (4) the Zigbee2MQTT app in the sidebar (add-on with ingress). If no address is found, the button is hidden; `show_network_link: false` hides it too. *Unverified:* whether the path `/#/network` is right for every Z2M version and whether the add-on sidebar detection works on every setup – otherwise set `network_url` (e.g. `/a0d7b954_zigbee2mqtt`).
+- **Links to the entity and the device:** In the popup, tapping an entity name (section **Entities**) opens that entity's dialog in Home Assistant; the copy icon stays. **Open device** (icon in the popup header and a button in the section) opens the device page in Home Assistant with all its entities. This needs Home Assistant to know the MQTT device.
+- **Sidebar name:** Under **Configure** you can set the **sidebar name** (default "Zigbee2MQTT Manager", at most 40 characters). It is also the panel title, so the panel can be told apart from the Zigbee2MQTT app. The icon stays. The change applies immediately, no restart.
+- **Missing devices:** The integration remembers every device Zigbee2MQTT has ever reported (name, vendor, model, picture, last values; survives restarts). If a device vanishes from the Z2M device list it stays visible **greyed out** with a **missing** badge. There is a **Missing** chip, the filter **Status → Missing in Zigbee2MQTT**, a **Missing devices** sensor (names as attribute), the event `zigbee2mqtt_manager_device_missing`, an entry in the event log and – if enabled – the Notification Center type `device_missing`. When the device returns, the marker disappears by itself. **Forget** (in the popup, or **Forget all missing** in the "Missing" filter) removes it from the memory for good; administrators only. Not counted as missing: devices you remove through the card or that Zigbee2MQTT reports as having left (10-minute grace period), and an empty device list (e.g. while the bridge starts). Missing devices are not counted under "Devices" and do not trigger the problem sensor.
+- **innr sockets without picture (fixed):** For models with a space in the name (e.g. `SP 120`) the picture was missing because the card built the address differently from the Z2M frontend. It now replaces `:`, spaces and `/` with `-` like Z2M and also uses a picture reported by Zigbee2MQTT (`definition.icon`). *Unverified* on the affected sockets; if zigbee2mqtt.io has no picture for a model, the icon stays.
+- **Base topic:** The option now shows the base topic in use in its description. Why the default topic `zigbee2mqtt` could apply after an update could not be traced in the code; the integration does not change the base topic itself. Check it under **Configure** if no devices appear after an update.
+- **Languages:** New is **Српски (Cyrillic)** – README and card. The card has the key terms translated into Serbian; remaining texts show in English.
+
+## Screenshots
+
+The screenshots show version 1.1.0; the 1.2.x additions (network button, links, missing devices) are not visible yet.
+
+![Device list in the card](docs/images/zigbee2mqtt_manager_karte.webp)
+
+![Functions (expose) in the device popup](docs/images/zigbee2mqtt_manager_expose.webp)
+
+![Grouping and filtering](docs/images/zigbee2mqtt_manager_gruppierung.webp)
+
+![Graphical card editor](docs/images/zigbee2mqtt_manager_ui.webp)
 
 ## Requirements
 
@@ -179,6 +208,7 @@ Can be switched off in the integration options ("Fire Home Assistant events"). A
 | `zigbee2mqtt_manager_battery_low` | `name`, `ieee`, `battery` – when the threshold is crossed |
 | `zigbee2mqtt_manager_update_available` | `name`, `ieee`, `installed`, `latest` |
 | `zigbee2mqtt_manager_device_joined` / `_device_left` | `name`, `ieee` |
+| `zigbee2mqtt_manager_device_missing` | `name`, `ieee` – a known device is missing from the Z2M device list (since 1.2.1) |
 
 ```yaml
 triggers:
@@ -192,7 +222,7 @@ actions:
 
 ## Sensors
 
-`Devices`, `Offline devices`, `Devices with low battery`, `Devices with critical battery`, `Available firmware updates`, `Disabled devices` and `Groups`. The sensors for offline, battery, updates and disabled devices carry the device list as an attribute.
+`Devices`, `Offline devices`, `Devices with low battery`, `Devices with critical battery`, `Available firmware updates`, `Disabled devices` and `Groups`. The sensors for offline, battery, updates and disabled devices carry the device list as an attribute. Since 1.2.1 there is also the sensor `Missing devices` (names as attribute).
 
 ### Collective problem sensor (binary sensor "Problem", since 1.2.0)
 
@@ -252,6 +282,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 - The device class is an approximation derived from the device's features; special cases may end up under "Other" or "Sensors".
 - Switches act immediately without confirmation (including configuration switches such as child lock). The clipboard requires HTTPS.
 - **New in 1.2.0, test status:** the Notification Center connection, the problem sensor, the "Disabled devices" sensor, area/HA device mapping, comment (display and editing), disabled devices with their chip, "not heard for long" and the sidebar entry were checked with simulated MQTT messages and registries (pytest with the Home Assistant test environment) and in a simulated browser (jsdom), **not on real hardware, not against a real Notification Center, not in Safari, Chrome, Firefox or the companion app, and not with 75 real devices**. The same applies to the fixes for flicker and scroll jump (issue #5); display values such as "last seen" and signal therefore update at most every 2 seconds. If the bridge restarts, devices may briefly be reported as offline and then closed again, depending on Zigbee2MQTT's availability settings. The HA device mapping finds the IEEE address in the MQTT identifiers; with unusual discovery, area and HA device stay empty. The comment comes from the Z2M device configuration (`description`) and is set via `bridge/request/device/options` when you save; whether your Z2M version includes it in `bridge/info` and accepts saving as expected is unverified. "Not heard for long" is informational and not its own notification type in the Notification Center. The sidebar entry is a Home Assistant panel, not a Lovelace dashboard (issue #6); it was only checked against the panel registration of the test environment, not in a real sidebar.
+- **New in 1.2.1, test status:** network button, entity and device links, greyed-out missing devices and the sidebar-name dialog were checked against simulated data, **not on real hardware or a real Home Assistant installation**. The Serbian card is only partly translated.
 
 ## Troubleshooting
 
@@ -273,6 +304,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 
 | Version | Changes |
 |---|---|
+| **1.2.1** | New: **Network** button (Zigbee2MQTT network map), links from entities and the device to Home Assistant, configurable **sidebar name**, **missing devices** stay visible greyed out (chip, filter, sensor, event, Notification Center, "Forget"), language **Српски**, README with flag language bar, blog link and images. Fixed: missing pictures for models with spaces (e.g. innr sockets). |
 | **1.2.0** | New: a device's **comment** can be **edited** in the popup (section "Comment", stored through Zigbee2MQTT in `description`, not in read-only mode). New: **Disabled** chip and **Disabled devices** sensor (counter and name list). New: **sidebar entry** (Home Assistant panel, administrators only, can be switched off under Configure) showing the card as a full page (issue #6). New: **Notification Center connection** (optional, interface schema 1) with seven notification types (bridge offline, battery critical, device offline, battery low, firmware update, new device, device left the network), main switch and a switch per type in the card and in the Configure dialog. New: **collective problem sensor** as a binary sensor (device class `problem`) with all counters and device lists as attributes; **area**, **HA device** and **comment** in list, popup and search, grouping by **area**; **"Not heard for long"** (chip, filter, badge, adjustable hours); setup aids (my.home-assistant.io links, one-time notice after setup, dashboard template in `examples`). Fixed (issue #7): devices **disabled** in Zigbee2MQTT no longer count as offline (own status "Disabled", excluded from counters, sensors and Notification Center). Fixed (issue #5): the card **flickered and jumped to the top while scrolling** because it was fully redrawn on every data update; now only changed parts are updated (images, rows, accordions and input focus stay in place, data-driven redraw at most every 2 seconds). Fixed: **typing in search and fields on the desktop** triggered Home Assistant keyboard shortcuts (e.g. "e" opened the entity search). Fixed (issue #4): HA device mapping without the deprecated `device_registry.devices` mapping. Changes to the Notification Center switches no longer reload the integration. English leftovers in the German texts (`strings.json`) corrected. **French** (thanks to @Locodice67, PR #3; adopted and adapted: informal address, new texts) and **Spanish** added. |
 | **1.1.0** | New: **group** lists by manufacturer or device class (accordion) and **filter** them (status online/offline, power source, signal, network role, firmware, last seen, not in a Zigbee group, manufacturer, device class; active filters as chips). Writable **switches** under "Features (expose)" can be toggled directly. New popup section **Entities (for automations)** and copy buttons for the entity names. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: new `set_expose` action (administrators only, values are validated) and a device class per device. |
 | 1.0.5 | Fixed: popup and the "Features (expose)" section could not be operated (endless redraw loop, device image flickered). Offline display protected against stale reports. Dutch added (card, integration, README), LICENSE and `examples/` added. Thanks to @pr0xyzer (PR #2): matching HA entities via MQTT identifiers with more than two values (list when renaming). |
@@ -285,14 +317,16 @@ Every `.py`, `.js` and `.yaml` file carries a SHA-256 hash of its content from l
 
 | File | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `cac91991cb4ea73c7bd299d2f0886ca28cdbe0a6d5dcab5a29245c4d8e155caa` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `fc1ff3cc15879e53243855085bab214b7f2b3f2be3d4eea727846084d99a97db` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `eefd4bf8270e6653beb64981c8879880c80d065ab80c297e969a5c200bb5fcf3` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `ac757e176af1b5886ac8d0ecc016c283790f18b58e86f8be1862ec9be65fa88e` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `fc1ff3cc15879e53243855085bab214b7f2b3f2be3d4eea727846084d99a97db` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `886da8733514cc59773857af3a6b6a52661ebcae8e005aabdf3fe4bfaf98fbf1` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `275906c3eb47186a60cec1c6647b6101ef0dceadafd9d473b225e33b298ec583` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `cf8260c4154f824471550a9a5b98dfaf4c590ab2f07caec209c170a6656a1347` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `0439cdd983dcd18c8a909e04190736c3972bb3649c16c7210614c75e8bf37bca` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `ac757e176af1b5886ac8d0ecc016c283790f18b58e86f8be1862ec9be65fa88e` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `474b4d4620631da7055006761799ffa86fa263b000d7ea11d44174833442aadb` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e020bfd76f0218abe3fccac54311a0ce2ee164c7079c570e7e7d6c9421e4a651` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `3767828e16a133f260a8fc22ef997c9ccd30872f9ca18ac6fd0144594bc83f56` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `db841a7909805d8675421a109093bea1f088bab81b50a0520927271e29a82428` |
+| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `cadd7f345e66f41eca696a475a3f7d4f390eaf416b9729911753e7faeddfc302` |
+| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `6241a89313bcacdf37a9e3d3bb78c90cc379736806ea7330ac058db7b529d528` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## License

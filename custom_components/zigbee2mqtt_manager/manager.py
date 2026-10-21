@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): df66b5184c8d5dd73aa5c131e4e7b0beabaf52f826b55253e4aaf368d16fded6
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 09af25a955f026eadfde3207da9c970eae315ab8829f8a1ce86ee0c1c7f40785
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -29,9 +29,11 @@ from .const import (
     CONF_CRITICAL_BATTERY,
     CONF_FIRE_EVENTS,
     CONF_LOW_BATTERY,
+    CONF_NETWORK_URL,
     CONF_PROBLEM_STALE,
     CONF_PROBLEM_UPDATES,
     CONF_SIDEBAR_PANEL,
+    CONF_SIDEBAR_TITLE,
     CONF_STALE_HOURS,
     DEFAULT_CRITICAL_BATTERY,
     DEFAULT_FIRE_EVENTS,
@@ -44,9 +46,11 @@ from .const import (
     EVENT_BATTERY_LOW,
     EVENT_DEVICE_JOINED,
     EVENT_DEVICE_LEFT,
+    EVENT_DEVICE_MISSING,
     EVENT_DEVICE_OFFLINE,
     EVENT_DEVICE_ONLINE,
     EVENT_UPDATE_AVAILABLE,
+    EXPECTED_GONE_SECONDS,
     FLUSH_DELAY,
     GITHUB_RELEASES_URL,
     MAX_EVENT_LOG,
@@ -57,6 +61,7 @@ from .const import (
     STALE_TICK,
     STORAGE_VERSION,
     VERSION,
+    valid_link,
 )
 from .nc_catalog import (
     NC_CATALOG,
@@ -262,6 +267,14 @@ def _device_class(definition: dict[str, Any]) -> str:
     return "sensor"
 
 
+def _definition_icon(definition: dict[str, Any]) -> str | None:
+    """Bild-Adresse, die Zigbee2MQTT selbst mitliefert (definition.icon), nur https."""
+    icon = definition.get("icon")
+    if isinstance(icon, str) and icon.lower().startswith("https://") and valid_link(icon):
+        return icon
+    return None
+
+
 def _same_value(a: Any, b: Any) -> bool:
     """Gleicher Wert UND gleicher Typ (True ist hier nicht dasselbe wie 1)."""
     return type(a) is type(b) and a == b
@@ -303,6 +316,11 @@ class Z2MManager:
             hass, STORAGE_VERSION, f"{DOMAIN}_{entry.entry_id}"
         )
         self._cache: dict[str, dict[str, Any]] = {}
+        # Zuletzt bekannte Geräte (nach IEEE) und Geräte, die aus der Z2M-Liste verschwunden sind
+        self._known: dict[str, dict[str, Any]] = {}
+        self._missing: dict[str, dict[str, Any]] = {}
+        # Gewollte Entfernungen (über die Karte oder "device_leave"): gelten nicht als "fehlt"
+        self._expected_gone: dict[str, datetime] = {}
 
         self._events: deque[dict[str, Any]] = deque(maxlen=MAX_EVENT_LOG)
         # Version der App (Integration) und Ergebnis der Prüfung auf neue Versionen
@@ -391,6 +409,14 @@ class Z2MManager:
             cache = stored.get("devices")
             if isinstance(cache, dict):
                 self._cache = {k: v for k, v in cache.items() if isinstance(v, dict)}
+            # Geräteliste nur übernehmen, wenn sie zum selben Base-Topic gehört (sonst anderer Stick)
+            if stored.get("known_topic") == self.base_topic:
+                known = stored.get("known")
+                if isinstance(known, dict):
+                    self._known = {k: v for k, v in known.items() if isinstance(v, dict)}
+                missing = stored.get("missing")
+                if isinstance(missing, dict):
+                    self._missing = {k: v for k, v in missing.items() if isinstance(v, dict)}
 
         self._unsubs.append(
             await mqtt.async_subscribe(
@@ -477,7 +503,12 @@ class Z2MManager:
         # Nur Geräte behalten, die es noch gibt
         if self._meta:
             devices = {k: v for k, v in devices.items() if k in self._meta}
-        return {"devices": devices}
+        return {
+            "devices": devices,
+            "known_topic": self.base_topic,
+            "known": self._known,
+            "missing": self._missing,
+        }
 
     # ------------------------------------------------------------------
     # MQTT-Eingang
@@ -555,6 +586,8 @@ class Z2MManager:
             self._fire(EVENT_DEVICE_JOINED, {"name": name, "ieee": data.get("ieee_address")})
             self._nc_once("device_joined", data.get("ieee_address"), name)
         elif kind == "device_leave":
+            if data.get("ieee_address"):
+                self._expected_gone[str(data["ieee_address"])] = dt_util.utcnow()
             self._fire(EVENT_DEVICE_LEFT, {"name": name, "ieee": data.get("ieee_address")})
             self._nc_once("device_left", data.get("ieee_address"), name)
         self._schedule_update()
@@ -603,6 +636,121 @@ class Z2MManager:
                     state[key] = cached[key]
             if "_last_msg" in cached and name not in self._last_msg:
                 self._last_msg[name] = cached["_last_msg"]
+
+        self._track_known(new_meta)
+
+    # ------------------------------------------------------------------
+    # Fehlende Geräte (aus der Z2M-Liste verschwunden)
+    # ------------------------------------------------------------------
+    def _known_snapshot(self, meta: dict[str, Any]) -> dict[str, Any]:
+        """Was von einem Gerät gemerkt wird, falls es aus der Z2M-Liste verschwindet."""
+        name = meta.get("friendly_name") or ""
+        state = self._states.get(name, {})
+        definition = meta.get("definition") or {}
+        dev_icon = self._device_config(meta).get("icon")
+        return {
+            "name": name,
+            "type": meta.get("type"),
+            "vendor": definition.get("vendor"),
+            "model": definition.get("model") or meta.get("model_id"),
+            "image_model": definition.get("model"),
+            "icon": dev_icon if isinstance(dev_icon, str) else None,
+            "icon_url": _definition_icon(definition),
+            "device_class": _device_class(definition),
+            "description": definition.get("description"),
+            "power_source": meta.get("power_source"),
+            "battery": _num(state.get("battery")),
+            "linkquality": _num(state.get("linkquality")),
+            "last_seen": _normalize_ts(state.get("last_seen")) or self._last_msg.get(name),
+        }
+
+    def _refresh_known(self) -> None:
+        """Gemerkte Geräteliste auf den aktuellen Stand bringen (nur mit bekannter Geräteliste)."""
+        if not self._meta:
+            return
+        self._known = {
+            ieee: self._known_snapshot(meta)
+            for ieee, meta in self._meta.items()
+            if meta.get("type") != "Coordinator"
+        }
+
+    def _track_known(self, new_meta: dict[str, dict[str, Any]]) -> None:
+        """Mit der letzten bekannten Liste vergleichen: verschwundene Geräte als "fehlt" merken."""
+        if not new_meta:
+            return  # leere Liste (z. B. Neustart von Z2M): nichts ableiten
+        now = dt_util.utcnow()
+        self._expected_gone = {
+            k: v
+            for k, v in self._expected_gone.items()
+            if (now - v).total_seconds() < EXPECTED_GONE_SECONDS
+        }
+        current = {i for i, m in new_meta.items() if m.get("type") != "Coordinator"}
+        for ieee in [i for i in self._missing if i in current]:
+            snap = self._missing.pop(ieee)
+            self._log("device_back", snap.get("name") or ieee)
+        for ieee, snap in self._known.items():
+            if ieee in current or ieee in self._missing or ieee in self._expected_gone:
+                continue
+            name = snap.get("name") or ieee
+            self._missing[ieee] = {**snap, "missing_since": now.isoformat(timespec="seconds")}
+            self._log("device_missing", name)
+            self._fire(EVENT_DEVICE_MISSING, {"name": name, "ieee": ieee})
+
+    def _serialize_missing(self, ieee: str, snap: dict[str, Any]) -> dict[str, Any]:
+        ha = self._ha_devices().get(ieee.lower())
+        return {
+            "ieee": ieee,
+            "name": snap.get("name") or ieee,
+            "comment": None,
+            "ha_device": ha[1] if ha else None,
+            "ha_device_id": ha[0] if ha else None,
+            "area": ha[2] if ha else None,
+            "stale": False,
+            "type": snap.get("type"),
+            "vendor": snap.get("vendor"),
+            "model": snap.get("model"),
+            "image_model": snap.get("image_model"),
+            "device_class": snap.get("device_class") or "other",
+            "icon": snap.get("icon"),
+            "icon_url": snap.get("icon_url"),
+            "description": snap.get("description"),
+            "power_source": snap.get("power_source"),
+            "network_address": None,
+            "supported": True,
+            "disabled": False,
+            "interviewing": False,
+            "sw_build_id": None,
+            "battery": snap.get("battery"),
+            "voltage": None,
+            "linkquality": snap.get("linkquality"),
+            "available": None,
+            "available_source": None,
+            "last_seen": snap.get("last_seen"),
+            "bindings": [],
+            "out_clusters": [],
+            "has_options": False,
+            "has_exposes": False,
+            "ota": {
+                "capable": False,
+                "state": None,
+                "installed": None,
+                "latest": None,
+                "progress": None,
+                "remaining": None,
+            },
+            "missing": True,
+            "missing_since": snap.get("missing_since"),
+        }
+
+    async def async_forget_missing(self, ieee: str | None = None) -> None:
+        """Ein fehlendes Gerät (oder alle) aus der Merkliste entfernen."""
+        if ieee is None:
+            self._missing.clear()
+        elif ieee in self._missing:
+            del self._missing[ieee]
+        else:
+            raise ValueError(f"Kein fehlendes Gerät: {ieee}")
+        self._schedule_update()
 
     def _apply_groups(self, groups: list[dict[str, Any]]) -> None:
         self._groups = {
@@ -767,6 +915,7 @@ class Z2MManager:
             "name": name,
             "comment": comment,
             "ha_device": ha[1] if ha else None,
+            "ha_device_id": ha[0] if ha else None,
             "area": ha[2] if ha else None,
             "stale": self._is_stale(last_seen, availability[0]),
             "type": meta.get("type"),
@@ -775,6 +924,8 @@ class Z2MManager:
             "image_model": definition.get("model"),
             "device_class": _device_class(definition),
             "icon": icon,
+            "icon_url": _definition_icon(definition),
+            "missing": False,
             "description": definition.get("description"),
             "power_source": meta.get("power_source"),
             "network_address": meta.get("network_address"),
@@ -822,6 +973,18 @@ class Z2MManager:
             "scenes": len(group.get("scenes") or []),
         }
 
+    def _network_url(self) -> tuple[str | None, str | None]:
+        """Adresse der Zigbee2MQTT-Netzwerkkarte: eigene Angabe, sonst die URL aus der Z2M-Konfiguration."""
+        custom = str(self.entry.options.get(CONF_NETWORK_URL) or "").strip()
+        if custom and valid_link(custom):
+            return custom, "option"
+        config = self.bridge_info.get("config")
+        frontend = config.get("frontend") if isinstance(config, dict) else None
+        url = frontend.get("url") if isinstance(frontend, dict) else None
+        if isinstance(url, str) and url.lower().startswith(("http://", "https://")) and valid_link(url):
+            return f"{url.rstrip('/')}/#/network", "z2m"
+        return None, None
+
     def _bridge_options(self) -> dict[str, Any]:
         config = self.bridge_info.get("config")
         config = config if isinstance(config, dict) else {}
@@ -834,6 +997,7 @@ class Z2MManager:
         return values
 
     def _rebuild(self) -> None:
+        self._refresh_known()
         devices = [
             self._serialize(meta)
             for meta in self._meta.values()
@@ -858,6 +1022,10 @@ class Z2MManager:
             (self._serialize_group(g) for g in self._groups.values()),
             key=lambda g: (g["name"] or "").lower(),
         )
+        missing = sorted(
+            (self._serialize_missing(i, snap) for i, snap in self._missing.items()),
+            key=lambda d: (d["name"] or "").lower(),
+        )
 
         info = self.bridge_info
         version = info.get("version")
@@ -874,6 +1042,7 @@ class Z2MManager:
             "critical_battery": [d["name"] for d in critical],
             "stale": [d["name"] for d in stale],
             "disabled": [d["name"] for d in disabled],
+            "missing": [d["name"] for d in missing],
         }
         reasons: list[str] = []
         if self.bridge_online is False:
@@ -887,6 +1056,7 @@ class Z2MManager:
         if stale and self.problem_includes_stale:
             reasons.append("stale")
         self.problem = {"on": bool(reasons), "reasons": reasons}
+        network_url, network_source = self._network_url()
         self.data = {
             "bridge": {
                 "online": self.bridge_online,
@@ -898,6 +1068,8 @@ class Z2MManager:
                 "base_topic": self.base_topic,
                 "coordinator_type": coordinator.get("type"),
                 "coordinator_revision": meta_c.get("revision"),
+                "network_url": network_url,
+                "network_url_source": network_source,
                 "options": self._bridge_options(),
                 "option_values": {k: list(v) for k, v in _BRIDGE_OPTION_VALUES.items()},
             },
@@ -911,6 +1083,7 @@ class Z2MManager:
                 "stale": len(stale),
                 "stale_hours": self.stale_hours,
                 "disabled": len(disabled),
+                "missing": len(missing),
                 "groups": len(groups),
                 "low_battery_threshold": low_t,
                 "critical_battery_threshold": crit_t,
@@ -921,6 +1094,7 @@ class Z2MManager:
             "events": list(self._events),
             "groups": groups,
             "devices": devices,
+            "missing": missing,
         }
 
     # ------------------------------------------------------------------
@@ -988,7 +1162,7 @@ class Z2MManager:
     @staticmethod
     def _core_of(options: Any) -> dict[str, Any]:
         return {
-            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES, CONF_SIDEBAR_PANEL)
+            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES, CONF_SIDEBAR_PANEL, CONF_SIDEBAR_TITLE)
         }
 
     def core_options_changed(self) -> bool:
@@ -1039,6 +1213,18 @@ class Z2MManager:
                 state["update_available"].append(
                     {"key": ieee, "subject": subject, "placeholders": {"name": name}}
                 )
+        for device in self.data.get("missing", []):
+            ieee = device.get("ieee")
+            if not ieee:
+                continue
+            name = device.get("name") or ieee
+            state["device_missing"].append(
+                {
+                    "key": ieee,
+                    "subject": {"id": ieee, "name": name, "kind": "device"},
+                    "placeholders": {"name": name},
+                }
+            )
         return state
 
     @callback
@@ -1390,8 +1576,14 @@ class Z2MManager:
         )
 
     async def async_remove(self, ieee: str | None, force: bool = False) -> None:
+        # Gewollte Entfernung: das Gerät soll danach nicht als "fehlt" erscheinen
+        name = self._name_of(ieee)
+        if ieee:
+            self._expected_gone[ieee] = dt_util.utcnow()
+            self._known.pop(ieee, None)
+            self._missing.pop(ieee, None)
         await self._request(
-            "device/remove", {"id": self._name_of(ieee), "force": bool(force)}
+            "device/remove", {"id": name, "force": bool(force)}
         )
 
     # --- OTA ----------------------------------------------------------

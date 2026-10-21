@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): d0b0928733a42f23ba55ba7ed3a0b98d343a816eacd1ae71841d7264428c3fba
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 5c371f42c62528e22226689aada45c33a3e7d75a520560e72c2eb390d39422ca
 """Übersichts-Sensoren (Geräte, Offline, Batterie niedrig, Updates)."""
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ SENSORS: dict[str, tuple[str, str, str | None]] = {
     "updates_available": ("updates_available", "mdi:update", "updates_available"),
     "critical_battery": ("critical_battery", "mdi:battery-alert-variant-outline", None),
     "disabled": ("disabled", "mdi:cancel", "disabled"),
+    "missing": ("missing", "mdi:help-network-outline", "missing"),
     "groups": ("groups", "mdi:group", None),
 }
 

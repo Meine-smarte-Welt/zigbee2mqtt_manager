@@ -1,5 +1,5 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 01327da6ec6384440a25a41950f799f8c1706285d70b15ba14f7e29ac895a59b
-// Seitenleisten-Eintrag „Zigbee2MQTT“: zeigt die Karte als eigene Seite (Home-Assistant-Panel).
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 5f82d0931ee72e885fee5a467cd70508e284199a8d5961c0aebb4c8104afb564
+// Seitenleisten-Eintrag „Zigbee2MQTT Manager“ (Name einstellbar): zeigt die Karte als eigene Seite (Home-Assistant-Panel).
 // Die Karte wird über die von der Integration übergebene URL nachgeladen, damit sie auch ohne
 // vorher geöffnetes Dashboard (Lovelace-Ressource) verfügbar ist.
 class Zigbee2MqttManagerPanel extends HTMLElement {
@@ -61,7 +61,7 @@ class Zigbee2MqttManagerPanel extends HTMLElement {
     menu.narrow = this._narrow;
     this._menu = menu;
     const title = document.createElement("span");
-    title.textContent = "Zigbee2MQTT";
+    title.textContent = typeof cfg.title === "string" && cfg.title ? cfg.title : "Zigbee2MQTT Manager";
     bar.append(menu, title);
 
     const wrap = document.createElement("div");

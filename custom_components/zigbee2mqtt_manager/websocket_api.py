@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 3e75c2ece557f4d2dc0f6b6b5fbddc686849ee92fb0d47fda86a6c8e51084b8a
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 98db3e4da4c7b391bb4ad84794085e80ed790815d309e7822132c3b6c96416d0
 """WebSocket-API zwischen Lovelace-Karte und Integration."""
 
 from __future__ import annotations
@@ -25,6 +25,8 @@ ACTIONS = [
     "set_comment",
     "set_expose",
     "remove",
+    "forget_missing",
+    "forget_missing_all",
     # Firmware
     "ota_check",
     "ota_update",
@@ -176,6 +178,10 @@ async def ws_action(
             await manager.async_set_expose(ieee, msg.get("key"), value)
         elif action == "remove":
             await manager.async_remove(ieee, bool(value))
+        elif action == "forget_missing":
+            await manager.async_forget_missing(ieee)
+        elif action == "forget_missing_all":
+            await manager.async_forget_missing()
         elif action == "ota_check":
             await manager.async_ota_check(ieee)
         elif action == "ota_update":

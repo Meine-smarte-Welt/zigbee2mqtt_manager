@@ -36,7 +36,7 @@
     "step": {
       "init": {
         "title": "Zigbee2MQTT Manager – ajustes",
-        "description": "Versión instalada: **{version}**\n\n{update_info}",
+        "description": "Versión instalada: **{version}**\n\nBase topic de esta instancia: **{base_topic}**\n\n{update_info}",
         "data": {
           "low_battery_threshold": "Umbral de «batería baja» (%)",
           "critical_battery_threshold": "Umbral de «batería crítica» (%)",
@@ -46,7 +46,9 @@
           "stale_hours": "«Sin noticias» tras (horas)",
           "problem_include_updates": "Las actualizaciones cuentan como problema",
           "problem_include_stale": "«Sin noticias» cuenta como problema",
-          "sidebar_panel": "Entrada en la barra lateral"
+          "sidebar_panel": "Entrada en la barra lateral",
+          "sidebar_title": "Nombre en la barra lateral",
+          "network_url": "Dirección del mapa de red (opcional)"
         },
         "data_description": {
           "critical_battery_threshold": "Debe ser menor o igual que el umbral de «batería baja».",
@@ -56,12 +58,15 @@
           "stale_hours": "Horas sin mensaje tras las cuales un dispositivo se considera «sin noticias» (0 = desactivado). Los dispositivos que Zigbee2MQTT ya notifica como sin conexión cuentan como sin conexión.",
           "problem_include_updates": "El sensor «Problema» también se activa cuando hay una actualización de firmware disponible.",
           "problem_include_stale": "El sensor «Problema» también se activa cuando un dispositivo lleva callado más tiempo del indicado. Cuidado con dispositivos que envían raramente.",
-          "sidebar_panel": "Muestra la tarjeta como página «Zigbee2MQTT» en la barra lateral (solo administradores), sin necesidad de crear un panel."
+          "sidebar_panel": "Muestra la tarjeta como página propia en la barra lateral (solo administradores), sin necesidad de crear un panel.",
+          "sidebar_title": "Nombre de la entrada en la barra lateral (por defecto: «Zigbee2MQTT Manager»). Útil si ahí también aparece la app Z2M con el mismo icono. Surte efecto de inmediato.",
+          "network_url": "Adonde lleva el botón «Red», por ejemplo el mapa de red de tu interfaz de Zigbee2MQTT (http://… o una ruta como /hassio/ingress/…). Déjalo vacío para usar la dirección de la configuración de Z2M o la app Zigbee2MQTT de la barra lateral."
         }
       }
     },
     "error": {
-      "critical_above_low": "El umbral crítico no puede superar el umbral de «baja»."
+      "critical_above_low": "El umbral crítico no puede superar el umbral de «baja».",
+      "invalid_url": "Dirección no válida. Se permiten http://, https:// o una ruta que empiece por / (sin espacios)."
     }
   },
   "entity": {
@@ -86,6 +91,9 @@
       },
       "groups": {
         "name": "Grupos"
+      },
+      "missing": {
+        "name": "Dispositivos ausentes"
       }
     },
     "binary_sensor": {

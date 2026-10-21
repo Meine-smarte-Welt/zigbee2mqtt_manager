@@ -36,7 +36,7 @@
     "step": {
       "init": {
         "title": "Zigbee2MQTT Manager – instellingen",
-        "description": "Geïnstalleerde versie: **{version}**\n\n{update_info}",
+        "description": "Geïnstalleerde versie: **{version}**\n\nBase-topic van deze instantie: **{base_topic}**\n\n{update_info}",
         "data": {
           "low_battery_threshold": "Drempel voor „batterij laag” (%)",
           "critical_battery_threshold": "Drempel voor „batterij kritiek” (%)",
@@ -46,7 +46,9 @@
           "stale_hours": "„Lang niets gehoord” na (uren)",
           "problem_include_updates": "Updates tellen als storing",
           "problem_include_stale": "„Lang niets gehoord” telt als storing",
-          "sidebar_panel": "Item in de zijbalk"
+          "sidebar_panel": "Item in de zijbalk",
+          "sidebar_title": "Naam in de zijbalk",
+          "network_url": "Adres van de netwerkkaart (optioneel)"
         },
         "data_description": {
           "critical_battery_threshold": "Moet kleiner dan of gelijk aan de drempel voor „batterij laag” zijn.",
@@ -56,12 +58,15 @@
           "stale_hours": "Uren zonder bericht waarna een apparaat als „lang niets gehoord” geldt (0 = uit). Apparaten die Zigbee2MQTT al als offline meldt, tellen onder offline.",
           "problem_include_updates": "De sensor „Storing” gaat ook aan als er een firmware-update beschikbaar is.",
           "problem_include_stale": "De sensor „Storing” gaat ook aan als een apparaat langer dan de ingestelde tijd stil is. Pas op bij apparaten die zelden zenden.",
-          "sidebar_panel": "Toont de kaart als eigen pagina „Zigbee2MQTT” in de zijbalk (alleen beheerders), zodat er geen eigen dashboard nodig is."
+          "sidebar_panel": "Toont de kaart als eigen pagina in de zijbalk (alleen voor beheerders), zodat er geen eigen dashboard nodig is.",
+          "sidebar_title": "Naam van het item in de zijbalk (standaard: „Zigbee2MQTT Manager”). Handig als daar ook de Z2M-app met hetzelfde pictogram staat. Werkt direct.",
+          "network_url": "Waar de knop „Netwerk” naartoe leidt, bijvoorbeeld de netwerkkaart van je Zigbee2MQTT-interface (http://… of een pad zoals /hassio/ingress/…). Laat leeg om het adres uit de Z2M-configuratie of de Zigbee2MQTT-zijbalk-app te gebruiken."
         }
       }
     },
     "error": {
-      "critical_above_low": "De kritieke drempel mag niet boven de drempel voor „laag” liggen."
+      "critical_above_low": "De kritieke drempel mag niet boven de drempel voor „laag” liggen.",
+      "invalid_url": "Ongeldig adres. Toegestaan zijn http://, https:// of een pad dat met / begint (zonder spaties)."
     }
   },
   "entity": {
@@ -86,6 +91,9 @@
       },
       "groups": {
         "name": "Groepen"
+      },
+      "missing": {
+        "name": "Ontbrekende apparaten"
       }
     },
     "binary_sensor": {

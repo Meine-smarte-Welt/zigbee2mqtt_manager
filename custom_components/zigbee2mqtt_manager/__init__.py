@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 20bb017a742d339a14ed81977e4f9be364b777126c58a8d41d3eb94d5130a8b3
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2117441ac8566f1c57af1c1743c0f4d03fb6c055917153d43cbac065612dc8d9
 """Zigbee2MQTT Manager – Verwaltung von Zigbee2MQTT direkt in Home Assistant."""
 
 from __future__ import annotations
@@ -20,16 +20,20 @@ from homeassistant.loader import async_get_integration
 
 from .const import (
     CONF_SIDEBAR_PANEL,
+    CONF_SIDEBAR_TITLE,
     CONF_WELCOME_SHOWN,
     CARD_FILENAME,
     CARD_URL_BASE,
     DEFAULT_SIDEBAR_PANEL,
+    DEFAULT_SIDEBAR_TITLE,
     DOMAIN,
+    MAX_SIDEBAR_TITLE,
     PANEL_ELEMENT,
     PANEL_FILENAME,
     PANEL_URL_PATH,
     SERVICE_CHECK_UPDATES,
     SERVICE_PERMIT_JOIN,
+    clean_title,
 )
 from .manager import Z2MConfigEntry, Z2MManager
 from .websocket_api import async_register_websocket_api
@@ -44,33 +48,39 @@ _DASHBOARDS = "https://my.home-assistant.io/redirect/lovelace_dashboards/"
 _WELCOME = {
     "de": (
         "Zigbee2MQTT Manager ist eingerichtet",
-        "Die Karte ist sofort in der Seitenleiste unter **Zigbee2MQTT** erreichbar (abschaltbar unter *Konfigurieren*). Für ein eigenes Dashboard: **Dashboard bearbeiten → Karte hinzufügen → „Zigbee2MQTT Manager“**.\n\n"
+        "Die Karte ist sofort in der Seitenleiste unter **{title}** erreichbar (Name und Anzeige änderbar unter *Konfigurieren*). Für ein eigenes Dashboard: **Dashboard bearbeiten → Karte hinzufügen → „Zigbee2MQTT Manager“**.\n\n"
         f"[Dashboards öffnen]({_DASHBOARDS}) · Eine fertige Dashboard-Vorlage steht in der README (Ordner `examples`).\n\n"
         "Für die Leitseite gibt es den Sensor „Störung“ (Binärsensor) mit allen Zählern als Attribute.",
     ),
     "en": (
         "Zigbee2MQTT Manager is set up",
-        "The card is available right away in the sidebar under **Zigbee2MQTT** (can be switched off under *Configure*). For your own dashboard: **Edit dashboard → Add card → “Zigbee2MQTT Manager”**.\n\n"
+        "The card is available right away in the sidebar under **{title}** (name and visibility can be changed under *Configure*). For your own dashboard: **Edit dashboard → Add card → “Zigbee2MQTT Manager”**.\n\n"
         f"[Open dashboards]({_DASHBOARDS}) · A ready-made dashboard template is in the README (folder `examples`).\n\n"
         "For your home page there is the “Problem” binary sensor with all counters as attributes.",
     ),
     "nl": (
         "Zigbee2MQTT Manager is ingesteld",
-        "De kaart is meteen beschikbaar in de zijbalk onder **Zigbee2MQTT** (uit te schakelen onder *Configureren*). Voor een eigen dashboard: **Dashboard bewerken → Kaart toevoegen → „Zigbee2MQTT Manager”**.\n\n"
+        "De kaart is meteen beschikbaar in de zijbalk onder **{title}** (naam en weergave aan te passen onder *Configureren*). Voor een eigen dashboard: **Dashboard bewerken → Kaart toevoegen → „Zigbee2MQTT Manager”**.\n\n"
         f"[Dashboards openen]({_DASHBOARDS}) · Een kant-en-klare dashboardsjabloon staat in de README (map `examples`).\n\n"
         "Voor je startpagina is er de binaire sensor „Storing” met alle tellers als attributen.",
     ),
     "fr": (
         "Zigbee2MQTT Manager est configuré",
-        "La carte est disponible tout de suite dans la barre latérale sous **Zigbee2MQTT** (désactivable sous *Configurer*). Pour ton propre tableau de bord : **Modifier le tableau de bord → Ajouter une carte → « Zigbee2MQTT Manager »**.\n\n"
+        "La carte est disponible tout de suite dans la barre latérale sous **{title}** (nom et affichage modifiables sous *Configurer*). Pour ton propre tableau de bord : **Modifier le tableau de bord → Ajouter une carte → « Zigbee2MQTT Manager »**.\n\n"
         f"[Ouvrir les tableaux de bord]({_DASHBOARDS}) · Un modèle de tableau de bord prêt à l'emploi se trouve dans le README (dossier `examples`).\n\n"
         "Pour ta page d'accueil, il y a le capteur binaire « Problème » avec tous les compteurs en attributs.",
     ),
     "es": (
         "Zigbee2MQTT Manager está configurado",
-        "La tarjeta está disponible enseguida en la barra lateral bajo **Zigbee2MQTT** (se puede desactivar en *Configurar*). Para tu propio panel: **Editar panel → Añadir tarjeta → «Zigbee2MQTT Manager»**.\n\n"
+        "La tarjeta está disponible enseguida en la barra lateral bajo **{title}** (nombre y visibilidad modificables en *Configurar*). Para tu propio panel: **Editar panel → Añadir tarjeta → «Zigbee2MQTT Manager»**.\n\n"
         f"[Abrir paneles]({_DASHBOARDS}) · Una plantilla de panel lista para usar está en el README (carpeta `examples`).\n\n"
         "Para tu página de inicio existe el sensor binario «Problema» con todos los contadores como atributos.",
+    ),
+    "sr": (
+        "Zigbee2MQTT Manager је подешен",
+        "Картица је одмах доступна у бочној траци под називом **{title}** (назив и приказ се мењају у *Подешавања*). За сопствену контролну таблу: **Уреди таблу → Додај картицу → „Zigbee2MQTT Manager“**.\n\n"
+        f"[Отвори контролне табле]({_DASHBOARDS}) · Готов шаблон табле налази се у README (фолдер `examples`).\n\n"
+        "За почетну страницу постоји бинарни сензор „Сметња“ са свим бројачима као атрибутима.",
     ),
 }
 
@@ -78,6 +88,7 @@ _CARD_DIR = Path(__file__).parent / "www"
 _CARD_STATIC_URL = f"{CARD_URL_BASE}/{CARD_FILENAME}"
 _FRONTEND_KEY = f"{DOMAIN}_frontend_registered"
 _PANEL_KEY = f"{DOMAIN}_panel_registered"
+_PANEL_TITLE_KEY = f"{DOMAIN}_panel_title"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -264,21 +275,35 @@ def _panel_wanted(hass: HomeAssistant) -> bool:
     )
 
 
+def _panel_title(hass: HomeAssistant) -> str:
+    """Beschriftung des Seitenleisten-Eintrags: die erste eigene Angabe, sonst der Standard."""
+    active = (ConfigEntryState.LOADED, ConfigEntryState.SETUP_IN_PROGRESS)
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        if entry.state in active and entry.options.get(CONF_SIDEBAR_PANEL, DEFAULT_SIDEBAR_PANEL):
+            return clean_title(
+                entry.options.get(CONF_SIDEBAR_TITLE), DEFAULT_SIDEBAR_TITLE, MAX_SIDEBAR_TITLE
+            )
+    return DEFAULT_SIDEBAR_TITLE
+
+
 async def _async_sync_panel(hass: HomeAssistant) -> None:
     """Seitenleisten-Eintrag anlegen oder entfernen, je nach Optionen der geladenen Einträge."""
     registered = bool(hass.data.get(_PANEL_KEY))
     wanted = _panel_wanted(hass) and bool(hass.data.get(_FRONTEND_KEY))
+    title = _panel_title(hass)
     try:
-        if wanted and not registered:
+        # Neu anlegen, wenn noch nicht vorhanden oder sich der Name geändert hat
+        if wanted and (not registered or hass.data.get(_PANEL_TITLE_KEY) != title):
             integration = await async_get_integration(hass, DOMAIN)
             version = integration.version
             frontend.async_register_built_in_panel(
                 hass,
                 component_name="custom",
-                sidebar_title="Zigbee2MQTT",
+                sidebar_title=title,
                 sidebar_icon="mdi:zigbee",
                 frontend_url_path=PANEL_URL_PATH,
                 config={
+                    "title": title,
                     "card_url": f"{_CARD_STATIC_URL}?v={version}",
                     "_panel_custom": {
                         "name": PANEL_ELEMENT,
@@ -291,6 +316,7 @@ async def _async_sync_panel(hass: HomeAssistant) -> None:
                 update=True,
             )
             hass.data[_PANEL_KEY] = True
+            hass.data[_PANEL_TITLE_KEY] = title
         elif registered and not wanted:
             frontend.async_remove_panel(hass, PANEL_URL_PATH, warn_if_unknown=False)
             hass.data[_PANEL_KEY] = False
@@ -304,8 +330,11 @@ def _async_welcome(hass: HomeAssistant, entry: Z2MConfigEntry) -> None:
         return
     lang = str(hass.config.language)[:2]
     title, message = _WELCOME.get(lang, _WELCOME["en"])
+    panel_title = clean_title(
+        entry.options.get(CONF_SIDEBAR_TITLE), DEFAULT_SIDEBAR_TITLE, MAX_SIDEBAR_TITLE
+    )
     persistent_notification.async_create(
-        hass, message, title=title, notification_id=f"{DOMAIN}_welcome_{entry.entry_id}"
+        hass, message.replace("{title}", panel_title), title=title, notification_id=f"{DOMAIN}_welcome_{entry.entry_id}"
     )
     # Reine Datenänderung: lädt die Integration nicht neu (nur Optionen tun das)
     hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_WELCOME_SHOWN: True})

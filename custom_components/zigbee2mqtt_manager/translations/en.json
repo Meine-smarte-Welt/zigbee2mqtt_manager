@@ -36,7 +36,7 @@
     "step": {
       "init": {
         "title": "Zigbee2MQTT Manager – settings",
-        "description": "Installed version: **{version}**\n\n{update_info}",
+        "description": "Installed version: **{version}**\n\nBase topic of this instance: **{base_topic}**\n\n{update_info}",
         "data": {
           "low_battery_threshold": "Threshold for “low battery” (%)",
           "critical_battery_threshold": "Threshold for “critical battery” (%)",
@@ -46,7 +46,9 @@
           "stale_hours": "“Not heard from” after (hours)",
           "problem_include_updates": "Updates count as a problem",
           "problem_include_stale": "“Not heard from” counts as a problem",
-          "sidebar_panel": "Sidebar entry"
+          "sidebar_panel": "Sidebar entry",
+          "sidebar_title": "Sidebar name",
+          "network_url": "Network map address (optional)"
         },
         "data_description": {
           "critical_battery_threshold": "Must be less than or equal to the “low battery” threshold.",
@@ -56,12 +58,15 @@
           "stale_hours": "Hours without a message after which a device counts as “not heard from” (0 = off). Devices Zigbee2MQTT already reports as offline are counted under offline.",
           "problem_include_updates": "The “Problem” sensor also turns on when a firmware update is available.",
           "problem_include_stale": "The “Problem” sensor also turns on when a device has been silent longer than the set time. Be careful with devices that rarely send.",
-          "sidebar_panel": "Shows the card as its own “Zigbee2MQTT” page in the sidebar (administrators only), so no dashboard has to be built."
+          "sidebar_panel": "Shows the card as its own page in the sidebar (administrators only), so no dashboard has to be built.",
+          "sidebar_title": "Label of the sidebar entry (default: “Zigbee2MQTT Manager”). Handy if the Z2M app with the same icon is also listed there. Takes effect immediately.",
+          "network_url": "Where the “Network” button leads, e.g. the network map of your Zigbee2MQTT interface (http://… or a path like /hassio/ingress/…). Leave empty to use the address from the Z2M configuration or the Zigbee2MQTT sidebar app."
         }
       }
     },
     "error": {
-      "critical_above_low": "The critical threshold must not exceed the “low” threshold."
+      "critical_above_low": "The critical threshold must not exceed the “low” threshold.",
+      "invalid_url": "Invalid address. Allowed are http://, https:// or a path starting with / (no spaces)."
     }
   },
   "entity": {
@@ -86,6 +91,9 @@
       },
       "groups": {
         "name": "Groups"
+      },
+      "missing": {
+        "name": "Missing devices"
       }
     },
     "binary_sensor": {

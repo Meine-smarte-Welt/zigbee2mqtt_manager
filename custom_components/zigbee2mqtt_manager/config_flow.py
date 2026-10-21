@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): ec291fa61c993155c278f6a885f39b16fb56a64f26c97eb8a2fb0e8142acea9d
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 02aca7cf2cad9ef32d87ad80203ebda154696071fbadb4813dfd5c737a890762
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -22,9 +22,11 @@ from .const import (
     CONF_CRITICAL_BATTERY,
     CONF_FIRE_EVENTS,
     CONF_LOW_BATTERY,
+    CONF_NETWORK_URL,
     CONF_PROBLEM_STALE,
     CONF_PROBLEM_UPDATES,
     CONF_SIDEBAR_PANEL,
+    CONF_SIDEBAR_TITLE,
     CONF_STALE_HOURS,
     DEFAULT_BASE_TOPIC,
     DEFAULT_CRITICAL_BATTERY,
@@ -33,9 +35,13 @@ from .const import (
     DEFAULT_PROBLEM_STALE,
     DEFAULT_PROBLEM_UPDATES,
     DEFAULT_SIDEBAR_PANEL,
+    DEFAULT_SIDEBAR_TITLE,
     DEFAULT_STALE_HOURS,
     DOMAIN,
+    MAX_SIDEBAR_TITLE,
     VERSION,
+    clean_title,
+    valid_link,
 )
 from .nc_catalog import NC_TYPE_IDS, nc_type_labels
 from .notification_bridge import OPT_ENABLED as NC_OPT_ENABLED
@@ -164,14 +170,22 @@ class Z2MManagerOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
+            network_url = str(user_input.get(CONF_NETWORK_URL) or "").strip()
             if user_input[CONF_CRITICAL_BATTERY] > user_input[CONF_LOW_BATTERY]:
                 errors[CONF_CRITICAL_BATTERY] = "critical_above_low"
+            elif network_url and not valid_link(network_url):
+                errors[CONF_NETWORK_URL] = "invalid_url"
             else:
                 chosen = set(user_input.get(NC_OPT_TYPES, []))
                 # Bestehende Optionen bleiben erhalten; die Meldungsarten werden als {Art: an/aus} gespeichert
                 data = {
                     **self.config_entry.options,
                     **user_input,
+                    # Leere Felder werden vom Formular weggelassen: bewusst leer = Standard
+                    CONF_SIDEBAR_TITLE: clean_title(
+                        user_input.get(CONF_SIDEBAR_TITLE), DEFAULT_SIDEBAR_TITLE, MAX_SIDEBAR_TITLE
+                    ),
+                    CONF_NETWORK_URL: network_url,
                     NC_OPT_TYPES: {t: t in chosen for t in NC_TYPE_IDS},
                 }
                 return self.async_create_entry(data=data)
@@ -188,6 +202,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "nl": f"⚠️ Nieuwe versie beschikbaar: **{latest}** – {link}",
                 "fr": f"⚠️ Nouvelle version disponible : **{latest}** – {link}",
                 "es": f"⚠️ Nueva versión disponible: **{latest}** – {link}",
+                "sr": f"⚠️ Доступна је нова верзија: **{latest}** – {link}",
             }.get(lang, f"⚠️ New version available: **{latest}** – {link}")
         elif latest:
             update_info = {
@@ -195,6 +210,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "nl": "✅ Actueel",
                 "fr": "✅ À jour",
                 "es": "✅ Actualizado",
+                "sr": "✅ Ажурно",
             }.get(lang, "✅ Up to date")
         else:
             update_info = ""
@@ -204,6 +220,8 @@ class Z2MManagerOptionsFlow(OptionsFlow):
             step_id="init",
             description_placeholders={
                 "version": app.get("version") or VERSION,
+                "base_topic": getattr(manager, "base_topic", None)
+                or self.config_entry.data.get(CONF_BASE_TOPIC, ""),
                 "update_info": update_info,
             },
             data_schema=vol.Schema(
@@ -238,6 +256,17 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                         CONF_SIDEBAR_PANEL,
                         default=opts.get(CONF_SIDEBAR_PANEL, DEFAULT_SIDEBAR_PANEL),
                     ): bool,
+                    # suggested_value statt default: so lässt sich das Feld auch leeren
+                    vol.Optional(
+                        CONF_SIDEBAR_TITLE,
+                        description={
+                            "suggested_value": opts.get(CONF_SIDEBAR_TITLE, DEFAULT_SIDEBAR_TITLE)
+                        },
+                    ): str,
+                    vol.Optional(
+                        CONF_NETWORK_URL,
+                        description={"suggested_value": opts.get(CONF_NETWORK_URL, "")},
+                    ): str,
                     vol.Required(
                         NC_OPT_ENABLED, default=opts.get(NC_OPT_ENABLED, True)
                     ): bool,

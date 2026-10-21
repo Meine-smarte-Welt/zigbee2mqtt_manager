@@ -36,7 +36,7 @@
     "step": {
       "init": {
         "title": "Zigbee2MQTT Manager – podešavanja",
-        "description": "Instalirana verzija: **{version}**\n\n{update_info}",
+        "description": "Instalirana verzija: **{version}**\n\nOsnovna tema (base topic) ove instance: **{base_topic}**\n\n{update_info}",
         "data": {
           "low_battery_threshold": "Prag za nizak nivo baterije (%)",
           "critical_battery_threshold": "Prag za kritičan nivo baterije (%)",
@@ -46,7 +46,9 @@
           "stale_hours": "Nema odziva nakon (sati)",
           "problem_include_updates": "Ažuriranja se računaju kao problem",
           "problem_include_stale": "Nema odziva se računa kao problem",
-          "sidebar_panel": "Unos u bočnoj traci"
+          "sidebar_panel": "Unos u bočnoj traci",
+          "sidebar_title": "Naziv u bočnoj traci",
+          "network_url": "Adresa mape mreže (opciono)"
         },
         "data_description": {
           "critical_battery_threshold": "Mora biti manji ili jednak pragu za nizak nivo baterije.",
@@ -56,12 +58,15 @@
           "stale_hours": "Broj sati bez poruke nakon kojih se uređaj računa kao uređaj od kog nema odziVa (0 = isključeno). Uređaji koje Zigbee2MQTT već prijavljuje kao oflajn ubrajaju se pod oflajn.",
           "problem_include_updates": "Senzor Problem se takođe uključuje kada je dostupno ažuriranje firmvera.",
           "problem_include_stale": "Senzor Problem se takođe uključuje kada uređaj ćuti duže od podešenog vremena. Budite oprezni sa uređajima koji retko šalju podatke.",
-          "sidebar_panel": "Prikazuje karticu kao zasebnu stranicu Zigbee2MQTT u bočnoj traci (samo za administratore), tako da nema potrebe za pravljenjem kontrolne table."
+          "sidebar_panel": "Prikazuje karticu kao zasebnu stranicu u bočnoj traci (samo za administratore), tako da nema potrebe za pravljenjem kontrolne table.",
+          "sidebar_title": "Naziv unosa u bočnoj traci (podrazumevano: „Zigbee2MQTT Manager“). Korisno ako se tamo nalazi i Z2M aplikacija sa istom ikonom. Deluje odmah.",
+          "network_url": "Kuda vodi dugme „Mreža“, na primer na mapu mreže vašeg Zigbee2MQTT interfejsa (http://… ili putanja kao /hassio/ingress/…). Ostavite prazno da se koristi adresa iz Z2M konfiguracije ili Zigbee2MQTT aplikacija iz bočne trake."
         }
       }
     },
     "error": {
-      "critical_above_low": "Kritični prag ne sme biti veći od praga za nizak nivo baterije."
+      "critical_above_low": "Kritični prag ne sme biti veći od praga za nizak nivo baterije.",
+      "invalid_url": "Nevažeća adresa. Dozvoljeni su http://, https:// ili putanja koja počinje sa / (bez razmaka)."
     }
   },
   "entity": {
@@ -86,6 +91,9 @@
       },
       "groups": {
         "name": "Grupe"
+      },
+      "missing": {
+        "name": "Uređaji koji nedostaju"
       }
     },
     "binary_sensor": {

@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 82c0bc727c9234def839ce8475b12f1d5b9f949b40ff18c2eee746bcd25981b7
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): da60db0ffa5e1849b8d9d220558869d1e111dfcc163abcf49ccbec3541e9e969
 """Katalog der Meldungsarten für das optionale Notification Center (Schema 1).
 
 Nur Meldungsarten, die der Zigbee2MQTT Manager aus seinen vorhandenen Zuständen
@@ -16,6 +16,7 @@ NC_SOURCE_ICON = "mdi:zigbee"
 NC_STATE_TYPES = (
     "bridge_offline",
     "device_offline",
+    "device_missing",
     "battery_critical",
     "battery_low",
     "update_available",
@@ -122,6 +123,40 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "label": "Dispositivo sin conexión",
                 "title": "{name} está sin conexión",
                 "message": "{name} no está accesible.",
+            },
+        },
+    },
+    {
+        "type": "device_missing",
+        "severity": "warning",
+        "resolvable": True,
+        "enabled_default": True,
+        "icon": "mdi:help-network-outline",
+        "texts": {
+            "de": {
+                "label": "Gerät fehlt in Zigbee2MQTT",
+                "title": "{name} fehlt in Zigbee2MQTT",
+                "message": "{name} ist aus der Geräteliste von Zigbee2MQTT verschwunden.",
+            },
+            "en": {
+                "label": "Device missing in Zigbee2MQTT",
+                "title": "{name} is missing in Zigbee2MQTT",
+                "message": "{name} has disappeared from the Zigbee2MQTT device list.",
+            },
+            "nl": {
+                "label": "Apparaat ontbreekt in Zigbee2MQTT",
+                "title": "{name} ontbreekt in Zigbee2MQTT",
+                "message": "{name} is verdwenen uit de apparatenlijst van Zigbee2MQTT.",
+            },
+            "fr": {
+                "label": "Appareil absent de Zigbee2MQTT",
+                "title": "{name} est absent de Zigbee2MQTT",
+                "message": "{name} a disparu de la liste des appareils de Zigbee2MQTT.",
+            },
+            "es": {
+                "label": "Dispositivo ausente en Zigbee2MQTT",
+                "title": "{name} falta en Zigbee2MQTT",
+                "message": "{name} ha desaparecido de la lista de dispositivos de Zigbee2MQTT.",
             },
         },
     },

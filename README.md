@@ -1,12 +1,19 @@
-🇩🇪 Deutsch · [🇬🇧 English](README.en.md) · [🇳🇱 Nederlands](README.nl.md) · [🇫🇷 Français](README.fr.md) · [🇪🇸 Español](README.es.md)
+| 🇩🇪<br>**Deutsch** | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | [🇷🇸<br>**Српски**](README.sr.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+
+![Zigbee2MQTT Manager – Banner](docs/images/zigbee2mqtt_manager.webp)
 
 # Zigbee2MQTT Manager für Home Assistant
+
+📖 **Ausführliche Anleitung mit Hintergründen:** [Zigbee2MQTT Manager für Home Assistant auf meinesmartewelt.de](https://meinesmartewelt.de/zigbee2mqtt-manager-home-assistant/)
 
 Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Firmware-Updates, Gruppen, Bindings und Bridge in einer Dashboard-Karte – als HACS-Integration. Aufbau und Design orientieren sich an der Karte von [FRITZ!Box Anrufe](https://github.com/Meine-smarte-Welt/fritzbox_anrufe): Symbol-Kategorien, Zeilenlisten, Detail-Popup, Akkordeon-Abschnitte, grafischer Editor und frei einstellbare Farben.
 
 ## Inhalt
 
 - [Funktionsumfang](#funktionsumfang)
+- [Neu in 1.2.1](#neu-in-121)
+- [Bilder](#bilder)
 - [Voraussetzungen](#voraussetzungen)
 - [Installation](#installation)
 - [Die Karte](#die-karte)
@@ -60,6 +67,28 @@ Weitere Punkte:
 - **Zoom:** `zoom` skaliert die ganze Karte.
 - **Sprachen:** Deutsch, Englisch, Niederländisch, Französisch und Spanisch (nach Home-Assistant-Sprache).
 - **Diagnose-Download** mit anonymisierten Namen und IEEE-Adressen.
+
+## Neu in 1.2.1
+
+- **Netzwerk aus der Hauptansicht:** In der Geräteliste und unter **Bridge → Status** gibt es den Knopf **Netzwerk**. Er öffnet die Zigbee2MQTT-Netzwerkkarte. Die Adresse kommt aus (1) dem Kartenschlüssel `network_url`, (2) der Integrations-Option **Adresse der Netzwerkkarte**, (3) der Z2M-Einstellung `frontend.url` (angehängt wird `/#/network`) oder (4) der Zigbee2MQTT-App in der Seitenleiste (Add-on mit Ingress). Findet sich keine Adresse, erscheint der Knopf nicht. Mit `show_network_link: false` blendest du ihn aus. *Ungeprüft:* ob der Pfad `/#/network` bei jeder Z2M-Version stimmt und ob die Erkennung der Add-on-Seitenleiste bei jeder Installation greift – trage sonst `network_url` ein (z. B. `/a0d7b954_zigbee2mqtt`).
+- **Links zur Entität und zum Gerät:** Im Popup öffnet ein Tipp auf einen Entitäts-Namen (Abschnitt **Entitäten**) direkt den Dialog dieser Entität in Home Assistant; das Kopieren-Symbol bleibt. **Gerät öffnen** (Symbol in der Popup-Kopfzeile und Knopf im Abschnitt) führt zur Geräteseite in Home Assistant mit allen Entitäten. Voraussetzung ist, dass Home Assistant das MQTT-Gerät kennt.
+- **Name in der Seitenleiste:** Unter **Konfigurieren** lässt sich der **Name in der Seitenleiste** festlegen (Standard „Zigbee2MQTT Manager“, höchstens 40 Zeichen). Er gilt auch als Titel des Panels – damit ist das Panel von der Zigbee2MQTT-App unterscheidbar. Das Symbol bleibt gleich. Die Änderung wirkt sofort, ohne Neustart.
+- **Fehlende Geräte (Issue-Wunsch „Geräte verschwinden aus der Liste“):** Die Integration merkt sich jedes Gerät, das Zigbee2MQTT je gemeldet hat (Name, Hersteller, Modell, Bild, letzte Werte; überlebt Neustarts). Verschwindet ein Gerät aus der Z2M-Geräteliste, bleibt es **ausgegraut** mit dem Abzeichen **fehlt** sichtbar. Dazu gibt es den Chip **Fehlt**, den Filter **Status → Fehlt in Zigbee2MQTT**, den Sensor **Fehlende Geräte** (Namen als Attribut), das Ereignis `zigbee2mqtt_manager_device_missing`, einen Eintrag im Ereignisprotokoll und – falls aktiviert – die Meldungsart `device_missing` im Notification Center. Kommt das Gerät zurück, verschwindet die Markierung von selbst. **Vergessen** (im Popup bzw. **Alle fehlenden vergessen** im Filter „Fehlt“) entfernt es dauerhaft aus der Merkliste, nur für Administratoren. Nicht als fehlend zählen: Geräte, die du selbst über die Karte entfernst oder die Zigbee2MQTT als ausgetreten meldet (10 Minuten Schonfrist), und eine leere Geräteliste (z. B. beim Start der Bridge). Fehlende Geräte zählen nicht bei „Geräte“ und lösen keine Störung aus.
+- **innr-Steckdosen ohne Bild (Behoben):** Bei Modellen mit Leerzeichen im Namen (z. B. `SP 120`) fehlte das Bild, weil die Karte die Adresse anders bildete als das Z2M-Frontend. Sie ersetzt jetzt wie Z2M `:`, Leerzeichen und `/` durch `-` und nutzt zusätzlich ein von Zigbee2MQTT gemeldetes Bild (`definition.icon`). *Ungeprüft* an den betroffenen Steckdosen; gibt es für ein Modell auf zigbee2mqtt.io kein Bild, bleibt das Symbol.
+- **Base-Topic:** Die Option zeigt jetzt das aktuell verwendete Base-Topic im Beschreibungstext. Warum bei einem Update das Standard-Topic `zigbee2mqtt` gelten konnte, ließ sich im Code nicht nachvollziehen; die Integration ändert das Base-Topic nicht selbst. Prüfe es unter **Konfigurieren**, wenn nach einem Update keine Geräte erscheinen.
+- **Sprachen:** Neu ist **Српски (Kyrillisch)** – README und Karte. Die Karte hat die wichtigsten Begriffe auf Serbisch übersetzt, übrige Texte erscheinen auf Englisch.
+
+## Bilder
+
+Die Screenshots zeigen den Stand 1.1.0; die Neuerungen aus 1.2.x (Netzwerk-Knopf, Links, fehlende Geräte) sind darauf noch nicht zu sehen.
+
+![Geräteliste in der Karte](docs/images/zigbee2mqtt_manager_karte.webp)
+
+![Funktionen (Expose) im Geräte-Popup](docs/images/zigbee2mqtt_manager_expose.webp)
+
+![Gruppieren und Filtern](docs/images/zigbee2mqtt_manager_gruppierung.webp)
+
+![Grafischer Karten-Editor](docs/images/zigbee2mqtt_manager_ui.webp)
 
 ## Voraussetzungen
 
@@ -179,6 +208,7 @@ Abschaltbar in den Integrations-Optionen („Home-Assistant-Ereignisse auslösen
 | `zigbee2mqtt_manager_battery_low` | `name`, `ieee`, `battery` – beim Unterschreiten der Schwelle |
 | `zigbee2mqtt_manager_update_available` | `name`, `ieee`, `installed`, `latest` |
 | `zigbee2mqtt_manager_device_joined` / `_device_left` | `name`, `ieee` |
+| `zigbee2mqtt_manager_device_missing` | `name`, `ieee` – ein bekanntes Gerät fehlt in der Z2M-Geräteliste (seit 1.2.1) |
 
 ```yaml
 triggers:
@@ -192,7 +222,7 @@ actions:
 
 ## Sensoren
 
-`Geräte`, `Offline-Geräte`, `Geräte mit niedriger Batterie`, `Geräte mit kritischer Batterie`, `Verfügbare Firmware-Updates`, `Deaktivierte Geräte` und `Gruppen`. Die Sensoren für Offline, Batterie, Updates und deaktivierte Geräte tragen die Geräteliste als Attribut.
+`Geräte`, `Offline-Geräte`, `Geräte mit niedriger Batterie`, `Geräte mit kritischer Batterie`, `Verfügbare Firmware-Updates`, `Deaktivierte Geräte` und `Gruppen`. Die Sensoren für Offline, Batterie, Updates und deaktivierte Geräte tragen die Geräteliste als Attribut. Dazu kommt seit 1.2.1 der Sensor `Fehlende Geräte` (Namen als Attribut).
 
 ### Sammelstörung (Binärsensor „Störung“, seit 1.2.0)
 
@@ -252,6 +282,7 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Schalten von Funktionen, Entfe
 - Die Geräteklasse ist eine Näherung aus den Funktionen des Geräts; Sonderfälle können unter „Sonstige“ oder „Sensoren“ landen.
 - Schalter wirken sofort und ohne Rückfrage (auch Konfigurationsschalter wie die Kindersicherung). Die Zwischenablage braucht HTTPS.
 - **Neu in 1.2.0, Teststand:** Die Anbindung an das Notification Center, Störungs-Sensor, Sensor „Deaktivierte Geräte“, Raum-/HA-Geräte-Zuordnung, Kommentar (Anzeige und Bearbeiten), deaktivierte Geräte samt Chip, „lange nichts gehört“ und der Seitenleisten-Eintrag wurden mit simulierten MQTT-Nachrichten und Registern (pytest mit der Home-Assistant-Testumgebung) und in einem simulierten Browser (jsdom) geprüft, **nicht an echter Hardware, nicht gegen ein echtes Notification Center, nicht in Safari, Chrome, Firefox oder der Companion-App und nicht mit 75 echten Geräten**. Das gilt auch für die Korrekturen zu Flackern und Scroll-Sprung (Issue #5); Anzeigewerte wie „zuletzt gesehen“ und Signal aktualisieren sich dadurch höchstens alle 2 Sekunden. Startet die Bridge neu, können Geräte je nach Verfügbarkeits-Einstellung von Zigbee2MQTT kurz als offline gemeldet und danach wieder geschlossen werden. Die Zuordnung zum HA-Gerät erkennt die IEEE-Adresse in den MQTT-Identifiern; bei ungewöhnlicher Discovery bleiben Raum und HA-Gerät leer. Der Kommentar stammt aus der Z2M-Gerätekonfiguration (`description`) und wird beim Speichern über `bridge/request/device/options` gesetzt; ob deine Z2M-Version ihn in `bridge/info` mitliefert und das Speichern wie erwartet annimmt, ist ungeprüft. „Lange nichts gehört“ ist informativ und kein eigener Meldungstyp im Notification Center. Der Seitenleisten-Eintrag ist ein Home-Assistant-Panel und kein Lovelace-Dashboard (Issue #6); er wurde nur gegen die Panel-Registrierung der Testumgebung geprüft, nicht in einer echten Seitenleiste.
+- **Neu in 1.2.1, Teststand:** Netzwerk-Knopf, Entitäts- und Geräte-Links, ausgegraute fehlende Geräte und der Namens-Optionsdialog sind gegen simulierte Daten geprüft, **nicht an echter Hardware oder einer echten Home-Assistant-Installation**. Die serbische Karte ist nur teilweise übersetzt.
 
 ## Fehlerbehebung
 
@@ -273,6 +304,7 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Schalten von Funktionen, Entfe
 
 | Version | Änderungen |
 |---|---|
+| **1.2.1** | Neu: Knopf **Netzwerk** (Zigbee2MQTT-Netzwerkkarte), Links von Entitäten und Gerät zu Home Assistant, einstellbarer **Name in der Seitenleiste**, **fehlende Geräte** bleiben ausgegraut sichtbar (Chip, Filter, Sensor, Ereignis, Notification Center, „Vergessen“), Sprache **Српски**, README mit Flaggen-Sprachleiste, Blog-Link und Bildern. Behoben: fehlende Bilder bei Modellen mit Leerzeichen (z. B. innr-Steckdosen). |
 | **1.2.0** | Neu: Der **Kommentar** eines Geräts lässt sich im Popup **bearbeiten** (Abschnitt „Kommentar“, wird über Zigbee2MQTT in `description` gespeichert, nicht im Nur-lesen-Modus). Neu: Chip **Deaktiviert** und Sensor **Deaktivierte Geräte** (Zähler und Namensliste). Neu: **Eintrag in der Seitenleiste** (Home-Assistant-Panel, nur Administratoren, abschaltbar unter Konfigurieren), der die Karte als ganze Seite zeigt (Issue #6). Neu: **Anbindung an das Notification Center** (optional, Schnittstelle Schema 1) mit sieben Meldungsarten (Bridge offline, Batterie kritisch, Gerät offline, Batterie niedrig, Firmware-Update, neues Gerät, Gerät hat das Netz verlassen), Hauptschalter und Schalter je Art in der Karte und im Konfigurieren-Dialog. Neu: **Sammelstörung** als Binärsensor (Geräteklasse `problem`) mit allen Zählern und Gerätelisten als Attribute; **Raum**, **HA-Gerät** und **Kommentar** in Liste, Popup und Suche, Gruppieren nach **Raum**; **„Lange nichts gehört“** (Chip, Filter, Abzeichen, einstellbare Stunden); Einrichtungshilfen (my.home-assistant.io-Links, einmaliger Hinweis nach der Einrichtung, Dashboard-Vorlage in `examples`). Behoben (Issue #7): in Zigbee2MQTT **deaktivierte Geräte** gelten nicht mehr als offline (eigener Status „Deaktiviert“, nicht in Zählern, Sensoren und Notification Center). Behoben (Issue #5): Die Karte **flackerte und sprang beim Scrollen nach oben**, weil sie bei jedem Datenupdate komplett neu gezeichnet wurde; jetzt werden nur geänderte Teile aktualisiert (Bilder, Zeilen, Akkordeons und Eingabefokus bleiben stehen, datengetriebenes Neuzeichnen höchstens alle 2 Sekunden). Behoben: Beim **Tippen in Suche und Feldern am Desktop** lösten Home-Assistant-Kurzbefehle aus (z. B. öffnete „e“ die Entitätssuche). Behoben (Issue #4): Zuordnung der HA-Geräte ohne die veraltete `device_registry.devices`-Abbildung. Änderungen an den Notification-Center-Schaltern laden die Integration nicht mehr neu. Englische Reste in den deutschen Texten (`strings.json`) korrigiert. **Französisch** (Dank an @Locodice67, PR #3; übernommen und angepasst: Du-Form, neue Texte) und **Spanisch** ergänzt. |
 | **1.1.0** | Neu: Listen nach Hersteller oder Geräteklasse **gruppieren** (Akkordeon) und **filtern** (Status online/offline, Stromversorgung, Signal, Netzwerk-Rolle, Firmware, zuletzt gesehen, ohne Zigbee-Gruppe, Hersteller, Geräteklasse; aktive Filter als Chips). Schreibbare **Schalter** unter „Funktionen (Expose)“ lassen sich direkt umlegen. Neuer Popup-Abschnitt **Entitäten (für Automationen)** und Kopieren-Knöpfe für die Entitäts-Namen. Editor: `show_group_by`, `default_group_by`, `show_filters`. Backend: neue Aktion `set_expose` (nur Administratoren, Werte werden geprüft) und Geräteklasse je Gerät. |
 | 1.0.5 | Behoben: Popup und Abschnitt „Funktionen (Expose)“ ließen sich nicht bedienen (Endlosschleife beim Neuzeichnen, Gerätebild flackerte). Offline-Anzeige gegen veraltete Meldungen abgesichert. Niederländisch ergänzt (Karte, Integration, README), LICENSE und `examples/` hinzugefügt. Dank an @pr0xyzer (PR #2): Zuordnung der HA-Entitäten über MQTT-Identifier mit mehr als zwei Werten (Liste beim Umbenennen). |
@@ -285,14 +317,16 @@ Jede `.py`-, `.js`- und `.yaml`-Datei trägt in der ersten Zeile einen SHA-256-H
 
 | Datei | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `cac91991cb4ea73c7bd299d2f0886ca28cdbe0a6d5dcab5a29245c4d8e155caa` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `fc1ff3cc15879e53243855085bab214b7f2b3f2be3d4eea727846084d99a97db` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `eefd4bf8270e6653beb64981c8879880c80d065ab80c297e969a5c200bb5fcf3` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `ac757e176af1b5886ac8d0ecc016c283790f18b58e86f8be1862ec9be65fa88e` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `fc1ff3cc15879e53243855085bab214b7f2b3f2be3d4eea727846084d99a97db` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `886da8733514cc59773857af3a6b6a52661ebcae8e005aabdf3fe4bfaf98fbf1` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `275906c3eb47186a60cec1c6647b6101ef0dceadafd9d473b225e33b298ec583` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `cf8260c4154f824471550a9a5b98dfaf4c590ab2f07caec209c170a6656a1347` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `0439cdd983dcd18c8a909e04190736c3972bb3649c16c7210614c75e8bf37bca` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `ac757e176af1b5886ac8d0ecc016c283790f18b58e86f8be1862ec9be65fa88e` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `474b4d4620631da7055006761799ffa86fa263b000d7ea11d44174833442aadb` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e020bfd76f0218abe3fccac54311a0ce2ee164c7079c570e7e7d6c9421e4a651` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `3767828e16a133f260a8fc22ef997c9ccd30872f9ca18ac6fd0144594bc83f56` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `db841a7909805d8675421a109093bea1f088bab81b50a0520927271e29a82428` |
+| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `cadd7f345e66f41eca696a475a3f7d4f390eaf416b9729911753e7faeddfc302` |
+| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `6241a89313bcacdf37a9e3d3bb78c90cc379736806ea7330ac058db7b529d528` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Lizenz

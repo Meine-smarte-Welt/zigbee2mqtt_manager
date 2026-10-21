@@ -36,7 +36,7 @@
     "step": {
       "init": {
         "title": "Zigbee2MQTT Manager – paramètres",
-        "description": "Version installée : **{version}**\n\n{update_info}",
+        "description": "Version installée : **{version}**\n\nBase topic de cette instance : **{base_topic}**\n\n{update_info}",
         "data": {
           "low_battery_threshold": "Seuil « batterie faible » (%)",
           "critical_battery_threshold": "Seuil « batterie critique » (%)",
@@ -46,7 +46,9 @@
           "stale_hours": "« Sans nouvelles » après (heures)",
           "problem_include_updates": "Les mises à jour comptent comme problème",
           "problem_include_stale": "« Sans nouvelles » compte comme problème",
-          "sidebar_panel": "Entrée dans la barre latérale"
+          "sidebar_panel": "Entrée dans la barre latérale",
+          "sidebar_title": "Nom dans la barre latérale",
+          "network_url": "Adresse de la carte du réseau (facultatif)"
         },
         "data_description": {
           "critical_battery_threshold": "Doit être inférieur ou égal au seuil « batterie faible ».",
@@ -56,12 +58,15 @@
           "stale_hours": "Heures sans message après lesquelles un appareil est considéré « sans nouvelles » (0 = désactivé). Les appareils que Zigbee2MQTT signale déjà hors ligne comptent comme hors ligne.",
           "problem_include_updates": "Le capteur « Problème » s'active aussi lorsqu'une mise à jour du firmware est disponible.",
           "problem_include_stale": "Le capteur « Problème » s'active aussi lorsqu'un appareil reste silencieux plus longtemps que la durée définie. Prudence avec les appareils qui émettent rarement.",
-          "sidebar_panel": "Affiche la carte comme page « Zigbee2MQTT » dans la barre latérale (administrateurs uniquement) : aucun tableau de bord à créer."
+          "sidebar_panel": "Affiche la carte comme page à part dans la barre latérale (administrateurs uniquement), sans devoir créer de tableau de bord.",
+          "sidebar_title": "Libellé de l'entrée dans la barre latérale (par défaut : « Zigbee2MQTT Manager »). Pratique si l'app Z2M avec la même icône y figure aussi. Effet immédiat.",
+          "network_url": "Destination du bouton « Réseau », par exemple la carte du réseau de ton interface Zigbee2MQTT (http://… ou un chemin comme /hassio/ingress/…). Laisse vide pour utiliser l'adresse de la configuration Z2M ou l'app Zigbee2MQTT de la barre latérale."
         }
       }
     },
     "error": {
-      "critical_above_low": "Le seuil critique ne doit pas dépasser le seuil « faible »."
+      "critical_above_low": "Le seuil critique ne doit pas dépasser le seuil « faible ».",
+      "invalid_url": "Adresse non valide. Autorisés : http://, https:// ou un chemin commençant par / (sans espaces)."
     }
   },
   "entity": {
@@ -86,6 +91,9 @@
       },
       "groups": {
         "name": "Groupes"
+      },
+      "missing": {
+        "name": "Appareils manquants"
       }
     },
     "binary_sensor": {
