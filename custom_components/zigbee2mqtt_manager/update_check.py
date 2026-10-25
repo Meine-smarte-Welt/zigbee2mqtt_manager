@@ -21,6 +21,11 @@ from .const import (
     GITHUB_RELEASES_URL,
     GITHUB_REPO,
     VERSION,
+    Z2M_GITHUB_API_LATEST,
+    Z2M_GITHUB_API_RELEASES,
+    Z2M_GITHUB_API_TAGS,
+    Z2M_GITHUB_RELEASES_URL,
+    Z2M_GITHUB_REPO,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,21 +75,72 @@ def is_newer(latest: str | None, current: str | None) -> bool:
     return new is not None and cur is not None and new > cur
 
 
-# Mehrere Instanzen teilen sich eine Abfrage (GitHub begrenzt unangemeldete Anfragen)
-_CACHE_KEY = f"{DOMAIN}_latest_version"
+# Mehrere Instanzen teilen sich ihre Abfragen (GitHub begrenzt unangemeldete Anfragen)
 _CACHE_SECONDS = 300
 
 
 async def async_fetch_latest(
     hass: HomeAssistant, force: bool = False
 ) -> dict[str, str] | None:
-    """Neueste Version holen (mit kurzem gemeinsamem Zwischenspeicher)."""
-    cached = hass.data.get(_CACHE_KEY)
+    """Neueste Integrationsversion holen (mit kurzem gemeinsamem Zwischenspeicher)."""
+    return await _async_fetch_latest(
+        hass,
+        latest_url=GITHUB_API_LATEST,
+        releases_url=GITHUB_API_RELEASES,
+        tags_url=GITHUB_API_TAGS,
+        repo=GITHUB_REPO,
+        releases_page=GITHUB_RELEASES_URL,
+        current_version=VERSION,
+        cache_key=f"{DOMAIN}_latest_version",
+        force=force,
+    )
+
+
+async def async_fetch_latest_z2m(
+    hass: HomeAssistant, current_version: str | None = None, force: bool = False
+) -> dict[str, str] | None:
+    """Neueste Zigbee2MQTT-Version holen (mit eigenem kurzem Cache)."""
+    prerelease_kind = "pre" if is_prerelease(current_version) else "stable"
+    return await _async_fetch_latest(
+        hass,
+        latest_url=Z2M_GITHUB_API_LATEST,
+        releases_url=Z2M_GITHUB_API_RELEASES,
+        tags_url=Z2M_GITHUB_API_TAGS,
+        repo=Z2M_GITHUB_REPO,
+        releases_page=Z2M_GITHUB_RELEASES_URL,
+        current_version=current_version,
+        cache_key=f"{DOMAIN}_latest_version_z2m_{prerelease_kind}",
+        force=force,
+    )
+
+
+async def _async_fetch_latest(
+    hass: HomeAssistant,
+    *,
+    latest_url: str,
+    releases_url: str,
+    tags_url: str,
+    repo: str,
+    releases_page: str,
+    current_version: str | None,
+    cache_key: str,
+    force: bool,
+) -> dict[str, str] | None:
+    """Gemeinsame Release-/Tag-Abfrage für ein GitHub-Repository."""
+    cached = hass.data.get(cache_key)
     if not force and cached and time.monotonic() - cached[0] < _CACHE_SECONDS:
         return cached[1]
-    result = await _fetch_latest(hass)
+    result = await _fetch_latest(
+        hass,
+        latest_url=latest_url,
+        releases_url=releases_url,
+        tags_url=tags_url,
+        repo=repo,
+        releases_page=releases_page,
+        current_version=current_version,
+    )
     if result is not None:
-        hass.data[_CACHE_KEY] = (time.monotonic(), result)
+        hass.data[cache_key] = (time.monotonic(), result)
     return result
 
 
@@ -95,7 +151,16 @@ def _best(candidates: list[dict[str, str]]) -> dict[str, str] | None:
     return max(candidates, key=lambda c: parse_version(c["version"]) or ())
 
 
-async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
+async def _fetch_latest(
+    hass: HomeAssistant,
+    *,
+    latest_url: str,
+    releases_url: str,
+    tags_url: str,
+    repo: str,
+    releases_page: str,
+    current_version: str | None,
+) -> dict[str, str] | None:
     """Neueste veröffentlichte Version holen: {\"version\", \"url\"} oder None bei Fehler.
 
     `releases/latest` liefert nie Vorabversionen (Pre-releases). Ist die installierte Version
@@ -104,13 +169,13 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
     Version sehen Vorabversionen nicht.
     """
     session = async_get_clientsession(hass)
-    include_pre = is_prerelease(VERSION)
+    include_pre = is_prerelease(current_version)
     candidates: list[dict[str, str]] = []
     reachable = False
 
     try:
         async with session.get(
-            GITHUB_API_LATEST, headers=_HEADERS, timeout=_TIMEOUT
+            latest_url, headers=_HEADERS, timeout=_TIMEOUT
         ) as resp:
             if resp.status == 200:
                 reachable = True
@@ -120,7 +185,7 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
                     candidates.append(
                         {
                             "version": str(tag).lstrip("vV"),
-                            "url": data.get("html_url") or GITHUB_RELEASES_URL,
+                            "url": data.get("html_url") or releases_page,
                         }
                     )
             elif resp.status == 404:
@@ -132,7 +197,7 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
 
         if include_pre:
             async with session.get(
-                GITHUB_API_RELEASES, headers=_HEADERS, timeout=_TIMEOUT
+                releases_url, headers=_HEADERS, timeout=_TIMEOUT
             ) as resp:
                 if resp.status == 200:
                     reachable = True
@@ -145,7 +210,7 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
                             candidates.append(
                                 {
                                     "version": str(tag).lstrip("vV"),
-                                    "url": rel.get("html_url") or GITHUB_RELEASES_URL,
+                                    "url": rel.get("html_url") or releases_page,
                                 }
                             )
                 else:
@@ -159,13 +224,13 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
 
         # Noch kein passendes Release veröffentlicht: höchstes Versions-Tag verwenden
         async with session.get(
-            GITHUB_API_TAGS, headers=_HEADERS, timeout=_TIMEOUT
+            tags_url, headers=_HEADERS, timeout=_TIMEOUT
         ) as resp:
             if resp.status != 200:
                 return None
             tags = await resp.json()
     except (aiohttp.ClientError, TimeoutError, ValueError) as err:
-        _LOGGER.debug("Prüfung auf neue App-Version fehlgeschlagen: %s", err)
+        _LOGGER.debug("Prüfung auf neue Version von %s fehlgeschlagen: %s", repo, err)
         return None
 
     names = [
@@ -180,5 +245,5 @@ async def _fetch_latest(hass: HomeAssistant) -> dict[str, str] | None:
     best_name = max(names, key=lambda n: parse_version(n) or ())
     return {
         "version": best_name.lstrip("vV"),
-        "url": f"https://github.com/{GITHUB_REPO}/releases/tag/{best_name}",
+        "url": f"https://github.com/{repo}/releases/tag/{best_name}",
     }

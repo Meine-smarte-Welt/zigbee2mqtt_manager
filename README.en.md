@@ -234,7 +234,7 @@ Under **Configure** you choose whether firmware updates (default: yes) and "not 
 
 ## Version display and update notice
 
-The installed version is shown in three places: in the card under **Bridge (cog) → App version**, at the top of the graphical card editor, and in the integration's **Configure** dialog. At startup and every 12 hours the integration asks GitHub (`api.github.com`, latest release, falling back to the highest version tag) whether a newer version was published. If so, it is highlighted: orange frame and notice in the section, an orange "↑" on the cog icon, a warning box in the editor and a note in the Configure dialog. Updating itself works as usual through HACS. **Check now** triggers the query immediately. If GitHub is not reachable, "Check not possible" appears; the card keeps working.
+The installed app version is shown in the card under **Bridge (cog) → App version**, at the top of the graphical card editor, and in the integration's **Configure** dialog. At startup and every 12 hours the integration checks GitHub for a newer app version. **Bridge → Status** also compares the installed Zigbee2MQTT version with the latest release. An available Z2M update shows its version and a release link; **Check now** triggers the query immediately. Update Zigbee2MQTT manually on its server or in the Docker container, not via HACS. If GitHub is not reachable, "Check not possible" appears; the card keeps working.
 
 If card and integration versions differ (stale browser cache), this is marked orange as well.
 

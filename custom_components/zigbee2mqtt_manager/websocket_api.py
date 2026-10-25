@@ -38,6 +38,7 @@ ACTIONS = [
     "restart",
     "bridge_option",
     "app_update_check",
+    "z2m_update_check",
     # Notification Center (optional)
     "nc_set_master",
     "nc_set_type",
@@ -200,6 +201,8 @@ async def ws_action(
             await manager.async_set_bridge_option(msg.get("key", ""), value)
         elif action == "app_update_check":
             await manager.async_check_app_update(force=True)
+        elif action == "z2m_update_check":
+            await manager.async_check_z2m_update(force=True)
         elif action == "nc_set_master":
             await manager.async_nc_set_master(msg.get("enabled"))
         elif action == "nc_set_type":

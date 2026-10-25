@@ -317,6 +317,8 @@ const I18N = {
     app_up_to_date: "Aktuell", app_update_available: "Update verfügbar: {v}", app_check_failed: "Prüfung nicht möglich (GitHub nicht erreichbar)", app_not_checked: "noch nicht geprüft",
     f_checked: "Zuletzt geprüft", app_check_now: "Jetzt prüfen", app_checking: "Prüfe auf neue Version …", app_release: "Release ansehen",
     app_update_hint: "Aktualisiere über HACS (Integration) und starte Home Assistant neu. Danach den Browser neu laden (Strg+F5).",
+    z2m_update_available: "Update verfügbar: {v}", z2m_update_hint: "Das Update erfolgt manuell auf dem Zigbee2MQTT-Server bzw. im Docker-Container, nicht über HACS.",
+    z2m_check_now: "Jetzt prüfen", z2m_check_failed: "Prüfung nicht möglich", z2m_release: "Release ansehen",
     app_mismatch: "Karte ({card}) und Integration ({integration}) haben unterschiedliche Versionen. Browser-Cache leeren (Strg+F5) bzw. die App neu laden.",
     sec_status: "Status", sec_pairing: "Pairing", sec_options: "Bridge-Optionen", sec_maintenance: "Wartung", sec_events: "Ereignisse",
     f_status: "Status", f_version: "Zigbee2MQTT-Version", f_coordinator: "Koordinator", f_base_topic: "Base-Topic", f_pairing: "Pairing",
@@ -427,6 +429,8 @@ const I18N = {
     app_up_to_date: "Up to date", app_update_available: "Update available: {v}", app_check_failed: "Check failed (GitHub not reachable)", app_not_checked: "not checked yet",
     f_checked: "Last checked", app_check_now: "Check now", app_checking: "Checking for a new version …", app_release: "View release",
     app_update_hint: "Update via HACS (integration) and restart Home Assistant. Then reload the browser (Ctrl+F5).",
+    z2m_update_available: "Update available: {v}", z2m_update_hint: "Update Zigbee2MQTT manually on its server or in the Docker container, not via HACS.",
+    z2m_check_now: "Check now", z2m_check_failed: "Check not possible", z2m_release: "View release",
     app_mismatch: "Card ({card}) and integration ({integration}) have different versions. Clear the browser cache (Ctrl+F5) or reload the app.",
     sec_status: "Status", sec_pairing: "Pairing", sec_options: "Bridge options", sec_maintenance: "Maintenance", sec_events: "Events",
     f_status: "Status", f_version: "Zigbee2MQTT version", f_coordinator: "Coordinator", f_base_topic: "Base topic", f_pairing: "Pairing",
@@ -2566,14 +2570,27 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   _renderBridge() {
     const b = this._data.bridge;
+    const z2m = this._data.z2m || b;
     const s = this._data.stats;
     const ro = this._readOnly;
     const networkBtn = this._networkButton();
     const status = b.online === true ? `<span class="pill" style="--c:var(--zmm-color-success)">${esc(this._t("online"))}</span>` : b.online === false ? `<span class="pill" style="--c:var(--zmm-color-error)">${esc(this._t("offline"))}</span>` : esc(this._t("unknown"));
     const coordinator = [b.coordinator_type, b.coordinator_revision].filter(Boolean).join(" · ");
+    const z2mUpdate = z2m.update_available === true;
+    const z2mUrl = /^https:\/\/github\.com\/Koenkk\/zigbee2mqtt(?:\/|$)/.test(z2m.release_url || "")
+      ? z2m.release_url
+      : "https://github.com/Koenkk/zigbee2mqtt/releases";
+    const z2mNotice = z2mUpdate
+      ? `<div class="hint warn">${esc(this._t("z2m_update_available", { v: z2m.latest_version }))} · <a href="${esc(z2mUrl)}" target="_blank" rel="noopener noreferrer">${esc(this._t("z2m_release"))}</a><br>${esc(this._t("z2m_update_hint"))}</div>`
+      : z2m.check_failed
+        ? `<div class="hint">${esc(this._t("z2m_check_failed"))}</div>`
+        : "";
+    const z2mCheck = ro ? "" : `<div class="toolbar"><button class="btn" data-act="z2m_update_check"><ha-icon icon="mdi:refresh"></ha-icon>${esc(this._t("z2m_check_now"))}</button></div>`;
     const info = [
       this._line(this._t("f_status"), status),
       this._line(this._t("f_version"), esc(b.version)),
+      z2mNotice,
+      z2mCheck,
       this._line(this._t("f_coordinator"), esc(coordinator)),
       this._line(this._t("f_base_topic"), esc(b.base_topic)),
       this._line(this._t("chip_devices"), esc(s.total)),
@@ -2823,6 +2840,9 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       case "app_update_check":
         this._toast(this._t("app_checking"));
         return void (await this._call("app_update_check"));
+      case "z2m_update_check":
+        this._toast(this._t("app_checking"));
+        return void (await this._call("z2m_update_check"));
       case "restart":
         return void (await this._call("restart"));
       case "nc_master": {

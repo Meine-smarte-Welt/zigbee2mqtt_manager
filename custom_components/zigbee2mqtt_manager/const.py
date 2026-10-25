@@ -84,6 +84,11 @@ GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest
 GITHUB_API_RELEASES = f"https://api.github.com/repos/{GITHUB_REPO}/releases?per_page=5"
 GITHUB_API_TAGS = f"https://api.github.com/repos/{GITHUB_REPO}/tags?per_page=30"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases"
+Z2M_GITHUB_REPO = "Koenkk/zigbee2mqtt"
+Z2M_GITHUB_API_LATEST = f"https://api.github.com/repos/{Z2M_GITHUB_REPO}/releases/latest"
+Z2M_GITHUB_API_RELEASES = f"https://api.github.com/repos/{Z2M_GITHUB_REPO}/releases?per_page=5"
+Z2M_GITHUB_API_TAGS = f"https://api.github.com/repos/{Z2M_GITHUB_REPO}/tags?per_page=30"
+Z2M_GITHUB_RELEASES_URL = f"https://github.com/{Z2M_GITHUB_REPO}/releases"
 APP_UPDATE_CHECK_INTERVAL = timedelta(hours=12)
 
 

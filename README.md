@@ -234,7 +234,7 @@ Unter **Konfigurieren** wählst du, ob Firmware-Updates (Standard: ja) und „la
 
 ## Versionsanzeige und Update-Hinweis
 
-Die installierte Version steht an drei Stellen: in der Karte unter **Bridge (Zahnrad) → App-Version**, oben im grafischen Karten-Editor und im Dialog **Konfigurieren** der Integration. Die Integration fragt beim Start und danach alle 12 Stunden bei GitHub ab (`api.github.com`, neuestes Release, ersatzweise das höchste Versions-Tag), ob eine neuere Version veröffentlicht wurde. Gibt es eine, wird das farbig hervorgehoben: orangefarbener Rahmen und Hinweis im Abschnitt, ein orangefarbenes „↑“ am Zahnrad-Symbol, eine Warnbox im Editor und ein Hinweis im Konfigurieren-Dialog. Die Aktualisierung selbst erfolgt wie gewohnt über HACS. Mit **Jetzt prüfen** lässt sich die Abfrage sofort auslösen. Ist GitHub nicht erreichbar, erscheint „Prüfung nicht möglich“; die Karte funktioniert unverändert weiter.
+Die installierte App-Version steht in der Karte unter **Bridge (Zahnrad) → App-Version**, oben im grafischen Karten-Editor und im Dialog **Konfigurieren** der Integration. Beim Start und danach alle 12 Stunden fragt die Integration GitHub nach einer neueren App-Version. In **Bridge → Status** wird zusätzlich die installierte Zigbee2MQTT-Version mit dem neuesten Release verglichen. Ein verfügbares Z2M-Update zeigt Versionsnummer und Release-Link; **Jetzt prüfen** löst die Abfrage sofort aus. Zigbee2MQTT selbst aktualisierst du manuell auf dem Z2M-Server bzw. im Docker-Container, nicht über HACS. Ist GitHub nicht erreichbar, erscheint „Prüfung nicht möglich“; die Karte funktioniert unverändert weiter.
 
 Weichen Karten- und Integrationsversion voneinander ab (veralteter Browser-Cache), wird auch das orange markiert.
 

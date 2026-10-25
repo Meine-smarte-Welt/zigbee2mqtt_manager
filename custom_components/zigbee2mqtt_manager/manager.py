@@ -53,6 +53,7 @@ from .const import (
     EXPECTED_GONE_SECONDS,
     FLUSH_DELAY,
     GITHUB_RELEASES_URL,
+    Z2M_GITHUB_RELEASES_URL,
     MAX_EVENT_LOG,
     MIN_Z2M_MAJOR,
     OTA_CHECK_SPACING,
@@ -75,7 +76,7 @@ from .notification_bridge import (
     OPT_TYPES as NC_OPT_TYPES,
     NotificationBridge,
 )
-from .update_check import async_fetch_latest, is_newer
+from .update_check import async_fetch_latest, async_fetch_latest_z2m, is_newer
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -332,6 +333,13 @@ class Z2MManager:
             "checked_at": None,
             "check_failed": False,
         }
+        self.z2m: dict[str, Any] = {
+            "latest_version": None,
+            "update_available": False,
+            "release_url": Z2M_GITHUB_RELEASES_URL,
+            "checked_at": None,
+            "check_failed": False,
+        }
         self.jobs: dict[str, Any] = {"ota": None}
         self._tasks: set[asyncio.Task[Any]] = set()
 
@@ -433,13 +441,14 @@ class Z2MManager:
         # Zählt die gesendeten Meldungen je Art (Diagnose); speichert keine Inhalte
         self._unsubs.append(self.hass.bus.async_listen(NC_EVENT_REPORT, self._nc_count))
 
-        # Beim Start und danach regelmäßig auf eine neue App-Version prüfen
+        # Beim Start und danach regelmäßig auf neue App- und Zigbee2MQTT-Versionen prüfen
         self._unsubs.append(
             async_track_time_interval(
                 self.hass, self._app_update_tick, APP_UPDATE_CHECK_INTERVAL
             )
         )
         self._spawn(self.async_check_app_update(), "app_update_check")
+        self._spawn(self.async_check_z2m_update(), "z2m_update_check")
 
     @callback
     def async_stop(self) -> None:
@@ -537,7 +546,16 @@ class Z2MManager:
             self.bridge_online = state == "online"
             self._schedule_update()
         elif sub == "info" and isinstance(payload, dict):
+            version_changed = self.bridge_info.get("version") != payload.get("version")
             self.bridge_info = payload
+            latest_version = self.z2m.get("latest_version")
+            if latest_version:
+                self.z2m = {
+                    **self.z2m,
+                    "update_available": is_newer(latest_version, payload.get("version")),
+                }
+            if version_changed:
+                self._spawn(self.async_check_z2m_update(), "z2m_update_check")
             self._comment_pending.clear()
             self._schedule_update()
         elif sub == "devices" and isinstance(payload, list):
@@ -1061,6 +1079,10 @@ class Z2MManager:
             "bridge": {
                 "online": self.bridge_online,
                 "version": version,
+                "latest_version": self.z2m["latest_version"],
+                "update_available": self.z2m["update_available"],
+                "release_url": self.z2m["release_url"],
+                "check_failed": self.z2m["check_failed"],
                 "compatible": major is None or major >= MIN_Z2M_MAJOR,
                 "permit_join": bool(info.get("permit_join")),
                 "permit_join_end": info.get("permit_join_end"),
@@ -1090,6 +1112,7 @@ class Z2MManager:
             },
             "jobs": dict(self.jobs),
             "app": dict(self.app),
+            "z2m": dict(self.z2m),
             "nc": self.nc.snapshot(),
             "events": list(self._events),
             "groups": groups,
@@ -1693,6 +1716,7 @@ class Z2MManager:
     @callback
     def _app_update_tick(self, _now: datetime) -> None:
         self._spawn(self.async_check_app_update(), "app_update_check")
+        self._spawn(self.async_check_z2m_update(), "z2m_update_check")
 
     def _spawn(self, coro: Any, name: str) -> None:
         task = self.entry.async_create_background_task(
@@ -1713,6 +1737,33 @@ class Z2MManager:
                 "latest_version": latest["version"],
                 "release_url": latest["url"],
                 "update_available": is_newer(latest["version"], VERSION),
+                "checked_at": checked,
+                "check_failed": False,
+            }
+        self._schedule_update()
+
+    async def async_check_z2m_update(self, force: bool = False) -> None:
+        """Auf GitHub nach einer neueren Zigbee2MQTT-Version suchen."""
+        current = (
+            self.bridge_info.get("version")
+            if isinstance(self.bridge_info, dict)
+            else None
+        )
+        latest = await async_fetch_latest_z2m(self.hass, current, force)
+        checked = dt_util.utcnow().isoformat(timespec="seconds")
+        if latest is None:
+            self.z2m = {**self.z2m, "checked_at": checked, "check_failed": True}
+        else:
+            current = (
+                self.bridge_info.get("version")
+                if isinstance(self.bridge_info, dict)
+                else None
+            )
+            self.z2m = {
+                **self.z2m,
+                "latest_version": latest["version"],
+                "release_url": latest["url"],
+                "update_available": is_newer(latest["version"], current),
                 "checked_at": checked,
                 "check_failed": False,
             }
