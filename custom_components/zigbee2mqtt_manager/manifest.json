@@ -19,5 +19,5 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/issues",
   "requirements": [],
-  "version": "1.2.2"
+  "version": "1.2.3"
 }

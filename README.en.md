@@ -42,7 +42,7 @@ The card has six categories in an icon bar (icons only below roughly 480 px card
 | **Updates** | Installed vs. available firmware; "check all" and "install all one after another" as a background job with progress and cancel |
 | **Groups** | Create, rename, delete; add and remove members |
 | **Bindings** | Overview of all device bindings; unbind; bind again in the device popup |
-| **Bridge** (cog) | **App version** (integration and card, colored notice when a new version exists), status, coordinator, pairing, bridge options, restart, event log, **Notification Center** |
+| **Bridge** (cog) | **App and Zigbee2MQTT versions** (automatic update checks, colored release link and persistent HA notification), status, coordinator, pairing, bridge options, restart, event log, **Notification Center** |
 
 **Device popup** (tap a row) with accordion sections: Information · **Features (expose)** · **Entities (for automations)** · Rename (with the list of affected HA entities) · Device options (form from the Z2M option schema) · Firmware · Bindings · Groups · Remove.
 
@@ -157,7 +157,7 @@ In the editor under **Colors** (or via `color_*` keys). Each value may be hex (`
 | `color_success` | Good: online, signal good, battery full, up to date |
 | `color_warning` | Warning: battery low, signal medium, update running |
 | `color_error` | Error: offline, battery critical, signal weak |
-| `color_info` | Update available (firmware, new app version) |
+| `color_info` | Update available (firmware, new app or Zigbee2MQTT version) |
 | `color_row_icon` | All list icons (overrides the category colors) |
 | `color_live_banner` | Banner background (pairing, firmware job) |
 | `color_icon_devices`, `_battery`, `_updates`, `_groups`, `_bindings`, `_bridge` | Category icon – colors tab icon and row icons |
@@ -234,7 +234,7 @@ Under **Configure** you choose whether firmware updates (default: yes) and "not 
 
 ## Version display and update notice
 
-The installed app version is shown in the card under **Bridge (cog) → App version**, at the top of the graphical card editor, and in the integration's **Configure** dialog. At startup and every 12 hours the integration checks GitHub for a newer app version. **Bridge → Status** also compares the installed Zigbee2MQTT version with the latest release. An available Z2M update shows its version and a release link; **Check now** triggers the query immediately. Update Zigbee2MQTT manually on its server or in the Docker container, not via HACS. If GitHub is not reachable, "Check not possible" appears; the card keeps working.
+The app version is shown in the card under **Bridge → App version**, in the card editor and in the integration's **Configure** dialog. At startup and every 12 hours, the integration checks GitHub for newer app and Zigbee2MQTT versions. Under **Bridge → Status**, the installed Z2M version is followed by green **Up to date** or orange **Update available: {version}**. The orange notice links directly to the release notes. An update also creates a persistent Home Assistant notification per instance; it is dismissed after a successful check finds the installed version current. **Check now** starts an immediate check. Update Zigbee2MQTT manually on its server or in the Docker container, not via HACS. If GitHub is unreachable, "Check not possible" appears; the card keeps working.
 
 If card and integration versions differ (stale browser cache), this is marked orange as well.
 
@@ -304,6 +304,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 
 | Version | Changes |
 |---|---|
+| **1.2.3** | New: automatic Zigbee2MQTT version checks at startup and every 12 hours, **Up to date** status or clickable update notice with release link under **Bridge → Status**, plus a persistent Home Assistant notification. Manual check available; Zigbee2MQTT is never installed automatically. |
 | **1.2.2** | New: own **Network** category in the card bar (explains how to enter the network map address, `show_network`). Fixed: with Home Assistant language **Serbian (Latin, `sr-Latn`)** the card, welcome message and version notice showed Cyrillic because only the language part "sr" was evaluated; there is now a Latin text block. |
 | **1.2.1** | New: **Network** button (Zigbee2MQTT network map), links from entities and the device to Home Assistant, configurable **sidebar name**, **missing devices** stay visible greyed out (chip, filter, sensor, event, Notification Center, "Forget"), language **Српски**, README with flag language bar, blog link and images. Fixed: missing pictures for models with spaces (e.g. innr sockets). |
 | **1.2.0** | New: a device's **comment** can be **edited** in the popup (section "Comment", stored through Zigbee2MQTT in `description`, not in read-only mode). New: **Disabled** chip and **Disabled devices** sensor (counter and name list). New: **sidebar entry** (Home Assistant panel, administrators only, can be switched off under Configure) showing the card as a full page (issue #6). New: **Notification Center connection** (optional, interface schema 1) with seven notification types (bridge offline, battery critical, device offline, battery low, firmware update, new device, device left the network), main switch and a switch per type in the card and in the Configure dialog. New: **collective problem sensor** as a binary sensor (device class `problem`) with all counters and device lists as attributes; **area**, **HA device** and **comment** in list, popup and search, grouping by **area**; **"Not heard for long"** (chip, filter, badge, adjustable hours); setup aids (my.home-assistant.io links, one-time notice after setup, dashboard template in `examples`). Fixed (issue #7): devices **disabled** in Zigbee2MQTT no longer count as offline (own status "Disabled", excluded from counters, sensors and Notification Center). Fixed (issue #5): the card **flickered and jumped to the top while scrolling** because it was fully redrawn on every data update; now only changed parts are updated (images, rows, accordions and input focus stay in place, data-driven redraw at most every 2 seconds). Fixed: **typing in search and fields on the desktop** triggered Home Assistant keyboard shortcuts (e.g. "e" opened the entity search). Fixed (issue #4): HA device mapping without the deprecated `device_registry.devices` mapping. Changes to the Notification Center switches no longer reload the integration. English leftovers in the German texts (`strings.json`) corrected. **French** (thanks to @Locodice67, PR #3; adopted and adapted: informal address, new texts) and **Spanish** added. |

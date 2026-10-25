@@ -46,7 +46,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.2.2";
+const CARD_VERSION = "1.2.3";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
@@ -2577,18 +2577,24 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const status = b.online === true ? `<span class="pill" style="--c:var(--zmm-color-success)">${esc(this._t("online"))}</span>` : b.online === false ? `<span class="pill" style="--c:var(--zmm-color-error)">${esc(this._t("offline"))}</span>` : esc(this._t("unknown"));
     const coordinator = [b.coordinator_type, b.coordinator_revision].filter(Boolean).join(" · ");
     const z2mUpdate = z2m.update_available === true;
+    const z2mCurrent = !z2mUpdate && Boolean(z2m.latest_version) && !z2m.check_failed;
     const z2mUrl = /^https:\/\/github\.com\/Koenkk\/zigbee2mqtt(?:\/|$)/.test(z2m.release_url || "")
       ? z2m.release_url
       : "https://github.com/Koenkk/zigbee2mqtt/releases";
+    const z2mVersion = `${esc(b.version)}${z2mUpdate
+      ? ` <a class="pill" style="--c:var(--zmm-color-warning)" href="${esc(z2mUrl)}" target="_blank" rel="noopener noreferrer">${esc(this._t("z2m_update_available", { v: z2m.latest_version }))}</a>`
+      : z2mCurrent
+        ? ` <span class="pill" style="--c:var(--zmm-color-success)">${esc(this._t("app_up_to_date"))}</span>`
+        : ""}`;
     const z2mNotice = z2mUpdate
-      ? `<div class="hint warn">${esc(this._t("z2m_update_available", { v: z2m.latest_version }))} · <a href="${esc(z2mUrl)}" target="_blank" rel="noopener noreferrer">${esc(this._t("z2m_release"))}</a><br>${esc(this._t("z2m_update_hint"))}</div>`
+      ? `<div class="hint">${esc(this._t("z2m_update_hint"))}</div>`
       : z2m.check_failed
         ? `<div class="hint">${esc(this._t("z2m_check_failed"))}</div>`
         : "";
     const z2mCheck = ro ? "" : `<div class="toolbar"><button class="btn" data-act="z2m_update_check"><ha-icon icon="mdi:refresh"></ha-icon>${esc(this._t("z2m_check_now"))}</button></div>`;
     const info = [
       this._line(this._t("f_status"), status),
-      this._line(this._t("f_version"), esc(b.version)),
+      this._line(this._t("f_version"), z2mVersion),
       z2mNotice,
       z2mCheck,
       this._line(this._t("f_coordinator"), esc(coordinator)),

@@ -12,7 +12,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
-from homeassistant.components import mqtt
+from homeassistant.components import mqtt, persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -1767,7 +1767,49 @@ class Z2MManager:
                 "checked_at": checked,
                 "check_failed": False,
             }
+            self._sync_z2m_update_notification(current)
         self._schedule_update()
+
+    def _sync_z2m_update_notification(self, current_version: str | None) -> None:
+        """Persistente HA-Meldung bei einem verfügbaren Z2M-Update synchronisieren."""
+        if not current_version:
+            return
+
+        notification_id = f"{DOMAIN}_z2m_update_{self.entry.entry_id}"
+        if not self.z2m["update_available"]:
+            persistent_notification.async_dismiss(self.hass, notification_id)
+            return
+
+        latest_version = str(self.z2m["latest_version"])
+        release_url = self.z2m.get("release_url")
+        if not isinstance(release_url, str) or not release_url.startswith(
+            "https://github.com/Koenkk/zigbee2mqtt/"
+        ):
+            release_url = Z2M_GITHUB_RELEASES_URL
+
+        language = str(getattr(self.hass.config, "language", "en")).lower()
+        if language.startswith("de"):
+            title = "Zigbee2MQTT-Update verfügbar"
+            message = (
+                f"Installierte Version: `{current_version}`\n\n"
+                f"Neueste Version: **{latest_version}** ([Release ansehen]({release_url}))\n\n"
+                "Aktualisiere Zigbee2MQTT manuell auf dem Server bzw. im Docker-Container. "
+                "Das Update erfolgt nicht über HACS."
+            )
+        else:
+            title = "Zigbee2MQTT update available"
+            message = (
+                f"Installed version: `{current_version}`\n\n"
+                f"Latest version: **{latest_version}** ([View release]({release_url}))\n\n"
+                "Update Zigbee2MQTT manually on its server or in the Docker container, "
+                "not via HACS."
+            )
+        persistent_notification.async_create(
+            self.hass,
+            message,
+            title=title,
+            notification_id=notification_id,
+        )
 
     # --- Gruppen ------------------------------------------------------
     async def async_group_add(self, name: str) -> None:
