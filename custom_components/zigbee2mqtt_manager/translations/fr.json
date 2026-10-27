@@ -3,28 +3,41 @@
     "step": {
       "user": {
         "title": "Zigbee2MQTT Manager",
-        "description": "Relie le gestionnaire à ton instance Zigbee2MQTT via l'intégration MQTT.",
+        "description": "Connecte le gestionnaire à ton instance Zigbee2MQTT, par défaut via l'intégration MQTT de Home Assistant. En option : un autre courtier MQTT (champs ci-dessous).",
         "data": {
           "base_topic": "Base topic",
-          "low_battery_threshold": "Seuil « batterie faible » (%)"
+          "low_battery_threshold": "Seuil « batterie faible » (%)",
+          "broker_host": "Courtier MQTT externe (adresse, facultatif)",
+          "broker_port": "Port du courtier externe",
+          "broker_username": "Nom d'utilisateur (facultatif)",
+          "broker_password": "Mot de passe (facultatif)",
+          "broker_tls": "Connexion chiffrée (TLS)"
         },
         "data_description": {
-          "base_topic": "Correspond à `mqtt.base_topic` dans la configuration de Zigbee2MQTT (par défaut : zigbee2mqtt)."
+          "base_topic": "Correspond à `mqtt.base_topic` dans la configuration de Zigbee2MQTT (par défaut : zigbee2mqtt).",
+          "broker_host": "Laisse vide si Zigbee2MQTT utilise le courtier MQTT de Home Assistant. Sinon, indique l'adresse du courtier, p. ex. d'un second site via VPN. Expérimental, peu testé."
         }
       },
       "reconfigure": {
         "title": "Modifier le base topic",
         "data": {
-          "base_topic": "Base topic"
+          "base_topic": "Base topic",
+          "broker_host": "Courtier MQTT externe (adresse, facultatif)",
+          "broker_port": "Port du courtier externe",
+          "broker_username": "Nom d'utilisateur (facultatif)",
+          "broker_password": "Mot de passe (facultatif)",
+          "broker_tls": "Connexion chiffrée (TLS)"
         },
         "data_description": {
-          "base_topic": "Doit correspondre à `mqtt.base_topic` dans Zigbee2MQTT."
+          "base_topic": "Doit correspondre à `mqtt.base_topic` dans Zigbee2MQTT.",
+          "broker_host": "Laisse vide si Zigbee2MQTT utilise le courtier MQTT de Home Assistant. Sinon, indique l'adresse du courtier, p. ex. d'un second site via VPN. Expérimental, peu testé."
         }
       }
     },
     "error": {
       "invalid_topic": "Base topic invalide (vide ou contenant # ou +).",
-      "topic_overlap": "Les base topics de plusieurs instances ne doivent pas être imbriqués (p. ex. « zigbee2mqtt » et « zigbee2mqtt/stick2 »). Utilise des topics séparés comme « zigbee2mqtt » et « zigbee2mqtt2 »."
+      "topic_overlap": "Les base topics de plusieurs instances ne doivent pas être imbriqués (p. ex. « zigbee2mqtt » et « zigbee2mqtt/stick2 »). Utilise des topics séparés comme « zigbee2mqtt » et « zigbee2mqtt2 ».",
+      "broker_unreachable": "Le courtier MQTT externe est injoignable ou refuse la connexion."
     },
     "abort": {
       "already_configured": "Une entrée existe déjà pour ce base topic.",

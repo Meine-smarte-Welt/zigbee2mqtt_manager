@@ -3,28 +3,41 @@
     "step": {
       "user": {
         "title": "Zigbee2MQTT Manager",
-        "description": "Conecta el gestor con tu instancia de Zigbee2MQTT mediante la integración MQTT.",
+        "description": "Conecta el gestor con tu instancia de Zigbee2MQTT, por defecto mediante la integración MQTT de Home Assistant. Opcional: otro broker MQTT (campos abajo).",
         "data": {
           "base_topic": "Base topic",
-          "low_battery_threshold": "Umbral de «batería baja» (%)"
+          "low_battery_threshold": "Umbral de «batería baja» (%)",
+          "broker_host": "Broker MQTT externo (dirección, opcional)",
+          "broker_port": "Puerto del broker externo",
+          "broker_username": "Usuario (opcional)",
+          "broker_password": "Contraseña (opcional)",
+          "broker_tls": "Conexión cifrada (TLS)"
         },
         "data_description": {
-          "base_topic": "Corresponde a `mqtt.base_topic` en la configuración de Zigbee2MQTT (por defecto: zigbee2mqtt)."
+          "base_topic": "Corresponde a `mqtt.base_topic` en la configuración de Zigbee2MQTT (por defecto: zigbee2mqtt).",
+          "broker_host": "Déjalo vacío si Zigbee2MQTT usa el broker MQTT de Home Assistant. Si no, indica la dirección del broker, p. ej. de una segunda ubicación por VPN. Experimental, poco probado."
         }
       },
       "reconfigure": {
         "title": "Cambiar el base topic",
         "data": {
-          "base_topic": "Base topic"
+          "base_topic": "Base topic",
+          "broker_host": "Broker MQTT externo (dirección, opcional)",
+          "broker_port": "Puerto del broker externo",
+          "broker_username": "Usuario (opcional)",
+          "broker_password": "Contraseña (opcional)",
+          "broker_tls": "Conexión cifrada (TLS)"
         },
         "data_description": {
-          "base_topic": "Debe coincidir con `mqtt.base_topic` en Zigbee2MQTT."
+          "base_topic": "Debe coincidir con `mqtt.base_topic` en Zigbee2MQTT.",
+          "broker_host": "Déjalo vacío si Zigbee2MQTT usa el broker MQTT de Home Assistant. Si no, indica la dirección del broker, p. ej. de una segunda ubicación por VPN. Experimental, poco probado."
         }
       }
     },
     "error": {
       "invalid_topic": "Base topic no válido (vacío o con # o +).",
-      "topic_overlap": "Los base topics de varias instancias no pueden estar anidados (p. ej. «zigbee2mqtt» y «zigbee2mqtt/stick2»). Usa topics separados como «zigbee2mqtt» y «zigbee2mqtt2»."
+      "topic_overlap": "Los base topics de varias instancias no pueden estar anidados (p. ej. «zigbee2mqtt» y «zigbee2mqtt/stick2»). Usa topics separados como «zigbee2mqtt» y «zigbee2mqtt2».",
+      "broker_unreachable": "No se puede acceder al broker MQTT externo o rechaza la conexión."
     },
     "abort": {
       "already_configured": "Ya existe una entrada para este base topic.",

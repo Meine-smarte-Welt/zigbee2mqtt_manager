@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 9ea1a13d2dd3e7120569ceded2d1dc9e3b452c31af8d118f3073dfe634a08ae6
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 212dffed9844e344c7bab515c044776ff16523ad106479e4aa31136b08fdbf3e
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.2.3"
+VERSION = "1.3.0b2"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
@@ -17,6 +17,13 @@ CONF_WELCOME_SHOWN = "welcome_shown"
 CONF_SIDEBAR_PANEL = "sidebar_panel"
 CONF_SIDEBAR_TITLE = "sidebar_title"
 CONF_NETWORK_URL = "network_url"
+# Optionaler externer MQTT-Broker (leer = MQTT-Integration von Home Assistant)
+CONF_BROKER_HOST = "broker_host"
+CONF_BROKER_PORT = "broker_port"
+CONF_BROKER_USERNAME = "broker_username"
+CONF_BROKER_PASSWORD = "broker_password"
+CONF_BROKER_TLS = "broker_tls"
+DEFAULT_BROKER_PORT = 1883
 
 DEFAULT_BASE_TOPIC = "zigbee2mqtt"
 DEFAULT_LOW_BATTERY = 20
@@ -59,6 +66,12 @@ STORAGE_SAVE_DELAY = 30
 MAX_EVENT_LOG = 50
 # Höchstlänge des Gerätekommentars (Z2M-Einstellung "description")
 MAX_COMMENT_LENGTH = 500
+
+# Netzwerkkarte (Zigbee2MQTT "networkmap"): Zeit, nach der eine Abfrage als gescheitert gilt (Sekunden).
+# Z2M fragt jedes Gerät einzeln ab, das dauert bei großen Netzen mehrere Minuten.
+NETWORK_REQUEST_TIMEOUT = 600
+# Höchstanzahl Verbindungen, die gespeichert werden (Schutz vor riesigen Antworten)
+MAX_NETWORK_LINKS = 6000
 
 # Mindestversion der Zigbee2MQTT-Bridge (2.x)
 MIN_Z2M_MAJOR = 2

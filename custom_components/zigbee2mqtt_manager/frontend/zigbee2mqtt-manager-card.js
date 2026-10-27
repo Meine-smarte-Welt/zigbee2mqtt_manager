@@ -1,3 +1,4 @@
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 14dd8ee99e5eafc4f2608e8f909c202960ac19c9d11bb197b13f59931caf3b04
 /* Zigbee2MQTT Manager Card – v0.0.1
  * Wird von der Integration automatisch geladen. Kartentyp: custom:zigbee2mqtt-manager-card
  */

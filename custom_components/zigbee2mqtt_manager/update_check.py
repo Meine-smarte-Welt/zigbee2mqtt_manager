@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 213eafcf036a89e690fca3bc26050720dbc310a5c0490769c3f38d7de4129c4f
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 5f23649d6f119e3972d74e3f16a1a3232b8e68489982fd961252b0eab9774db3
 """Prüft auf GitHub, ob eine neuere Version der Integration veröffentlicht wurde."""
 
 from __future__ import annotations

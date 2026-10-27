@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 98db3e4da4c7b391bb4ad84794085e80ed790815d309e7822132c3b6c96416d0
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8272902f9f108738aef7690375d221a2222cabbc58fe22f9cf686d2d3cb71e0a
 """WebSocket-API zwischen Lovelace-Karte und Integration."""
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ ACTIONS = [
     "remove",
     "forget_missing",
     "forget_missing_all",
+    "set_ignore_offline",
     # Firmware
     "ota_check",
     "ota_update",
@@ -39,6 +40,8 @@ ACTIONS = [
     "bridge_option",
     "app_update_check",
     "z2m_update_check",
+    # Netzwerkkarte
+    "network_refresh",
     # Notification Center (optional)
     "nc_set_master",
     "nc_set_type",
@@ -183,6 +186,10 @@ async def ws_action(
             await manager.async_forget_missing(ieee)
         elif action == "forget_missing_all":
             await manager.async_forget_missing()
+        elif action == "set_ignore_offline":
+            await manager.async_set_ignore_offline(ieee, msg.get("enabled"))
+        elif action == "network_refresh":
+            await manager.async_network_refresh()
         elif action == "ota_check":
             await manager.async_ota_check(ieee)
         elif action == "ota_update":

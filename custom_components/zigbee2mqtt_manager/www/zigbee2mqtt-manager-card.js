@@ -1,3 +1,4 @@
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): df9b6cd07f2140b743cc65698794fb5a8aeabaf40d74b1e92980a4a94143bbd1
 // SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 4a345f2ac6232826d876052447cdf2dde2292a0ec25c0b34d7ac9899bc54ede6
 /**
  * zigbee2mqtt-manager-card
@@ -34,6 +35,10 @@
  * "Netzwerk" führt zur Zigbee2MQTT-Netzwerkkarte, und Geräte, die aus der Z2M-Liste verschwinden,
  * bleiben ausgegraut als "fehlt" sichtbar (bis sie zurückkommen oder vergessen werden).
  *
+ * Seit 1.3.0: Der Reiter "Netzwerk" zeigt die Zigbee-Topologie selbst (Coordinator, Router,
+ * Endgeräte als Wolken) und darunter je Router ein Akkordeon mit seinen Verbindungen. Geräte lassen
+ * sich im Popup auf "Offline ignorieren" setzen (z. B. Lampen hinter einem Wandschalter).
+ *
  * Alle schreibenden Aktionen laufen über die Integration und sind dort auf
  * Administratoren beschränkt. Mit `read_only: true` blendet die Karte alle
  * Bedienelemente zum Ändern aus (z. B. für Wandtablets).
@@ -46,7 +51,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.2.3";
+const CARD_VERSION = "1.3.0b2";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
@@ -104,7 +109,7 @@ const CLASS_ICON = {
 const UNKNOWN_VENDOR = "__unknown__";
 // Feste Filter (Auswahl: Wert -> Textschlüssel). Hersteller und Klasse werden aus den Daten gebildet.
 const FILTER_FIELDS = [
-  { key: "status", label: "flt_status", options: [["online", "flt_online"], ["offline", "flt_offline"], ["stale", "flt_stale"], ["disabled", "flt_disabled"], ["missing", "flt_missing"]] },
+  { key: "status", label: "flt_status", options: [["online", "flt_online"], ["offline", "flt_offline"], ["stale", "flt_stale"], ["disabled", "flt_disabled"], ["ignored", "flt_ignored"], ["missing", "flt_missing"]] },
   {
     key: "power",
     label: "flt_power",
@@ -226,7 +231,7 @@ const CONFIG_DEFAULTS = {
   show_ieee: false,
   show_lqi: true,
   show_area: true,
-  show_comment: false,
+  show_comment: true,
   show_battery_value: true,
   show_last_seen: true,
   // Bearbeiten
@@ -342,6 +347,15 @@ const I18N = {
     f_available: "Erreichbar", f_last_seen: "Zuletzt gesehen",
     flt_missing: "Fehlt in Zigbee2MQTT", chip_missing: "Fehlt", status_missing: "Fehlt in Zigbee2MQTT (zuletzt bekanntes Gerät)", missing_badge: "fehlt", missing_hint: "Diese Geräte waren bekannt, fehlen aber aktuell in der Zigbee2MQTT-Geräteliste. Sie verschwinden von selbst, sobald sie zurückkehren.", missing_popup_hint: "Dieses Gerät steht nicht mehr in der Geräteliste von Zigbee2MQTT. Angezeigt werden die zuletzt bekannten Daten. Kommt es zurück, verschwindet die Markierung von selbst; mit „Vergessen“ entfernst du es aus dieser Liste.", forget: "Vergessen", forget_all: "Alle fehlenden vergessen", f_missing_since: "Fehlt seit", network: "Netzwerk", network_open: "Zigbee2MQTT-Netzwerkkarte öffnen", open_entity: "Entität in Home Assistant öffnen", open_device: "Gerät in Home Assistant öffnen", ev_device_missing: "Fehlt in Zigbee2MQTT", ev_device_back: "Wieder in der Geräteliste",
     network_tab_hint: "Öffnet die Zigbee2MQTT-Netzwerkkarte (Topologie) in Home Assistant bzw. in einem neuen Tab.", network_no_url: "Noch keine Adresse der Netzwerkkarte bekannt. Trage sie unter Einstellungen → Geräte & Dienste → Zigbee2MQTT Manager → Konfigurieren als „Adresse der Netzwerkkarte“ ein (z. B. http://192.168.1.10:8080/#/network oder /a0d7b954_zigbee2mqtt), oder setze in der Karte `network_url`.",
+    net_intro: "Aufbau des Zigbee-Netzes aus den Nachbartabellen der Router. Jeder Router hängt an seiner besten Verbindung zum Coordinator (stark, wenige Sprünge) – eine Näherung der echten Routen.", net_refresh: "Netz neu einlesen", net_refresh_hint: "Zigbee2MQTT fragt dafür jedes Gerät einzeln ab. Das dauert je nach Netz mehrere Minuten und belastet das Zigbee-Netz. Lies es nur ein, wenn du es brauchst.", net_loading: "Netz wird eingelesen (gestartet {t}) …",
+    net_updated: "Stand: {t}", net_none: "Das Netz wurde noch nicht eingelesen. Starte die Abfrage mit „Netz neu einlesen“.", net_error_failed: "Zigbee2MQTT hat die Netzwerkkarte nicht geliefert.", net_error_timeout: "Zigbee2MQTT hat nicht rechtzeitig geantwortet (nach 10 Minuten abgebrochen).",
+    net_summary: "{routers} Router · {clients} Endgeräte · {links} Verbindungen", net_coordinator: "Coordinator", net_router: "Router", net_cloud: "{n} Endgeräte",
+    net_links_routers: "Verbindungen zu Routern", net_end_devices: "Endgeräte", net_rel_parent: "Elternknoten", net_rel_child: "Kind",
+    net_rel_sibling: "Nachbar", net_orphan: "Keine Verbindung zum Coordinator bekannt", net_unassigned: "Ohne bekannte Verbindung", net_unassigned_hint: "Diese Endgeräte stehen in keiner Nachbartabelle (z. B. gerade außer Reichweite, neu oder nur kurz aktiv).",
+    net_open_tip: "{name} öffnen", net_show_tip: "Endgeräte von {name} anzeigen", net_no_links: "Keine Verbindungen bekannt", net_refresh_done: "Netzwerkkarte aktualisiert",
+    net_lqi: "Signal", ev_network_map: "Netzwerkkarte eingelesen", sec_monitor: "Überwachung", ignore_offline: "Offline-Status ignorieren",
+    ignore_offline_hint: "Das Gerät gilt nicht als offline: keine Störung, keine Ereignisse, keine Meldung ans Notification Center. Sinnvoll z. B. für Lampen hinter einem Wandschalter.", ignored_badge: "Offline ignoriert", status_ignored: "Offline, wird ignoriert", flt_ignored: "Offline ignoriert",
+    net_map_label: "Zigbee-Netzwerkkarte", net_native: "Zigbee2MQTT-Oberfläche öffnen",
     avail_activity: "ja (kürzlich Nachricht empfangen, trotz Offline-Meldung)",
     type_Router: "Router", type_EndDevice: "Endgerät",
     // Expose-Funktionen (Popup)
@@ -453,6 +467,15 @@ const I18N = {
     f_available: "Reachable", f_last_seen: "Last seen",
     flt_missing: "Missing in Zigbee2MQTT", chip_missing: "Missing", status_missing: "Missing in Zigbee2MQTT (last known device)", missing_badge: "missing", missing_hint: "These devices were known but are currently missing from the Zigbee2MQTT device list. They disappear from here by themselves once they return.", missing_popup_hint: "This device is no longer in the Zigbee2MQTT device list. The last known data is shown. If it comes back, the marker disappears by itself; use \"Forget\" to remove it from this list.", forget: "Forget", forget_all: "Forget all missing", f_missing_since: "Missing since", network: "Network", network_open: "Open the Zigbee2MQTT network map", open_entity: "Open entity in Home Assistant", open_device: "Open device in Home Assistant", ev_device_missing: "Missing in Zigbee2MQTT", ev_device_back: "Back in the device list",
     network_tab_hint: "Opens the Zigbee2MQTT network map (topology) in Home Assistant or in a new tab.", network_no_url: "No network map address known yet. Enter it under Settings → Devices & services → Zigbee2MQTT Manager → Configure as \"Network map address\" (e.g. http://192.168.1.10:8080/#/network or /a0d7b954_zigbee2mqtt), or set `network_url` in the card.",
+    net_intro: "Structure of the Zigbee network, read from the routers' neighbour tables. Each router hangs off its best path to the coordinator (strong link, few hops) – an approximation of the real routes.", net_refresh: "Re-read network", net_refresh_hint: "Zigbee2MQTT queries every device one by one for this. Depending on the network it takes several minutes and puts load on the Zigbee network. Only read it when you need it.", net_loading: "Reading the network (started {t}) …",
+    net_updated: "As of {t}", net_none: "The network has not been read yet. Start the query with “Re-read network”.", net_error_failed: "Zigbee2MQTT did not deliver the network map.", net_error_timeout: "Zigbee2MQTT did not answer in time (aborted after 10 minutes).",
+    net_summary: "{routers} routers · {clients} end devices · {links} links", net_coordinator: "Coordinator", net_router: "Router", net_cloud: "{n} end devices",
+    net_links_routers: "Links to routers", net_end_devices: "End devices", net_rel_parent: "Parent", net_rel_child: "Child",
+    net_rel_sibling: "Neighbour", net_orphan: "No connection to the coordinator known", net_unassigned: "No known connection", net_unassigned_hint: "These end devices appear in no neighbour table (e.g. out of range right now, new or only briefly active).",
+    net_open_tip: "Open {name}", net_show_tip: "Show end devices of {name}", net_no_links: "No links known", net_refresh_done: "Network map updated",
+    net_lqi: "Signal", ev_network_map: "Network map read", sec_monitor: "Monitoring", ignore_offline: "Ignore offline status",
+    ignore_offline_hint: "The device does not count as offline: no problem state, no events, no Notification Center message. Useful e.g. for lamps behind a wall switch.", ignored_badge: "Offline ignored", status_ignored: "Offline, ignored", flt_ignored: "Offline ignored",
+    net_map_label: "Zigbee network map", net_native: "Open the Zigbee2MQTT interface",
     avail_activity: "yes (message received recently, despite offline report)",
     type_Router: "Router", type_EndDevice: "End device",
     sec_exposes: "Features (exposes)", no_exposes: "This device reports no features.",
@@ -566,6 +589,15 @@ const I18N = {
     f_available: "Bereikbaar", f_last_seen: "Laatst gezien",
     flt_missing: "Ontbreekt in Zigbee2MQTT", chip_missing: "Ontbreekt", status_missing: "Ontbreekt in Zigbee2MQTT (laatst bekend apparaat)", missing_badge: "ontbreekt", missing_hint: "Deze apparaten waren bekend, maar ontbreken nu in de apparatenlijst van Zigbee2MQTT. Ze verdwijnen vanzelf zodra ze terugkomen.", missing_popup_hint: "Dit apparaat staat niet meer in de apparatenlijst van Zigbee2MQTT. De laatst bekende gegevens worden getoond. Komt het terug, dan verdwijnt de markering vanzelf; met „Vergeten” haal je het uit deze lijst.", forget: "Vergeten", forget_all: "Alle ontbrekende vergeten", f_missing_since: "Ontbreekt sinds", network: "Netwerk", network_open: "Zigbee2MQTT-netwerkkaart openen", open_entity: "Entiteit openen in Home Assistant", open_device: "Apparaat openen in Home Assistant", ev_device_missing: "Ontbreekt in Zigbee2MQTT", ev_device_back: "Weer in de apparatenlijst",
     network_tab_hint: "Opent de Zigbee2MQTT-netwerkkaart (topologie) in Home Assistant of in een nieuw tabblad.", network_no_url: "Nog geen adres van de netwerkkaart bekend. Vul het in onder Instellingen → Apparaten & services → Zigbee2MQTT Manager → Configureren als „Adres van de netwerkkaart” (bijv. http://192.168.1.10:8080/#/network of /a0d7b954_zigbee2mqtt), of stel `network_url` in de kaart in.",
+    net_intro: "Opbouw van het Zigbee-netwerk uit de buurtabellen van de routers. Elke router hangt aan zijn beste verbinding met de coordinator (sterk, weinig sprongen) – een benadering van de echte routes.", net_refresh: "Netwerk opnieuw inlezen", net_refresh_hint: "Zigbee2MQTT bevraagt hiervoor elk apparaat afzonderlijk. Dat duurt afhankelijk van het netwerk enkele minuten en belast het Zigbee-netwerk. Lees het alleen in als je het nodig hebt.", net_loading: "Netwerk wordt ingelezen (gestart {t}) …",
+    net_updated: "Stand: {t}", net_none: "Het netwerk is nog niet ingelezen. Start de opdracht met „Netwerk opnieuw inlezen”.", net_error_failed: "Zigbee2MQTT heeft de netwerkkaart niet geleverd.", net_error_timeout: "Zigbee2MQTT antwoordde niet op tijd (afgebroken na 10 minuten).",
+    net_summary: "{routers} routers · {clients} eindapparaten · {links} verbindingen", net_coordinator: "Coordinator", net_router: "Router", net_cloud: "{n} eindapparaten",
+    net_links_routers: "Verbindingen met routers", net_end_devices: "Eindapparaten", net_rel_parent: "Ouder", net_rel_child: "Kind",
+    net_rel_sibling: "Buur", net_orphan: "Geen verbinding met de coordinator bekend", net_unassigned: "Zonder bekende verbinding", net_unassigned_hint: "Deze eindapparaten staan in geen enkele buurtabel (bijv. nu buiten bereik, nieuw of maar kort actief).",
+    net_open_tip: "{name} openen", net_show_tip: "Eindapparaten van {name} tonen", net_no_links: "Geen verbindingen bekend", net_refresh_done: "Netwerkkaart bijgewerkt",
+    net_lqi: "Signaal", ev_network_map: "Netwerkkaart ingelezen", sec_monitor: "Bewaking", ignore_offline: "Offline-status negeren",
+    ignore_offline_hint: "Het apparaat geldt niet als offline: geen storing, geen gebeurtenissen, geen melding aan het Notification Center. Handig bijv. voor lampen achter een wandschakelaar.", ignored_badge: "Offline genegeerd", status_ignored: "Offline, wordt genegeerd", flt_ignored: "Offline genegeerd",
+    net_map_label: "Zigbee-netwerkkaart", net_native: "Zigbee2MQTT-interface openen",
     avail_activity: "ja (recent bericht ontvangen, ondanks offline-melding)",
     type_Router: "Router", type_EndDevice: "Eindapparaat",
     // Expose-functies (popup)
@@ -608,6 +640,7 @@ const I18N = {
     nc_missing_hint: "Het Notification Center is niet geïnstalleerd. De schakelaars werken zodra het is geïnstalleerd; zonder gebeurt er niets.",
     nc_saved: "Opgeslagen",
     nc_sev_critical: "Kritiek", nc_sev_warning: "Waarschuwing", nc_sev_info: "Info", nc_sev_ok: "OK",
+    z2m_update_available: "Update beschikbaar: {v}", z2m_update_hint: "Werk Zigbee2MQTT handmatig bij op de server of in de Docker-container, niet via HACS.", z2m_check_now: "Nu controleren", z2m_check_failed: "Controle niet mogelijk", z2m_release: "Release bekijken",
   },
   fr: {
     connecting: "Connexion …",
@@ -681,6 +714,15 @@ const I18N = {
     f_available: "Joignable", f_last_seen: "Dernière activité",
     flt_missing: "Absent de Zigbee2MQTT", chip_missing: "Absents", status_missing: "Absent de Zigbee2MQTT (dernier appareil connu)", missing_badge: "absent", missing_hint: "Ces appareils étaient connus mais manquent actuellement dans la liste d'appareils de Zigbee2MQTT. Ils disparaissent d'ici dès qu'ils reviennent.", missing_popup_hint: "Cet appareil ne figure plus dans la liste d'appareils de Zigbee2MQTT. Les dernières données connues sont affichées. S'il revient, le repère disparaît de lui-même ; avec « Oublier », tu le retires de cette liste.", forget: "Oublier", forget_all: "Oublier tous les absents", f_missing_since: "Absent depuis", network: "Réseau", network_open: "Ouvrir la carte du réseau Zigbee2MQTT", open_entity: "Ouvrir l'entité dans Home Assistant", open_device: "Ouvrir l'appareil dans Home Assistant", ev_device_missing: "Absent de Zigbee2MQTT", ev_device_back: "De retour dans la liste",
     network_tab_hint: "Ouvre la carte du réseau Zigbee2MQTT (topologie) dans Home Assistant ou dans un nouvel onglet.", network_no_url: "Aucune adresse de la carte du réseau connue. Saisis-la sous Paramètres → Appareils et services → Zigbee2MQTT Manager → Configurer comme « Adresse de la carte du réseau » (p. ex. http://192.168.1.10:8080/#/network ou /a0d7b954_zigbee2mqtt), ou définis `network_url` dans la carte.",
+    net_intro: "Structure du réseau Zigbee, lue dans les tables de voisinage des routeurs. Chaque routeur est rattaché à sa meilleure liaison vers le coordinateur (forte, peu de sauts) – une approximation des routes réelles.", net_refresh: "Relire le réseau", net_refresh_hint: "Zigbee2MQTT interroge chaque appareil un par un. Selon le réseau, cela prend plusieurs minutes et charge le réseau Zigbee. Ne le relis que si nécessaire.", net_loading: "Lecture du réseau (démarrée {t}) …",
+    net_updated: "État : {t}", net_none: "Le réseau n'a pas encore été lu. Lance la requête avec « Relire le réseau ».", net_error_failed: "Zigbee2MQTT n'a pas fourni la carte du réseau.", net_error_timeout: "Zigbee2MQTT n'a pas répondu à temps (abandon après 10 minutes).",
+    net_summary: "{routers} routeurs · {clients} terminaux · {links} liaisons", net_coordinator: "Coordinateur", net_router: "Routeur", net_cloud: "{n} terminaux",
+    net_links_routers: "Liaisons avec les routeurs", net_end_devices: "Terminaux", net_rel_parent: "Parent", net_rel_child: "Enfant",
+    net_rel_sibling: "Voisin", net_orphan: "Aucune liaison connue avec le coordinateur", net_unassigned: "Sans liaison connue", net_unassigned_hint: "Ces terminaux figurent dans aucune table de voisinage (p. ex. hors de portée, nouveaux ou brièvement actifs).",
+    net_open_tip: "Ouvrir {name}", net_show_tip: "Afficher les terminaux de {name}", net_no_links: "Aucune liaison connue", net_refresh_done: "Carte du réseau mise à jour",
+    net_lqi: "Signal", ev_network_map: "Carte du réseau lue", sec_monitor: "Surveillance", ignore_offline: "Ignorer l'état hors ligne",
+    ignore_offline_hint: "L'appareil n'est pas considéré hors ligne : pas de défaut, pas d'événements, pas de message au Notification Center. Utile p. ex. pour des lampes derrière un interrupteur mural.", ignored_badge: "Hors ligne ignoré", status_ignored: "Hors ligne, ignoré", flt_ignored: "Hors ligne ignoré",
+    net_map_label: "Carte du réseau Zigbee", net_native: "Ouvrir l'interface Zigbee2MQTT",
     avail_activity: "oui (message reçu récemment, malgré le signalement hors ligne)",
     type_Router: "Routeur", type_EndDevice: "Appareil terminal",
     // Fonctions expose (popup)
@@ -723,6 +765,7 @@ const I18N = {
     nc_missing_hint: "Le Notification Center n'est pas installé. Les interrupteurs agissent dès son installation ; sans lui, rien ne se passe.",
     nc_saved: "Enregistré",
     nc_sev_critical: "Critique", nc_sev_warning: "Avertissement", nc_sev_info: "Info", nc_sev_ok: "OK",
+    z2m_update_available: "Mise à jour disponible : {v}", z2m_update_hint: "Mets Zigbee2MQTT à jour manuellement sur son serveur ou dans le conteneur Docker, pas via HACS.", z2m_check_now: "Vérifier maintenant", z2m_check_failed: "Vérification impossible", z2m_release: "Voir la version",
   },
   es: {
     connecting: "Conectando …",
@@ -796,6 +839,15 @@ const I18N = {
     f_available: "Accesible", f_last_seen: "Última actividad",
     flt_missing: "Falta en Zigbee2MQTT", chip_missing: "Ausentes", status_missing: "Falta en Zigbee2MQTT (último dispositivo conocido)", missing_badge: "ausente", missing_hint: "Estos dispositivos eran conocidos, pero ahora faltan en la lista de dispositivos de Zigbee2MQTT. Desaparecen de aquí solos en cuanto vuelven.", missing_popup_hint: "Este dispositivo ya no está en la lista de dispositivos de Zigbee2MQTT. Se muestran los últimos datos conocidos. Si vuelve, la marca desaparece sola; con «Olvidar» lo quitas de esta lista.", forget: "Olvidar", forget_all: "Olvidar todos los ausentes", f_missing_since: "Ausente desde", network: "Red", network_open: "Abrir el mapa de red de Zigbee2MQTT", open_entity: "Abrir la entidad en Home Assistant", open_device: "Abrir el dispositivo en Home Assistant", ev_device_missing: "Falta en Zigbee2MQTT", ev_device_back: "De nuevo en la lista",
     network_tab_hint: "Abre el mapa de red de Zigbee2MQTT (topología) en Home Assistant o en una pestaña nueva.", network_no_url: "Aún no se conoce la dirección del mapa de red. Indícala en Ajustes → Dispositivos y servicios → Zigbee2MQTT Manager → Configurar como «Dirección del mapa de red» (p. ej. http://192.168.1.10:8080/#/network o /a0d7b954_zigbee2mqtt), o define `network_url` en la tarjeta.",
+    net_intro: "Estructura de la red Zigbee, leída de las tablas de vecinos de los routers. Cada router cuelga de su mejor enlace con el coordinador (fuerte, pocos saltos): una aproximación de las rutas reales.", net_refresh: "Releer la red", net_refresh_hint: "Zigbee2MQTT consulta cada dispositivo uno por uno. Según la red tarda varios minutos y carga la red Zigbee. Léela solo cuando la necesites.", net_loading: "Leyendo la red (iniciado {t}) …",
+    net_updated: "Estado: {t}", net_none: "La red aún no se ha leído. Inicia la consulta con «Releer la red».", net_error_failed: "Zigbee2MQTT no entregó el mapa de red.", net_error_timeout: "Zigbee2MQTT no respondió a tiempo (cancelado tras 10 minutos).",
+    net_summary: "{routers} routers · {clients} dispositivos finales · {links} enlaces", net_coordinator: "Coordinador", net_router: "Router", net_cloud: "{n} dispositivos finales",
+    net_links_routers: "Enlaces con routers", net_end_devices: "Dispositivos finales", net_rel_parent: "Padre", net_rel_child: "Hijo",
+    net_rel_sibling: "Vecino", net_orphan: "No se conoce enlace con el coordinador", net_unassigned: "Sin enlace conocido", net_unassigned_hint: "Estos dispositivos finales no aparecen en ninguna tabla de vecinos (p. ej. fuera de alcance, nuevos o activos solo un momento).",
+    net_open_tip: "Abrir {name}", net_show_tip: "Mostrar dispositivos finales de {name}", net_no_links: "Sin enlaces conocidos", net_refresh_done: "Mapa de red actualizado",
+    net_lqi: "Señal", ev_network_map: "Mapa de red leído", sec_monitor: "Supervisión", ignore_offline: "Ignorar estado sin conexión",
+    ignore_offline_hint: "El dispositivo no cuenta como sin conexión: sin avería, sin eventos, sin aviso al Notification Center. Útil p. ej. para lámparas tras un interruptor de pared.", ignored_badge: "Sin conexión ignorado", status_ignored: "Sin conexión, ignorado", flt_ignored: "Sin conexión ignorado",
+    net_map_label: "Mapa de red Zigbee", net_native: "Abrir la interfaz de Zigbee2MQTT",
     avail_activity: "sí (mensaje reciente, a pesar de figurar sin conexión)",
     type_Router: "Router", type_EndDevice: "Dispositivo final",
     // Funciones expose (ventana)
@@ -838,6 +890,7 @@ const I18N = {
     nc_missing_hint: "El Notification Center no está instalado. Los interruptores surten efecto en cuanto se instale; sin él no ocurre nada.",
     nc_saved: "Guardado",
     nc_sev_critical: "Crítica", nc_sev_warning: "Aviso", nc_sev_info: "Info", nc_sev_ok: "OK",
+    z2m_update_available: "Actualización disponible: {v}", z2m_update_hint: "Actualiza Zigbee2MQTT manualmente en su servidor o en el contenedor Docker, no a través de HACS.", z2m_check_now: "Comprobar ahora", z2m_check_failed: "Comprobación no posible", z2m_release: "Ver versión",
   },
   // Српски (ћирилица): Kernbegriffe übersetzt, übrige Texte fallen auf Englisch zurück (siehe _t)
   sr: {
@@ -870,6 +923,16 @@ const I18N = {
     open_entity: "Отвори ентитет у Home Assistant-у", open_device: "Отвори уређај у Home Assistant-у",
     ev_device_missing: "Недостаје у Zigbee2MQTT", ev_device_back: "Поново на листи уређаја",
     network_tab_hint: "Отвара мрежну мапу Zigbee2MQTT (топологију) у Home Assistant-у или у новој картици.", network_no_url: "Адреса мапе мреже још није позната. Унеси је у Подешавања → Уређаји и услуге → Zigbee2MQTT Manager → Конфигуриши као „Адреса мапе мреже“ (нпр. http://192.168.1.10:8080/#/network) или постави `network_url` у картици.",
+    net_intro: "Структура Zigbee мреже, прочитана из табела суседа рутера. Сваки рутер је везан за своју најбољу везу ка координатору (јака, мало скокова) – апроксимација стварних рута.", net_refresh: "Поново учитај мрежу", net_refresh_hint: "Zigbee2MQTT за ово пита сваки уређај појединачно. Зависно од мреже траје неколико минута и оптерећује Zigbee мрежу. Учитај је само када је треба.", net_loading: "Мрежа се учитава (почело {t}) …",
+    net_updated: "Стање: {t}", net_none: "Мрежа још није учитана. Покрени упит са „Поново учитај мрежу“.", net_error_failed: "Zigbee2MQTT није испоручио мапу мреже.", net_error_timeout: "Zigbee2MQTT није одговорио на време (прекинуто након 10 минута).",
+    net_summary: "{routers} рутера · {clients} крајњих уређаја · {links} веза", net_coordinator: "Координатор", net_router: "Рутер", net_cloud: "{n} крајњих уређаја",
+    net_links_routers: "Везе ка рутерима", net_end_devices: "Крајњи уређаји", net_rel_parent: "Родитељ", net_rel_child: "Дете",
+    net_rel_sibling: "Сусед", net_orphan: "Веза са координатором није позната", net_unassigned: "Без познате везе", net_unassigned_hint: "Ови крајњи уређаји нису ни у једној табели суседа (нпр. ван домета, нови или кратко активни).",
+    net_open_tip: "Отвори {name}", net_show_tip: "Прикажи крајње уређаје од {name}", net_no_links: "Нема познатих веза", net_refresh_done: "Мапа мреже ажурирана",
+    net_lqi: "Сигнал", ev_network_map: "Мапа мреже учитана", sec_monitor: "Надзор", ignore_offline: "Игнориши статус ван мреже",
+    ignore_offline_hint: "Уређај се не рачуна као ван мреже: без сметње, без догађаја, без поруке за Notification Center. Корисно нпр. за лампе иза зидног прекидача.", ignored_badge: "Ван мреже игнорисано", status_ignored: "Ван мреже, игнорише се", flt_ignored: "Ван мреже игнорисано",
+    net_map_label: "Zigbee мапа мреже", net_native: "Отвори Zigbee2MQTT интерфејс",
+    z2m_update_available: "Ажурирање доступно: {v}", z2m_update_hint: "Ажурирај Zigbee2MQTT ручно на његовом серверу или у Docker контејнеру, не преко HACS-а.", z2m_check_now: "Провери сада", z2m_check_failed: "Провера није могућа", z2m_release: "Погледај издање",
   },
   // Srpski (latinica): automatski iz ćiriličnog bloka prevedena slova, isti ključevi
   "sr-Latn": {
@@ -902,6 +965,16 @@ const I18N = {
     open_entity: "Otvori entitet u Home Assistant-u", open_device: "Otvori uređaj u Home Assistant-u",
     ev_device_missing: "Nedostaje u Zigbee2MQTT", ev_device_back: "Ponovo na listi uređaja",
     network_tab_hint: "Otvara mrežnu mapu Zigbee2MQTT (topologiju) u Home Assistant-u ili u novoj kartici.", network_no_url: "Adresa mape mreže još nije poznata. Unesi je u Podešavanja → Uređaji i usluge → Zigbee2MQTT Manager → Konfiguriši kao „Adresa mape mreže“ (npr. http://192.168.1.10:8080/#/network) ili postavi `network_url` u kartici.",
+    net_intro: "Struktura Zigbee mreže, pročitana iz tabela suseda rutera. Svaki ruter je vezan za svoju najbolju vezu ka koordinatoru (jaka, malo skokova) – aproksimacija stvarnih ruta.", net_refresh: "Ponovo učitaj mrežu", net_refresh_hint: "Zigbee2MQTT za ovo pita svaki uređaj pojedinačno. Zavisno od mreže traje nekoliko minuta i opterećuje Zigbee mrežu. Učitaj je samo kada je treba.", net_loading: "Mreža se učitava (počelo {t}) …",
+    net_updated: "Stanje: {t}", net_none: "Mreža još nije učitana. Pokreni upit sa „Ponovo učitaj mrežu“.", net_error_failed: "Zigbee2MQTT nije isporučio mapu mreže.", net_error_timeout: "Zigbee2MQTT nije odgovorio na vreme (prekinuto nakon 10 minuta).",
+    net_summary: "{routers} rutera · {clients} krajnjih uređaja · {links} veza", net_coordinator: "Koordinator", net_router: "Ruter", net_cloud: "{n} krajnjih uređaja",
+    net_links_routers: "Veze ka ruterima", net_end_devices: "Krajnji uređaji", net_rel_parent: "Roditelj", net_rel_child: "Dete",
+    net_rel_sibling: "Sused", net_orphan: "Veza sa koordinatorom nije poznata", net_unassigned: "Bez poznate veze", net_unassigned_hint: "Ovi krajnji uređaji nisu ni u jednoj tabeli suseda (npr. van dometa, novi ili kratko aktivni).",
+    net_open_tip: "Otvori {name}", net_show_tip: "Prikaži krajnje uređaje od {name}", net_no_links: "Nema poznatih veza", net_refresh_done: "Mapa mreže ažurirana",
+    net_lqi: "Signal", ev_network_map: "Mapa mreže učitana", sec_monitor: "Nadzor", ignore_offline: "Ignoriši status van mreže",
+    ignore_offline_hint: "Uređaj se ne računa kao van mreže: bez smetnje, bez događaja, bez poruke za Notification Center. Korisno npr. za lampe iza zidnog prekidača.", ignored_badge: "Van mreže ignorisano", status_ignored: "Van mreže, ignoriše se", flt_ignored: "Van mreže ignorisano",
+    net_map_label: "Zigbee mapa mreže", net_native: "Otvori Zigbee2MQTT interfejs",
+    z2m_update_available: "Ažuriranje dostupno: {v}", z2m_update_hint: "Ažuriraj Zigbee2MQTT ručno na njegovom serveru ili u Docker kontejneru, ne preko HACS-a.", z2m_check_now: "Proveri sada", z2m_check_failed: "Provera nije moguća", z2m_release: "Pogledaj izdanje",
   },
 };
 
@@ -1023,6 +1096,7 @@ const BASE_CARD_STYLES = `
   .row-icon .dot.seen { background: var(--zmm-color-success); opacity: 0.6; }
   .row-icon .dot.stale { background: var(--zmm-color-warning); }
   .row-icon .dot.missing { background: var(--zmm-color-warning); }
+  .row-icon .dot.ignored { background: transparent; border: 2px solid var(--secondary-text-color, #727272); box-sizing: border-box; }
   /* Aus Zigbee2MQTT verschwundene Geräte: ausgegraut, aber weiter anklickbar */
   .row.missing .row-icon, .row.missing .row-main, .row.missing .row-extra { opacity: 0.55; }
   .row.missing .row-icon .dev-img { filter: grayscale(1); }
@@ -1084,6 +1158,34 @@ const BASE_CARD_STYLES = `
   }
   .settings-line:last-child { border-bottom: none; }
   .settings-label { color: var(--secondary-text-color, #727272); }
+  /* Netzwerk: Zeichnung (SVG) und Verbindungslisten */
+  .nm-wrap { overflow-x: auto; padding: 0 2px; margin: 4px 0; }
+  .nm-svg { width: 100%; height: auto; display: block; margin: 0; }
+  .nm-node rect { fill: var(--card-background-color, #fff); stroke: var(--zmm-color-tab-active); stroke-width: 1.5; }
+  .nm-node.coord rect { stroke-width: 2.5; }
+  .nm-node.cl rect { stroke: var(--divider-color, #999); stroke-dasharray: 4 3; }
+  .nm-node.off rect { stroke: var(--zmm-color-error); }
+  .nm-node.link { cursor: pointer; }
+  .nm-node.link:hover rect, .nm-node.link:focus-visible rect { stroke-width: 3; }
+  .nm-node.link:focus-visible { outline: none; }
+  .nm-node ha-icon { --mdc-icon-size: 24px; width: 24px; height: 24px; color: var(--zmm-color-tab-active); }
+  .nm-node.cl ha-icon { --mdc-icon-size: 18px; width: 18px; height: 18px; color: var(--secondary-text-color, #727272); }
+  .nm-node.off ha-icon { color: var(--zmm-color-error); }
+  .nm-t { font-size: 13px; font-weight: 600; fill: var(--primary-text-color, #222); }
+  .nm-s { font-size: 11px; fill: var(--secondary-text-color, #727272); }
+  .nm-lbl { font-size: 10px; fill: var(--secondary-text-color, #727272); }
+  .nm-edge { fill: none; stroke: var(--zmm-color-tab-active); stroke-width: 2; }
+  .nm-edge.nm-dash { stroke: var(--divider-color, #999); stroke-dasharray: 4 3; stroke-width: 1.5; }
+  .nm-edge.nm-orphan { stroke: var(--zmm-color-warning); stroke-dasharray: 6 4; }
+  .nm-sub { font-weight: 600; font-size: 0.9em; margin: 8px 0 2px; }
+  .nm-row { display: flex; align-items: center; gap: 8px; padding: 6px 2px; border-bottom: 1px solid var(--divider-color, #e0e0e0); cursor: pointer; }
+  .nm-row.plain { cursor: default; }
+  .nm-row:last-child { border-bottom: none; }
+  .nm-row .nm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nm-row .nm-dot { position: relative; width: 14px; height: 14px; flex: none; }
+  .nm-row .nm-dot .dot { position: static; }
+  .nm-row ha-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color, #727272); }
+  .nm-rel { white-space: nowrap; }
   /* Expose-Funktionen im Geräte-Popup */
   .ex-list { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
   .ex-group { font-size: 0.8em; font-weight: 600; color: var(--secondary-text-color, #727272); padding: 10px 0 2px; }
@@ -1540,6 +1642,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     else if (topic.startsWith("group/")) msg = this._t("done_group");
     else if (topic === "options") msg = this._t("done_bridge_option");
     else if (topic === "restart") msg = this._t("done_restart");
+    else if (topic === "networkmap") msg = this._t("net_refresh_done");
     if (msg) this._toast(msg);
     if (topic === "device/rename") this._reloadDetails();
   }
@@ -1686,7 +1789,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && this._selected) this._closePopup();
-      if ((e.key === "Enter" || e.key === " ") && e.target.matches?.(".row.clickable")) {
+      if ((e.key === "Enter" || e.key === " ") && e.target.matches?.(".row.clickable, .nm-node.link, .nm-row[role=button]")) {
         e.preventDefault();
         e.target.click();
       }
@@ -1999,7 +2102,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   // Status wie der Statuspunkt: Z2M-Verfügbarkeit hat Vorrang, sonst aus "zuletzt gesehen" abgeleitet.
   // Deaktivierte Geräte (in Z2M abgeschaltet) sind nicht "offline" – sie werden getrennt geführt.
   _isOffline(d) {
-    return !d.disabled && d.available === false;
+    return !d.disabled && d.available === false && !d.ignore_offline;
   }
 
   // Fehlende Geräte erscheinen in der Liste "Alle" (ausgegraut), damit sie nicht untergehen
@@ -2011,7 +2114,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (d.missing) return "missing";
     if (d.disabled) return "disabled";
     if (d.available === true) return "online";
-    if (d.available === false) return "offline";
+    if (d.available === false) return d.ignore_offline ? "ignored" : "offline";
     const ts = d.last_seen ? Date.parse(d.last_seen) : NaN;
     if (Number.isNaN(ts)) return "unknown";
     return Date.now() - ts <= STALE_AFTER_MS ? "online" : "offline";
@@ -2245,8 +2348,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       cls = d.stale ? "stale" : "on";
       tip = d.stale ? t("status_silent", { t: this._relTime(d.last_seen) }) : t("status_online");
     } else if (d.available === false) {
-      cls = "off";
-      tip = t("status_offline");
+      cls = d.ignore_offline ? "ignored" : "off";
+      tip = t(d.ignore_offline ? "status_ignored" : "status_offline");
     } else if (d.last_seen) {
       const ts = Date.parse(d.last_seen);
       if (!Number.isNaN(ts)) {
@@ -2301,6 +2404,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       d.stale && !d.disabled ? `<span class="badge" style="--c:var(--zmm-color-warning)">${esc(this._t("stale_badge"))}</span>` : "",
       d.interviewing ? `<span class="badge" style="--c:var(--zmm-color-warning)">${esc(this._t("interviewing"))}</span>` : "",
       d.disabled ? `<span class="badge">${esc(this._t("disabled"))}</span>` : "",
+      d.ignore_offline && d.available === false ? `<span class="badge">${esc(this._t("ignored_badge"))}</span>` : "",
     ].join("");
 
     return `<div class="row clickable${d.missing ? " missing" : ""}" tabindex="0" role="button" data-act="open" data-ieee="${esc(d.ieee)}">
@@ -2390,16 +2494,198 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     return `<button class="${cls}" data-act="open_network" title="${esc(this._t("network_open"))}"><ha-icon icon="mdi:graph-outline"></ha-icon>${esc(this._t("network"))}</button>`;
   }
 
-  // Kategorie "Netzwerk": immer sichtbar; ohne bekannte Adresse erklärt sie, wie man sie festlegt
+  // Kategorie "Netzwerk": oben die Karte (Coordinator, Router, Endgeräte als Wolken), darunter je
+  // Router ein Akkordeon mit seinen Verbindungen. Daten: topology aus der Integration (networkmap).
   _renderNetworkTab() {
-    const t = (k) => this._t(k);
+    const t = (k, v) => this._t(k, v);
+    const net = this._data?.network || {};
+    const topo = net.topology;
+    const ro = this._readOnly;
     const target = this._networkTarget();
-    if (!target) {
-      return `<div class="settings-view"><div class="hint">${esc(t("network_no_url"))}</div></div>`;
+    let status = "";
+    if (net.loading) {
+      status = `<span class="pill" style="--c:var(--zmm-color-warning)">${esc(t("net_loading", { t: this._relTime(net.loading_since) }))}</span>`;
+    } else if (net.error) {
+      status = `<span class="pill" style="--c:var(--zmm-color-error)">${esc(t(net.error === "timeout" ? "net_error_timeout" : "net_error_failed"))}</span>`;
+    } else if (net.updated_at) {
+      status = `<span class="hint">${esc(t("net_updated", { t: this._relTime(net.updated_at) }))}</span>`;
     }
-    return `<div class="settings-view"><div class="hint">${esc(t("network_tab_hint"))}</div>
-      <div class="toolbar"><button class="btn primary" data-act="open_network"><ha-icon icon="mdi:graph-outline"></ha-icon>${esc(t("network_open"))}</button></div>
-      <div class="hint"><code>${esc(target)}</code></div></div>`;
+    let refresh = "";
+    if (!ro) {
+      refresh = net.loading
+        ? `<button class="btn" disabled><ha-icon icon="mdi:timer-sand"></ha-icon>${esc(t("net_refresh"))}</button>`
+        : this._confirmButton("net_refresh", "network_refresh", "", t("net_refresh"), "btn primary");
+    }
+    const nativeBtn = target
+      ? `<button class="btn" data-act="open_network" title="${esc(t("network_open"))}"><ha-icon icon="mdi:open-in-new"></ha-icon>${esc(t("net_native"))}</button>`
+      : "";
+    const toolbar = `<div class="toolbar">${refresh}${nativeBtn}<span class="spacer"></span>${status}</div>`;
+    if (!topo || !topo.hubs?.length) {
+      return `<div class="settings-view nm-view">${toolbar}<div class="hint">${esc(t("net_none"))}</div><div class="hint">${esc(t("net_refresh_hint"))}</div></div>`;
+    }
+    const summary = t("net_summary", { routers: topo.routers, clients: topo.clients, links: topo.links });
+    return `<div class="settings-view nm-view">${toolbar}
+      ${this._networkSvg(topo)}
+      <div class="hint">${esc(summary)}</div>
+      <div class="hint">${esc(t("net_intro"))}</div>
+      ${!ro ? `<div class="hint">${esc(t("net_refresh_hint"))}</div>` : ""}
+      ${this._networkLists(topo)}</div>`;
+  }
+
+  _networkDevice(ieee) {
+    return this._allDevices().find((x) => String(x.ieee || "").toLowerCase() === String(ieee || "").toLowerCase()) || null;
+  }
+
+  // Zeichnung: eine Spalte je Ebene (Coordinator links), Unterbäume untereinander, Endgeräte als Wolke
+  _networkSvg(topo) {
+    const t = (k, v) => this._t(k, v);
+    const hubs = topo.hubs;
+    const byId = new Map(hubs.map((h) => [h.ieee, h]));
+    const children = new Map(hubs.map((h) => [h.ieee, []]));
+    const roots = [];
+    for (const h of hubs) {
+      if (h.parent && h.parent !== h.ieee && byId.has(h.parent)) children.get(h.parent).push(h);
+      else roots.push(h);
+    }
+    const HUB_W = 196, HUB_H = 52, CL_W = 128, CL_H = 34, GAP = 14, COL = 276, SIDE = 16, LEAF = 16;
+    const hasKids = (h) => children.get(h.ieee).length > 0;
+    const cloudBelow = (h) => h.clients.length > 0 && hasKids(h);
+    const blockH = (h) => HUB_H + (cloudBelow(h) ? 10 + CL_H : 0) + GAP;
+    const sub = new Map();
+    const seen = new Set();
+    const measure = (h) => {
+      seen.add(h.ieee);
+      let kids = 0;
+      for (const k of children.get(h.ieee)) kids += measure(k);
+      const v = Math.max(blockH(h), kids);
+      sub.set(h.ieee, v);
+      return v;
+    };
+    let total = 0;
+    for (const r of roots) total += measure(r);
+    const pos = new Map();
+    let maxDepth = 0;
+    let leafCloud = false;
+    const place = (h, top, depth) => {
+      pos.set(h.ieee, { x: SIDE + HUB_W / 2 + depth * COL, top });
+      maxDepth = Math.max(maxDepth, depth);
+      if (h.clients.length && !hasKids(h)) leafCloud = true;
+      let y = top;
+      for (const k of children.get(h.ieee)) {
+        place(k, y, depth + 1);
+        y += sub.get(k.ieee);
+      }
+    };
+    let y0 = 8;
+    for (const r of roots) {
+      place(r, y0, 0);
+      y0 += sub.get(r.ieee);
+    }
+    const width = SIDE * 2 + HUB_W + maxDepth * COL + (leafCloud ? LEAF + CL_W : 0);
+    const height = Math.max(total, 60) + 16;
+
+    const lqiText = (v) => (v == null ? "" : String(v));
+    const node = (cx, top, w, h, icon, lines, cls, attrs = "", label = "") => {
+      const textX = w > 130 ? 38 : 28;
+      const avail = w - textX - 6;
+      const ys = lines.length > 1 && lines[1] ? [h / 2 - 3, h / 2 + 13] : [h / 2 + 5];
+      const text = lines
+        .filter((l) => l)
+        .map((line, i) => `<text x="${textX}" y="${ys[i]}" class="${i === 0 ? "nm-t" : "nm-s"}">${esc(String(line).slice(0, Math.floor(avail / (i === 0 ? 7.2 : 5.9))))}</text>`)
+        .join("");
+      const ico = w > 130 ? 24 : 18;
+      return `<g class="nm-node ${cls}${attrs ? " link" : ""}" transform="translate(${cx - w / 2} ${top})"${
+        attrs ? ` role="button" tabindex="0" ${attrs} aria-label="${esc(label)}"` : ""
+      }><title>${esc(label || lines[0] || "")}</title>
+        <rect width="${w}" height="${h}" rx="12"/>
+        <foreignObject x="${w > 130 ? 8 : 6}" y="${(h - ico) / 2}" width="${ico}" height="${ico}"><ha-icon icon="${icon}" xmlns="http://www.w3.org/1999/xhtml"></ha-icon></foreignObject>
+        ${text}</g>`;
+    };
+
+    let edges = "";
+    let nodes = "";
+    for (const h of hubs) {
+      const p = pos.get(h.ieee);
+      if (!p) continue;
+      const cy = p.top + HUB_H / 2;
+      const dev = this._networkDevice(h.ieee);
+      const offline = dev ? this._isOffline(dev) : false;
+      for (const k of children.get(h.ieee)) {
+        const kp = pos.get(k.ieee);
+        if (!kp) continue;
+        const ky = kp.top + HUB_H / 2;
+        const x1 = p.x + HUB_W / 2;
+        const x2 = kp.x - HUB_W / 2;
+        const mid = (x1 + x2) / 2;
+        edges += `<path class="nm-edge${k.orphan ? " nm-orphan" : ""}" d="M${x1} ${cy} H ${mid} V ${ky} H ${x2}"/>`;
+        if (k.lqi != null) edges += `<text class="nm-lbl" x="${x2 - 4}" y="${ky - 5}" text-anchor="end">${esc(lqiText(k.lqi))}</text>`;
+      }
+      if (h.clients.length) {
+        const label = t("net_show_tip", { name: h.name });
+        const title = t("net_cloud", { n: h.clients.length });
+        if (cloudBelow(h)) {
+          const cTop = p.top + HUB_H + 10;
+          edges += `<path class="nm-edge nm-dash" d="M${p.x} ${p.top + HUB_H} V ${cTop}"/>`;
+          nodes += node(p.x, cTop, CL_W, CL_H, "mdi:devices", [title], "cl", `data-act="net_open" data-net="${esc(h.ieee)}"`, label);
+        } else {
+          const cx = p.x + HUB_W / 2 + LEAF + CL_W / 2;
+          edges += `<path class="nm-edge nm-dash" d="M${p.x + HUB_W / 2} ${cy} H ${cx - CL_W / 2}"/>`;
+          nodes += node(cx, cy - CL_H / 2, CL_W, CL_H, "mdi:devices", [title], "cl", `data-act="net_open" data-net="${esc(h.ieee)}"`, label);
+        }
+      }
+      const isCoord = h.type === "Coordinator";
+      const typeLabel = isCoord ? t("net_coordinator") : t("net_router");
+      const attrs = dev && !dev.missing ? `data-act="open" data-ieee="${esc(h.ieee)}"` : `data-act="net_open" data-net="${esc(h.ieee)}"`;
+      nodes += node(
+        p.x,
+        p.top,
+        HUB_W,
+        HUB_H,
+        isCoord ? "mdi:access-point-network" : offline ? "mdi:router-network-wireless" : "mdi:router-wireless",
+        [h.name, `${typeLabel} · ${h.clients.length}`],
+        `${isCoord ? "coord" : "rt"}${offline ? " off" : ""}`,
+        attrs,
+        t("net_open_tip", { name: h.name })
+      );
+    }
+    return `<div class="nm-wrap"><svg class="nm-svg" style="min-width:${width}px;max-width:${Math.round(width * 1.4)}px" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t("net_map_label"))}">${edges}${nodes}</svg></div>`;
+  }
+
+  // Tabellen unter der Zeichnung: je Coordinator/Router ein Akkordeon mit seinen Verbindungen
+  _networkLists(topo) {
+    const t = (k, v) => this._t(k, v);
+    const lqi = (v) => (v == null ? "" : `<span class="pill" style="--c:${this._lqiColor(v)}" title="${esc(t("net_lqi"))}">${esc(v)}</span>`);
+    const row = (ieee, name, right) => {
+      const dev = this._networkDevice(ieee);
+      const open = dev && !dev.missing;
+      const dot = dev ? this._statusDot(dev) : "";
+      return `<div class="nm-row${open ? "" : " plain"}"${open ? ` role="button" tabindex="0" data-act="open" data-ieee="${esc(ieee)}"` : ""}>
+        <span class="row-icon nm-dot">${dot}</span><span class="nm-name">${esc(name)}</span>${right}${open ? '<ha-icon icon="mdi:chevron-right"></ha-icon>' : ""}</div>`;
+    };
+    const relLabel = (r) => (r ? t(`net_rel_${r}`) : "");
+    const parts = topo.hubs.map((h, idx) => {
+      const isCoord = h.type === "Coordinator";
+      let body = "";
+      if (h.orphan) body += `<div class="hint warn">${esc(t("net_orphan"))}</div>`;
+      if (h.neighbors.length) {
+        body += `<div class="nm-sub">${esc(t("net_links_routers"))}</div>${h.neighbors
+          .map((n) => row(n.ieee, n.name, `${n.rel ? `<span class="hint nm-rel">${esc(relLabel(n.rel))}</span>` : ""}${lqi(n.lqi)}`))
+          .join("")}`;
+      }
+      if (h.clients.length) {
+        body += `<div class="nm-sub">${esc(t("net_end_devices"))} (${h.clients.length})</div>${h.clients
+          .map((c) => row(c.ieee, c.name, lqi(c.lqi)))
+          .join("")}`;
+      }
+      if (!body) body = `<div class="hint">${esc(t("net_no_links"))}</div>`;
+      const meta = `${h.clients.length ? t("net_cloud", { n: h.clients.length }) : ""}`;
+      return this._accordion(`net:${h.ieee}`, isCoord ? "mdi:access-point-network" : "mdi:router-wireless", h.name, body, { meta, open: idx === 0 });
+    });
+    if (topo.unassigned?.length) {
+      const body = `<div class="hint">${esc(t("net_unassigned_hint"))}</div>${topo.unassigned.map((c) => row(c.ieee, c.name, "")).join("")}`;
+      parts.push(this._accordion("net:_unassigned", "mdi:help-network-outline", t("net_unassigned"), body, { meta: String(topo.unassigned.length) }));
+    }
+    return parts.join("");
   }
 
   _navigate(path) {
@@ -2814,6 +3100,24 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         return this._navigate(`/config/devices/device/${encodeURIComponent(d.device || "")}`);
       case "open_network":
         return this._navigate(this._networkTarget());
+      case "network_refresh":
+        return void (await this._call("network_refresh"));
+      case "net_open": {
+        // Wolke oder Router in der Zeichnung: das zugehörige Akkordeon aufklappen und anzeigen
+        const key = `net:${d.net}`;
+        this._open[key] = true;
+        this._refresh();
+        requestAnimationFrame(() => {
+          const el = [...this.shadowRoot.querySelectorAll("details[data-k]")].find((x) => x.dataset.k === key);
+          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        });
+        return;
+      }
+      case "ignore_offline": {
+        const dev = this._networkDevice(d.ieee || this._selected);
+        if (dev) await this._call("set_ignore_offline", { ieee: dev.ieee, enabled: !dev.ignore_offline });
+        return;
+      }
       case "forget_missing": {
         if (await this._call("forget_missing", { ieee: d.ieee || this._selected })) this._closePopup();
         return;
@@ -3270,6 +3574,19 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       })
     );
 
+    if (!d.missing && !d.disabled) {
+      const sw = `<button class="sw ${d.ignore_offline ? "on" : ""}" role="switch" aria-checked="${!!d.ignore_offline}" aria-label="${esc(t("ignore_offline"))}" data-act="ignore_offline" data-ieee="${esc(d.ieee)}"${ro ? " disabled" : ""}><span class="knob"></span></button>`;
+      sections.push(
+        this._accordion(
+          "p:monitor",
+          "mdi:eye-off-outline",
+          t("sec_monitor"),
+          `<div class="settings-line"><span>${esc(t("ignore_offline"))}</span>${sw}</div><div class="hint">${esc(t("ignore_offline_hint"))}</div>`,
+          { meta: d.ignore_offline ? "✓" : "" }
+        )
+      );
+    }
+
     if (!ro) {
       const commentDraft = String(this._draft(`comment:${d.ieee}`, d.comment || ""));
       sections.push(
@@ -3539,8 +3856,8 @@ const EDITOR_SCHEMA = [
     expanded: false,
     schema: [
       bool("show_title"),
-      { name: "max_rows", selector: { number: { min: 0, max: 50, step: 1, mode: "slider" } } },
-      { name: "zoom", selector: { number: { min: 0.5, max: 3, step: 0.1, mode: "slider" } } },
+      { name: "max_rows", selector: { number: { min: 0, max: 50, step: 1, mode: "box" } } },
+      { name: "zoom", selector: { number: { min: 0.5, max: 3, step: 0.1, mode: "box" } } },
       bool("show_stats"),
       bool("show_images"),
       bool("show_search"),
