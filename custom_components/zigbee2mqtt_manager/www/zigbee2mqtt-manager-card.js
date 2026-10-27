@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 1769ec893f6603e168c3901fc4b01797574583a09a1939c91d85ad67dad1a1f5
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): df9b6cd07f2140b743cc65698794fb5a8aeabaf40d74b1e92980a4a94143bbd1
 // SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 4a345f2ac6232826d876052447cdf2dde2292a0ec25c0b34d7ac9899bc54ede6
 /**
  * zigbee2mqtt-manager-card
@@ -51,7 +51,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.3.0b1";
+const CARD_VERSION = "1.3.0b2";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 const RELEASES_URL = "https://github.com/Meine-smarte-Welt/zigbee2mqtt_manager/releases";
@@ -1160,7 +1160,7 @@ const BASE_CARD_STYLES = `
   .settings-label { color: var(--secondary-text-color, #727272); }
   /* Netzwerk: Zeichnung (SVG) und Verbindungslisten */
   .nm-wrap { overflow-x: auto; padding: 0 2px; margin: 4px 0; }
-  .nm-svg { width: 100%; height: auto; display: block; margin: 0 auto; }
+  .nm-svg { width: 100%; height: auto; display: block; margin: 0; }
   .nm-node rect { fill: var(--card-background-color, #fff); stroke: var(--zmm-color-tab-active); stroke-width: 1.5; }
   .nm-node.coord rect { stroke-width: 2.5; }
   .nm-node.cl rect { stroke: var(--divider-color, #999); stroke-dasharray: 4 3; }
@@ -1171,9 +1171,9 @@ const BASE_CARD_STYLES = `
   .nm-node ha-icon { --mdc-icon-size: 24px; width: 24px; height: 24px; color: var(--zmm-color-tab-active); }
   .nm-node.cl ha-icon { --mdc-icon-size: 18px; width: 18px; height: 18px; color: var(--secondary-text-color, #727272); }
   .nm-node.off ha-icon { color: var(--zmm-color-error); }
-  .nm-t { font-size: 12px; font-weight: 600; fill: var(--primary-text-color, #222); }
-  .nm-s { font-size: 10px; fill: var(--secondary-text-color, #727272); }
-  .nm-lbl { font-size: 9px; fill: var(--secondary-text-color, #727272); }
+  .nm-t { font-size: 13px; font-weight: 600; fill: var(--primary-text-color, #222); }
+  .nm-s { font-size: 11px; fill: var(--secondary-text-color, #727272); }
+  .nm-lbl { font-size: 10px; fill: var(--secondary-text-color, #727272); }
   .nm-edge { fill: none; stroke: var(--zmm-color-tab-active); stroke-width: 2; }
   .nm-edge.nm-dash { stroke: var(--divider-color, #999); stroke-dasharray: 4 3; stroke-width: 1.5; }
   .nm-edge.nm-orphan { stroke: var(--zmm-color-warning); stroke-dasharray: 6 4; }
@@ -2547,7 +2547,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       if (h.parent && h.parent !== h.ieee && byId.has(h.parent)) children.get(h.parent).push(h);
       else roots.push(h);
     }
-    const HUB_W = 156, HUB_H = 46, CL_W = 112, CL_H = 30, GAP = 12, COL = 232, SIDE = 16, LEAF = 14;
+    const HUB_W = 196, HUB_H = 52, CL_W = 128, CL_H = 34, GAP = 14, COL = 276, SIDE = 16, LEAF = 16;
     const hasKids = (h) => children.get(h.ieee).length > 0;
     const cloudBelow = (h) => h.clients.length > 0 && hasKids(h);
     const blockH = (h) => HUB_H + (cloudBelow(h) ? 10 + CL_H : 0) + GAP;
@@ -2588,10 +2588,10 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const node = (cx, top, w, h, icon, lines, cls, attrs = "", label = "") => {
       const textX = w > 130 ? 38 : 28;
       const avail = w - textX - 6;
-      const ys = lines.length > 1 && lines[1] ? [h / 2 - 3, h / 2 + 11] : [h / 2 + 4];
+      const ys = lines.length > 1 && lines[1] ? [h / 2 - 3, h / 2 + 13] : [h / 2 + 5];
       const text = lines
         .filter((l) => l)
-        .map((line, i) => `<text x="${textX}" y="${ys[i]}" class="${i === 0 ? "nm-t" : "nm-s"}">${esc(String(line).slice(0, Math.floor(avail / (i === 0 ? 6.4 : 5.3))))}</text>`)
+        .map((line, i) => `<text x="${textX}" y="${ys[i]}" class="${i === 0 ? "nm-t" : "nm-s"}">${esc(String(line).slice(0, Math.floor(avail / (i === 0 ? 7.2 : 5.9))))}</text>`)
         .join("");
       const ico = w > 130 ? 24 : 18;
       return `<g class="nm-node ${cls}${attrs ? " link" : ""}" transform="translate(${cx - w / 2} ${top})"${
@@ -2648,7 +2648,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         t("net_open_tip", { name: h.name })
       );
     }
-    return `<div class="nm-wrap"><svg class="nm-svg" style="max-width:${width}px;min-width:${Math.min(width, 640)}px" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t("net_map_label"))}">${edges}${nodes}</svg></div>`;
+    return `<div class="nm-wrap"><svg class="nm-svg" style="min-width:${width}px;max-width:${Math.round(width * 1.4)}px" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(t("net_map_label"))}">${edges}${nodes}</svg></div>`;
   }
 
   // Tabellen unter der Zeichnung: je Coordinator/Router ein Akkordeon mit seinen Verbindungen
