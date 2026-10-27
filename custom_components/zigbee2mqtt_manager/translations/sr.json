@@ -3,28 +3,41 @@
     "step": {
       "user": {
         "title": "Zigbee2MQTT Manager",
-        "description": "Повезује менаџер са вашом Zigbee2MQTT инстанцом преко MQTT интеграције.",
+        "description": "Повезује менаџер са вашом Zigbee2MQTT инстанцом, подразумевано преко MQTT интеграције Home Assistant-а. Опционо: други MQTT брокер (поља испод).",
         "data": {
           "base_topic": "Основна тема base_topic",
-          "low_battery_threshold": "Праг за низак ниво батерије (%)"
+          "low_battery_threshold": "Праг за низак ниво батерије (%)",
+          "broker_host": "Спољни MQTT брокер (адреса, опционо)",
+          "broker_port": "Порт спољног брокера",
+          "broker_username": "Корисничко име (опционо)",
+          "broker_password": "Лозинка (опционо)",
+          "broker_tls": "Шифрована веза (TLS)"
         },
         "data_description": {
-          "base_topic": "Мора да се поклапа са mqtt.base_topic у Zigbee2MQTT конфигурацији (подразумевано: zigbee2mqtt)."
+          "base_topic": "Мора да се поклапа са mqtt.base_topic у Zigbee2MQTT конфигурацији (подразумевано: zigbee2mqtt).",
+          "broker_host": "Оставите празно ако Zigbee2MQTT користи MQTT брокер Home Assistant-а. Иначе унесите адресу брокера, нпр. друге локације преко VPN-а. Експериментално, ограничено тестирано."
         }
       },
       "reconfigure": {
         "title": "Промена основне теме",
         "data": {
-          "base_topic": "Основна тема base_topic"
+          "base_topic": "Основна тема base_topic",
+          "broker_host": "Спољни MQTT брокер (адреса, опционо)",
+          "broker_port": "Порт спољног брокера",
+          "broker_username": "Корисничко име (опционо)",
+          "broker_password": "Лозинка (опционо)",
+          "broker_tls": "Шифрована веза (TLS)"
         },
         "data_description": {
-          "base_topic": "Мора да se поклапа са mqtt.base_topic у Zigbee2MQTT."
+          "base_topic": "Мора да se поклапа са mqtt.base_topic у Zigbee2MQTT.",
+          "broker_host": "Оставите празно ако Zigbee2MQTT користи MQTT брокер Home Assistant-а. Иначе унесите адресу брокера, нпр. друге локације преко VPN-а. Експериментално, ограничено тестирано."
         }
       }
     },
     "error": {
       "invalid_topic": "Неважећа основна тема (празна је или садржи знаке # или +).",
-      "topic_overlap": "Основне теме за више инстанци не смеју бити угнежђене (нпр. zigbee2mqtt и zigbee2mqtt/stick2). Користите засебне теме као што су zigbee2mqtt и zigbee2mqtt2."
+      "topic_overlap": "Основне теме за више инстанци не смеју бити угнежђене (нпр. zigbee2mqtt и zigbee2mqtt/stick2). Користите засебне теме као што су zigbee2mqtt и zigbee2mqtt2.",
+      "broker_unreachable": "Спољни MQTT брокер није доступан или одбија везу."
     },
     "abort": {
       "already_configured": "Унос за ову основну тему већ постоји.",

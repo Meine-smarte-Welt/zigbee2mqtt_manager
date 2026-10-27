@@ -3,28 +3,41 @@
     "step": {
       "user": {
         "title": "Zigbee2MQTT Manager",
-        "description": "Verbindet den Manager mit deiner Zigbee2MQTT-Instanz über die MQTT-Integration.",
+        "description": "Verbindet den Manager mit deiner Zigbee2MQTT-Instanz, standardmäßig über die MQTT-Integration von Home Assistant. Optional: ein anderer MQTT-Broker (Felder unten).",
         "data": {
           "base_topic": "Base-Topic",
-          "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)"
+          "low_battery_threshold": "Schwelle für „Batterie niedrig“ (%)",
+          "broker_host": "Externer MQTT-Broker (Adresse, optional)",
+          "broker_port": "Port des externen Brokers",
+          "broker_username": "Benutzername (optional)",
+          "broker_password": "Passwort (optional)",
+          "broker_tls": "Verschlüsselte Verbindung (TLS)"
         },
         "data_description": {
-          "base_topic": "Entspricht `mqtt.base_topic` in der Zigbee2MQTT-Konfiguration (Standard: zigbee2mqtt)."
+          "base_topic": "Entspricht `mqtt.base_topic` in der Zigbee2MQTT-Konfiguration (Standard: zigbee2mqtt).",
+          "broker_host": "Leer lassen, wenn Zigbee2MQTT am MQTT-Broker von Home Assistant hängt. Sonst die Adresse des Brokers, z. B. eines zweiten Standorts im VPN. Experimentell, nur eingeschränkt getestet."
         }
       },
       "reconfigure": {
         "title": "Base-Topic ändern",
         "data": {
-          "base_topic": "Base-Topic"
+          "base_topic": "Base-Topic",
+          "broker_host": "Externer MQTT-Broker (Adresse, optional)",
+          "broker_port": "Port des externen Brokers",
+          "broker_username": "Benutzername (optional)",
+          "broker_password": "Passwort (optional)",
+          "broker_tls": "Verschlüsselte Verbindung (TLS)"
         },
         "data_description": {
-          "base_topic": "Muss mit `mqtt.base_topic` in Zigbee2MQTT übereinstimmen."
+          "base_topic": "Muss mit `mqtt.base_topic` in Zigbee2MQTT übereinstimmen.",
+          "broker_host": "Leer lassen, wenn Zigbee2MQTT am MQTT-Broker von Home Assistant hängt. Sonst die Adresse des Brokers, z. B. eines zweiten Standorts im VPN. Experimentell, nur eingeschränkt getestet."
         }
       }
     },
     "error": {
       "invalid_topic": "Ungültiges Base-Topic (leer oder mit # bzw. +).",
-      "topic_overlap": "Base-Topics mehrerer Instanzen dürfen nicht ineinander liegen (z. B. „zigbee2mqtt“ und „zigbee2mqtt/stick2“). Nimm getrennte wie „zigbee2mqtt“ und „zigbee2mqtt2“."
+      "topic_overlap": "Base-Topics mehrerer Instanzen dürfen nicht ineinander liegen (z. B. „zigbee2mqtt“ und „zigbee2mqtt/stick2“). Nimm getrennte wie „zigbee2mqtt“ und „zigbee2mqtt2“.",
+      "broker_unreachable": "Der externe MQTT-Broker ist nicht erreichbar oder lehnt die Verbindung ab."
     },
     "abort": {
       "already_configured": "Für dieses Base-Topic existiert bereits ein Eintrag.",

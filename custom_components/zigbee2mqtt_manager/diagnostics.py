@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6d95d1f14616c1cab02e68b7ab28dc30341652a908aa0477b9012e4a4890ffd0
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6b6e7d364951c1becea2118fa46c5c9085e0b8cae13872b345d4dfa8e1f07d0a
 """Diagnose-Download (IEEE-Adressen und Namen werden geschwärzt)."""
 
 from __future__ import annotations
@@ -48,6 +48,16 @@ async def async_get_config_entry_diagnostics(
         "stats": data["stats"],
         "problem": manager.problem,
         "groups": len(data["groups"]),
+        # Nur Anzahlen, keine Namen oder Adressen
+        "network": {
+            "loading": data["network"]["loading"],
+            "error": data["network"]["error"],
+            "updated_at": data["network"]["updated_at"],
+            "routers": (data["network"]["topology"] or {}).get("routers"),
+            "clients": (data["network"]["topology"] or {}).get("clients"),
+            "links": (data["network"]["topology"] or {}).get("links"),
+        },
+        "external_broker": bool(getattr(manager._transport, "external", False)),
         "app": data["app"],
         # Nur Schalterstand und Anzahl gesendeter Meldungen je Art, keine Namen oder Texte
         "notification_center": {

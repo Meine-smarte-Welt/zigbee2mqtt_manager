@@ -1,3 +1,4 @@
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): f1a28ac82d1971bf602d0ed904e00ee421998ad0b9b1773a6b235dbe80f8728e
 // SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 5f82d0931ee72e885fee5a467cd70508e284199a8d5961c0aebb4c8104afb564
 // Seitenleisten-Eintrag „Zigbee2MQTT Manager“ (Name einstellbar): zeigt die Karte als eigene Seite (Home-Assistant-Panel).
 // Die Karte wird über die von der Integration übergebene URL nachgeladen, damit sie auch ohne

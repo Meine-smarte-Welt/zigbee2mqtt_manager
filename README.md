@@ -12,6 +12,7 @@ Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Fir
 ## Inhalt
 
 - [Funktionsumfang](#funktionsumfang)
+- [Neu in 1.3.0b1 (Beta)](#neu-in-130b1-beta)
 - [Neu in 1.2.1](#neu-in-121)
 - [Bilder](#bilder)
 - [Voraussetzungen](#voraussetzungen)
@@ -33,7 +34,7 @@ Zigbee2MQTT verwalten, ohne Home Assistant zu verlassen: Geräte, Batterien, Fir
 
 ## Funktionsumfang
 
-Die Karte hat sechs Kategorien in einer Symbolleiste (unter ca. 480 px Kartenbreite nur Symbole). Jede Kategorie ist einzeln ein- und ausblendbar.
+Die Karte hat sieben Kategorien in einer Symbolleiste (unter ca. 480 px Kartenbreite nur Symbole). Jede Kategorie ist einzeln ein- und ausblendbar.
 
 | Kategorie | Was es kann |
 |---|---|
@@ -42,7 +43,8 @@ Die Karte hat sechs Kategorien in einer Symbolleiste (unter ca. 480 px Kartenbre
 | **Updates** | Installierte vs. verfügbare Firmware; „Alle prüfen“ und „Alle nacheinander installieren“ als Hintergrundauftrag mit Fortschritt und Abbruch |
 | **Gruppen** | Anlegen, umbenennen, löschen; Mitglieder hinzufügen und entfernen |
 | **Bindings** | Übersicht aller Geräte-Verknüpfungen; Lösen; Neu verknüpfen im Geräte-Popup |
-| **Bridge** (Zahnrad) | **App-Version** (Integration und Karte, mit farbigem Hinweis bei einer neuen Version), Status, Koordinator, Pairing, Bridge-Optionen, Neustart, Ereignisprotokoll, **Notification Center** |
+| **Netzwerk** | **Netzwerkkarte** aus den Nachbartabellen der Router: oben Coordinator, Router und Endgeräte als Wolken, darunter je Router ein Akkordeon mit seinen Verbindungen (seit 1.3.0b1); Knopf zur Zigbee2MQTT-Oberfläche |
+| **Bridge** (Zahnrad) | **App- und Zigbee2MQTT-Version** (automatischer Update-Check, farbiger Release-Link und persistente HA-Benachrichtigung), Status, Koordinator, Pairing, Bridge-Optionen, Neustart, Ereignisprotokoll, **Notification Center** |
 
 **Geräte-Popup** (Tipp auf eine Zeile) mit Akkordeon-Abschnitten: Informationen · **Funktionen (Expose)** · **Entitäten (für Automationen)** · Umbenennen (mit Liste der betroffenen HA-Entitäten) · Geräteoptionen (Formular aus dem Z2M-Optionsschema) · Firmware · Bindings · Gruppen · Entfernen.
 
@@ -67,6 +69,18 @@ Weitere Punkte:
 - **Zoom:** `zoom` skaliert die ganze Karte.
 - **Sprachen:** Deutsch, Englisch, Niederländisch, Französisch und Spanisch (nach Home-Assistant-Sprache).
 - **Diagnose-Download** mit anonymisierten Namen und IEEE-Adressen.
+
+## Neu in 1.3.0b1 (Beta)
+
+> **Beta-Version:** Sie ist in GitHub als *Pre-release* markiert. In HACS erscheint sie nur, wenn du bei der Integration **Beta-Versionen anzeigen** einschaltest. Alles hier Beschriebene ist gegen simulierte Daten geprüft, **nicht an echter Hardware** (Details unter [Bekannte Einschränkungen](#bekannte-einschränkungen)).
+
+- **Netzwerkkarte in der Karte (Kategorie Netzwerk):** Oben steht die Zeichnung nach dem Vorbild von [FRITZ!Box Netzwerk](https://github.com/Meine-smarte-Welt/fritzbox_netzwerk): links der **Coordinator**, nach rechts die **Router** (eine Spalte je Sprung), daran je Router eine gestrichelte **Wolke** mit der Zahl seiner Endgeräte. Die Zahl an der Linie ist die Verbindungsqualität (LQI). Ein Tipp auf einen Router öffnet das Geräte-Popup, ein Tipp auf eine Wolke klappt das passende Akkordeon auf. Darunter gibt es **je Coordinator und Router ein Akkordeon** mit **Verbindungen zu Routern** (Name, Beziehung Elternknoten / Kind / Nachbar, Signal) und **Endgeräten** (Name, Signal); Endgeräte ohne bekannte Verbindung stehen in einem eigenen Akkordeon. Der Knopf **Netz neu einlesen** (Zwei-Klick-Bestätigung, nur Administratoren, nicht im Nur-lesen-Modus) fragt bei Zigbee2MQTT die Netzwerkkarte ab. Zigbee2MQTT liest dafür **jedes Gerät einzeln** aus; das dauert je nach Netz mehrere Minuten und belastet das Zigbee-Netz (nach 10 Minuten bricht die Integration ab). Das Ergebnis wird gespeichert und übersteht Neustarts; „Stand: vor …“ zeigt das Alter. Der Knopf **Zigbee2MQTT-Oberfläche öffnen** bleibt (Adresse wie bei 1.2.1). *Ungeprüft an echter Hardware:* Aufbau und Dauer der Antwort von Zigbee2MQTT. **Wichtig zur Genauigkeit:** Zigbee2MQTT liefert Nachbartabellen, keine festen Routen. Die Karte hängt jeden Router an den Weg zum Coordinator mit den geringsten Kosten (starke Verbindungen, wenige Sprünge) und jedes Endgerät an den Router, der es als Kind führt (sonst an die beste Verbindung). Das ist eine **Näherung**; die echten Routen können abweichen. Router ohne bekannten Weg erscheinen orange gestrichelt unter dem Coordinator.
+- **Offline-Status ignorieren (Issue #15):** Im Geräte-Popup gibt es den Abschnitt **Überwachung** mit dem Schalter **Offline-Status ignorieren** (nur Administratoren). Ein so markiertes Gerät zählt nicht als offline: keine Störung, kein Ereignis, keine Meldung ans Notification Center, kein Eintrag bei „Offline“. Es hat den Status **Offline, wird ignoriert** (Abzeichen und Filter **Status → Offline ignoriert**). Gedacht für z. B. Lampen hinter einem Wandschalter. Die Auswahl gilt je Gerät und übersteht Neustarts; ob das Gerät erreichbar ist, siehst du weiterhin im Popup.
+- **Kommentar standardmäßig sichtbar (Issue #16):** `show_comment` ist jetzt standardmäßig `true`. Wer ihn bewusst ausgeschaltet hatte, behält `false`; neue und bisher nicht gesetzte Karten zeigen den Kommentar als zweite Zeile.
+- **Editor ohne Schieberegler (Issue #17):** `max_rows` und `zoom` lassen sich im grafischen Editor als **Eingabefeld** eintragen statt per Schieberegler. *Hinweis:* Der Teil des Issues zum *Matter Manager* ist ein anderes Projekt und wurde hier nicht geändert.
+- **Externer MQTT-Broker (Issue #14, experimentell):** Bei der Einrichtung und unter **Neu konfigurieren** gibt es optional Adresse, Port, Benutzername, Passwort und TLS eines **eigenen MQTT-Brokers**. Ist die Adresse leer (Standard), nutzt die Integration wie bisher die MQTT-Integration von Home Assistant. Mit Adresse verbindet sie sich selbst (paho-mqtt) mit diesem Broker, etwa für Zigbee2MQTT an einem zweiten Standort im VPN; die Einrichtung testet die Verbindung. Ohne die MQTT-Integration von Home Assistant für diesen Broker kennt Home Assistant diese Geräte nicht: **Raum, HA-Gerät und die Entitäten-Liste bleiben leer**, nur die Zigbee2MQTT-Daten erscheinen. Pro Broker und Base-Topic ist nur ein Eintrag möglich. Das Passwort steht im Konfigurationseintrag von Home Assistant (nicht im Diagnose-Download). *Ungeprüft* gegen einen echten externen Broker.
+- **Zigbee2MQTT-Update-Prüfung (Dank an @seebaer1976, PR #18):** Die Integration prüft beim Start und alle 12 Stunden bei GitHub (Koenkk/zigbee2mqtt), ob es eine neuere Zigbee2MQTT-Version gibt. Unter **Bridge → Status** steht hinter der Z2M-Version grün **Aktuell** oder orange **Update verfügbar: {Version}** mit Link zu den Release-Notizen; **Jetzt prüfen** startet die Abfrage sofort (nicht im Nur-lesen-Modus). Gibt es ein Update, erscheint zusätzlich eine persistente Home-Assistant-Benachrichtigung je Instanz, die nach einem Abgleich ohne Update wieder verschwindet. Zigbee2MQTT wird nicht automatisch installiert, du aktualisierst manuell auf dem Z2M-Server bzw. im Docker-Container. Ist GitHub nicht erreichbar, steht „Prüfung nicht möglich“. Texte in allen Sprachen ergänzt. *Ungeprüft:* die Abfrage gegen GitHub und die Benachrichtigung in einer echten Home-Assistant-Installation.
+- **Schon in 1.2.2 behoben:** Die Issues #12 und #13 wurden mit 1.2.2 erledigt (siehe Versionshistorie).
 
 ## Neu in 1.2.1
 
@@ -157,7 +171,7 @@ Im Editor unter **Farben** (oder per `color_*`-Schlüssel). Jeder Wert darf Hex 
 | `color_success` | Gut: online, Signal gut, Batterie voll, aktuell |
 | `color_warning` | Warnung: Batterie niedrig, Signal mittel, Update läuft |
 | `color_error` | Fehler: offline, Batterie kritisch, Signal schwach |
-| `color_info` | Update verfügbar (Firmware, neue App-Version) |
+| `color_info` | Update verfügbar (Firmware, neue App- oder Zigbee2MQTT-Version) |
 | `color_row_icon` | Alle Listen-Symbole (überschreibt die Kategorie-Farben) |
 | `color_live_banner` | Banner-Hintergrund (Pairing, Firmware-Auftrag) |
 | `color_icon_devices`, `_battery`, `_updates`, `_groups`, `_bindings`, `_bridge` | Symbol der Kategorie – färbt Tab-Symbol und Zeilen-Symbole |
@@ -234,7 +248,7 @@ Unter **Konfigurieren** wählst du, ob Firmware-Updates (Standard: ja) und „la
 
 ## Versionsanzeige und Update-Hinweis
 
-Die installierte Version steht an drei Stellen: in der Karte unter **Bridge (Zahnrad) → App-Version**, oben im grafischen Karten-Editor und im Dialog **Konfigurieren** der Integration. Die Integration fragt beim Start und danach alle 12 Stunden bei GitHub ab (`api.github.com`, neuestes Release, ersatzweise das höchste Versions-Tag), ob eine neuere Version veröffentlicht wurde. Gibt es eine, wird das farbig hervorgehoben: orangefarbener Rahmen und Hinweis im Abschnitt, ein orangefarbenes „↑“ am Zahnrad-Symbol, eine Warnbox im Editor und ein Hinweis im Konfigurieren-Dialog. Die Aktualisierung selbst erfolgt wie gewohnt über HACS. Mit **Jetzt prüfen** lässt sich die Abfrage sofort auslösen. Ist GitHub nicht erreichbar, erscheint „Prüfung nicht möglich“; die Karte funktioniert unverändert weiter.
+Die App-Version steht in der Karte unter **Bridge → App-Version**, im Karten-Editor und im Dialog **Konfigurieren**. Beim Start und danach alle 12 Stunden prüft die Integration GitHub auf eine neuere App- und Zigbee2MQTT-Version. Unter **Bridge → Status** steht hinter der installierten Z2M-Version grün **Aktuell** oder orange **Update verfügbar: {Version}**. Der orange Hinweis führt direkt zu den Release-Notizen. Ein Update erzeugt zusätzlich eine persistente Home-Assistant-Benachrichtigung je Instanz, die nach einem erfolgreichen Abgleich ohne Update wieder entfernt wird. **Jetzt prüfen** startet die Abfrage sofort. Zigbee2MQTT aktualisierst du manuell auf dem Z2M-Server bzw. im Docker-Container, nicht über HACS. Ist GitHub nicht erreichbar, erscheint „Prüfung nicht möglich“; die Karte funktioniert weiter.
 
 Weichen Karten- und Integrationsversion voneinander ab (veralteter Browser-Cache), wird auch das orange markiert.
 
@@ -263,7 +277,7 @@ Datenschutz: Die Meldungen enthalten Gerätenamen und Batteriestand und bleiben 
 
 ## Einstellungen der Integration
 
-Unter **Konfigurieren** (mit Anzeige der installierten Version): Schwelle „Batterie niedrig“, Schwelle „Batterie kritisch“ (muss kleiner oder gleich sein) Ereignisse an/aus, Meldungen ans Notification Center an/aus und die Auswahl der Meldungsarten. Über **Neu konfigurieren** lässt sich das Base-Topic ändern. Seit 1.2.0 zusätzlich: „Lange nichts gehört nach … Stunden“ (0 = aus), „Firmware-Updates lösen die Störung aus“ und „Lange nichts gehört löst die Störung aus“. Außerdem: „Eintrag in der Seitenleiste“ (Standard: an).
+Unter **Konfigurieren** (mit Anzeige der installierten Version): Schwelle „Batterie niedrig“, Schwelle „Batterie kritisch“ (muss kleiner oder gleich sein) Ereignisse an/aus, Meldungen ans Notification Center an/aus und die Auswahl der Meldungsarten. Über **Neu konfigurieren** lässt sich das Base-Topic ändern. Seit 1.2.0 zusätzlich: „Lange nichts gehört nach … Stunden“ (0 = aus), „Firmware-Updates lösen die Störung aus“ und „Lange nichts gehört löst die Störung aus“. Außerdem: „Eintrag in der Seitenleiste“ (Standard: an). Neu in 1.3.0b1: optional **Externer MQTT-Broker** (Adresse, Port, Benutzername, Passwort, TLS; experimentell).
 
 ## Sicherheit
 
@@ -283,6 +297,7 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Schalten von Funktionen, Entfe
 - Schalter wirken sofort und ohne Rückfrage (auch Konfigurationsschalter wie die Kindersicherung). Die Zwischenablage braucht HTTPS.
 - **Neu in 1.2.0, Teststand:** Die Anbindung an das Notification Center, Störungs-Sensor, Sensor „Deaktivierte Geräte“, Raum-/HA-Geräte-Zuordnung, Kommentar (Anzeige und Bearbeiten), deaktivierte Geräte samt Chip, „lange nichts gehört“ und der Seitenleisten-Eintrag wurden mit simulierten MQTT-Nachrichten und Registern (pytest mit der Home-Assistant-Testumgebung) und in einem simulierten Browser (jsdom) geprüft, **nicht an echter Hardware, nicht gegen ein echtes Notification Center, nicht in Safari, Chrome, Firefox oder der Companion-App und nicht mit 75 echten Geräten**. Das gilt auch für die Korrekturen zu Flackern und Scroll-Sprung (Issue #5); Anzeigewerte wie „zuletzt gesehen“ und Signal aktualisieren sich dadurch höchstens alle 2 Sekunden. Startet die Bridge neu, können Geräte je nach Verfügbarkeits-Einstellung von Zigbee2MQTT kurz als offline gemeldet und danach wieder geschlossen werden. Die Zuordnung zum HA-Gerät erkennt die IEEE-Adresse in den MQTT-Identifiern; bei ungewöhnlicher Discovery bleiben Raum und HA-Gerät leer. Der Kommentar stammt aus der Z2M-Gerätekonfiguration (`description`) und wird beim Speichern über `bridge/request/device/options` gesetzt; ob deine Z2M-Version ihn in `bridge/info` mitliefert und das Speichern wie erwartet annimmt, ist ungeprüft. „Lange nichts gehört“ ist informativ und kein eigener Meldungstyp im Notification Center. Der Seitenleisten-Eintrag ist ein Home-Assistant-Panel und kein Lovelace-Dashboard (Issue #6); er wurde nur gegen die Panel-Registrierung der Testumgebung geprüft, nicht in einer echten Seitenleiste.
 - **Neu in 1.2.1, Teststand:** Netzwerk-Knopf, Entitäts- und Geräte-Links, ausgegraute fehlende Geräte und der Namens-Optionsdialog sind gegen simulierte Daten geprüft, **nicht an echter Hardware oder einer echten Home-Assistant-Installation**. Die serbische Karte ist nur teilweise übersetzt.
+- **Neu in 1.3.0b1, Teststand:** Geprüft wurden die Aufbereitung der Netzwerkkarte (Auswertung von Knoten und Verbindungen, Baumaufbau, defekte Antworten) mit einem Testprogramm und die Karte in einem Headless-Browser (Chromium) mit simulierten Daten (10 Router, 40 Endgeräte, Router ohne Verbindung): alle Reiter, das Geräte-Popup mit dem Schalter, Akkordeons, Zwei-Klick-Bestätigung, Ladezustand und Nur-lesen-Modus in allen sieben Sprachen. **Nicht geprüft:** an echter Hardware und mit der echten Antwort von Zigbee2MQTT (Format, Dauer, Belastung des Netzes), mit sehr großen Netzen, in der iOS-/Android-Companion-App. Der Python-Teil (Abfrage der Netzwerkkarte, Speicherung, Offline ignorieren, Einrichtung, **externer Broker**, **Z2M-Update-Prüfung**) wurde nur mit `py_compile` und `pyflakes` auf Syntaxfehler und unbekannte Namen geprüft und **nicht in Home Assistant ausgeführt**; ebenso der Notification-Center-Teil des Schalters. Die Netzwerkzeichnung ist eine Näherung der echten Routen. Die serbische Karte ist nur teilweise übersetzt.
 
 ## Fehlerbehebung
 
@@ -304,6 +319,7 @@ Alle schreibenden Aktionen (Umbenennen, Optionen, Schalten von Funktionen, Entfe
 
 | Version | Änderungen |
 |---|---|
+| **1.3.0b1** (Beta) | Neu: **Netzwerkkarte** in der Kategorie Netzwerk (Coordinator, Router und Endgeräte-Wolken als Zeichnung, darunter je Router ein Akkordeon mit den Verbindungen; Abfrage per „Netz neu einlesen“). Neu: **Offline-Status ignorieren** je Gerät (Issue #15). Neu: optionaler **externer MQTT-Broker** (Issue #14, experimentell). Geändert: `show_comment` ist standardmäßig an (Issue #16); `max_rows` und `zoom` im Editor als Eingabefeld statt Schieberegler (Issue #17). **Neu: Zigbee2MQTT-Update-Prüfung mit Hinweis und Benachrichtigung** (PR #18, @seebaer1976). Die Issues #12 und #13 waren schon mit 1.2.2 behoben. **Beta, nur gegen simulierte Daten geprüft.** |
 | **1.2.2** | Neu: eigene Kategorie **Netzwerk** in der Kartenleiste (mit Hinweis, wie die Adresse der Netzwerkkarte einzutragen ist, `show_network`). Behoben: Bei Home-Assistant-Sprache **Serbisch (lateinisch, `sr-Latn`)** zeigten Karte, Willkommensmeldung und Versionshinweis Kyrillisch, weil nur der Sprachteil „sr“ ausgewertet wurde; es gibt jetzt einen lateinischen Textblock. |
 | **1.2.1** | Neu: Knopf **Netzwerk** (Zigbee2MQTT-Netzwerkkarte), Links von Entitäten und Gerät zu Home Assistant, einstellbarer **Name in der Seitenleiste**, **fehlende Geräte** bleiben ausgegraut sichtbar (Chip, Filter, Sensor, Ereignis, Notification Center, „Vergessen“), Sprache **Српски**, README mit Flaggen-Sprachleiste, Blog-Link und Bildern. Behoben: fehlende Bilder bei Modellen mit Leerzeichen (z. B. innr-Steckdosen). |
 | **1.2.0** | Neu: Der **Kommentar** eines Geräts lässt sich im Popup **bearbeiten** (Abschnitt „Kommentar“, wird über Zigbee2MQTT in `description` gespeichert, nicht im Nur-lesen-Modus). Neu: Chip **Deaktiviert** und Sensor **Deaktivierte Geräte** (Zähler und Namensliste). Neu: **Eintrag in der Seitenleiste** (Home-Assistant-Panel, nur Administratoren, abschaltbar unter Konfigurieren), der die Karte als ganze Seite zeigt (Issue #6). Neu: **Anbindung an das Notification Center** (optional, Schnittstelle Schema 1) mit sieben Meldungsarten (Bridge offline, Batterie kritisch, Gerät offline, Batterie niedrig, Firmware-Update, neues Gerät, Gerät hat das Netz verlassen), Hauptschalter und Schalter je Art in der Karte und im Konfigurieren-Dialog. Neu: **Sammelstörung** als Binärsensor (Geräteklasse `problem`) mit allen Zählern und Gerätelisten als Attribute; **Raum**, **HA-Gerät** und **Kommentar** in Liste, Popup und Suche, Gruppieren nach **Raum**; **„Lange nichts gehört“** (Chip, Filter, Abzeichen, einstellbare Stunden); Einrichtungshilfen (my.home-assistant.io-Links, einmaliger Hinweis nach der Einrichtung, Dashboard-Vorlage in `examples`). Behoben (Issue #7): in Zigbee2MQTT **deaktivierte Geräte** gelten nicht mehr als offline (eigener Status „Deaktiviert“, nicht in Zählern, Sensoren und Notification Center). Behoben (Issue #5): Die Karte **flackerte und sprang beim Scrollen nach oben**, weil sie bei jedem Datenupdate komplett neu gezeichnet wurde; jetzt werden nur geänderte Teile aktualisiert (Bilder, Zeilen, Akkordeons und Eingabefokus bleiben stehen, datengetriebenes Neuzeichnen höchstens alle 2 Sekunden). Behoben: Beim **Tippen in Suche und Feldern am Desktop** lösten Home-Assistant-Kurzbefehle aus (z. B. öffnete „e“ die Entitätssuche). Behoben (Issue #4): Zuordnung der HA-Geräte ohne die veraltete `device_registry.devices`-Abbildung. Änderungen an den Notification-Center-Schaltern laden die Integration nicht mehr neu. Englische Reste in den deutschen Texten (`strings.json`) korrigiert. **Französisch** (Dank an @Locodice67, PR #3; übernommen und angepasst: Du-Form, neue Texte) und **Spanisch** ergänzt. |
@@ -318,16 +334,16 @@ Jede `.py`-, `.js`- und `.yaml`-Datei trägt in der ersten Zeile einen SHA-256-H
 
 | Datei | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `a6bd75c07b2f675b24a20ce819643b5aacd3230cb302321011bd6e4672153c6b` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `ac757e176af1b5886ac8d0ecc016c283790f18b58e86f8be1862ec9be65fa88e` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `cc7dd2a79d53871860d8abfba3b9bee78beaff6dcda11846ff353737a6a1a9d2` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `6de799ec33723aea7c3e8712040c6346e4e040250821a446a275d924200741e7` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `ac757e176af1b5886ac8d0ecc016c283790f18b58e86f8be1862ec9be65fa88e` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `474b4d4620631da7055006761799ffa86fa263b000d7ea11d44174833442aadb` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `e020bfd76f0218abe3fccac54311a0ce2ee164c7079c570e7e7d6c9421e4a651` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `3767828e16a133f260a8fc22ef997c9ccd30872f9ca18ac6fd0144594bc83f56` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `db841a7909805d8675421a109093bea1f088bab81b50a0520927271e29a82428` |
-| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `cadd7f345e66f41eca696a475a3f7d4f390eaf416b9729911753e7faeddfc302` |
-| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `6241a89313bcacdf37a9e3d3bb78c90cc379736806ea7330ac058db7b529d528` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `6de799ec33723aea7c3e8712040c6346e4e040250821a446a275d924200741e7` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `da553753a4d279502fffae4c64f9a38b91917e249df8c7edb4d9dffe220169c2` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `da8ee025b20022837a5143210079225f08e8c13a6d2ee190804985e66bb017ec` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `6ab0460955e883883e3da224c644e593e8ba993b899485a38ca0dd825bc5c147` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `32ed1f7a0567b3a859ae74b6fcbb129aaae81bb8117b047ff468753ce6be86f8` |
+| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `c101a5d913202a6a34b2351b2f628196ecabc6e24f26040d6262ed0541139769` |
+| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `e04494d6d680f513f8d03973e4c89ba731e4b8ce23818d05bebb852ae2bf7776` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Lizenz

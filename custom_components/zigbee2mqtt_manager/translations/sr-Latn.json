@@ -3,28 +3,41 @@
     "step": {
       "user": {
         "title": "Zigbee2MQTT Manager",
-        "description": "Povezuje menadžer sa vašom Zigbee2MQTT instancom preko MQTT integracije.",
+        "description": "Povezuje menadžer sa vašom Zigbee2MQTT instancom, podrazumevano preko MQTT integracije Home Assistant-a. Opciono: drugi MQTT broker (polja ispod).",
         "data": {
           "base_topic": "Osnovna tema base_topic",
-          "low_battery_threshold": "Prag za nizak nivo baterije (%)"
+          "low_battery_threshold": "Prag za nizak nivo baterije (%)",
+          "broker_host": "Spoljni MQTT broker (adresa, opciono)",
+          "broker_port": "Port spoljnog brokera",
+          "broker_username": "Korisničko ime (opciono)",
+          "broker_password": "Lozinka (opciono)",
+          "broker_tls": "Šifrovana veza (TLS)"
         },
         "data_description": {
-          "base_topic": "Mora da se poklapa sa mqtt.base_topic u Zigbee2MQTT konfiguraciji (podrazumevano: zigbee2mqtt)."
+          "base_topic": "Mora da se poklapa sa mqtt.base_topic u Zigbee2MQTT konfiguraciji (podrazumevano: zigbee2mqtt).",
+          "broker_host": "Ostavite prazno ako Zigbee2MQTT koristi MQTT broker Home Assistant-a. Inače unesite adresu brokera, npr. druge lokacije preko VPN-a. Eksperimentalno, ograničeno testirano."
         }
       },
       "reconfigure": {
         "title": "Promena osnovne teme",
         "data": {
-          "base_topic": "Osnovna tema base_topic"
+          "base_topic": "Osnovna tema base_topic",
+          "broker_host": "Spoljni MQTT broker (adresa, opciono)",
+          "broker_port": "Port spoljnog brokera",
+          "broker_username": "Korisničko ime (opciono)",
+          "broker_password": "Lozinka (opciono)",
+          "broker_tls": "Šifrovana veza (TLS)"
         },
         "data_description": {
-          "base_topic": "Mora da se poklapa sa mqtt.base_topic u Zigbee2MQTT."
+          "base_topic": "Mora da se poklapa sa mqtt.base_topic u Zigbee2MQTT.",
+          "broker_host": "Ostavite prazno ako Zigbee2MQTT koristi MQTT broker Home Assistant-a. Inače unesite adresu brokera, npr. druge lokacije preko VPN-a. Eksperimentalno, ograničeno testirano."
         }
       }
     },
     "error": {
       "invalid_topic": "Nevažeća osnovna tema (prazna je ili sadrži znake # ili +).",
-      "topic_overlap": "Osnovne teme za više instanci ne smeju biti ugnežđene (npr. zigbee2mqtt i zigbee2mqtt/stick2). Koristite zasebne teme kao što su zigbee2mqtt i zigbee2mqtt2."
+      "topic_overlap": "Osnovne teme za više instanci ne smeju biti ugnežđene (npr. zigbee2mqtt i zigbee2mqtt/stick2). Koristite zasebne teme kao što su zigbee2mqtt i zigbee2mqtt2.",
+      "broker_unreachable": "Spoljni MQTT broker nije dostupan ili odbija vezu."
     },
     "abort": {
       "already_configured": "Unos za ovu osnovnu cenu već postoji.",

@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 9ea1a13d2dd3e7120569ceded2d1dc9e3b452c31af8d118f3073dfe634a08ae6
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 7366116f8aa06a63ed9c9edf0c24b450a5b8243d4224325cf55a1bbadcec0cba
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.2.2"
+VERSION = "1.3.0b1"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
@@ -17,6 +17,13 @@ CONF_WELCOME_SHOWN = "welcome_shown"
 CONF_SIDEBAR_PANEL = "sidebar_panel"
 CONF_SIDEBAR_TITLE = "sidebar_title"
 CONF_NETWORK_URL = "network_url"
+# Optionaler externer MQTT-Broker (leer = MQTT-Integration von Home Assistant)
+CONF_BROKER_HOST = "broker_host"
+CONF_BROKER_PORT = "broker_port"
+CONF_BROKER_USERNAME = "broker_username"
+CONF_BROKER_PASSWORD = "broker_password"
+CONF_BROKER_TLS = "broker_tls"
+DEFAULT_BROKER_PORT = 1883
 
 DEFAULT_BASE_TOPIC = "zigbee2mqtt"
 DEFAULT_LOW_BATTERY = 20
@@ -60,6 +67,12 @@ MAX_EVENT_LOG = 50
 # Höchstlänge des Gerätekommentars (Z2M-Einstellung "description")
 MAX_COMMENT_LENGTH = 500
 
+# Netzwerkkarte (Zigbee2MQTT "networkmap"): Zeit, nach der eine Abfrage als gescheitert gilt (Sekunden).
+# Z2M fragt jedes Gerät einzeln ab, das dauert bei großen Netzen mehrere Minuten.
+NETWORK_REQUEST_TIMEOUT = 600
+# Höchstanzahl Verbindungen, die gespeichert werden (Schutz vor riesigen Antworten)
+MAX_NETWORK_LINKS = 6000
+
 # Mindestversion der Zigbee2MQTT-Bridge (2.x)
 MIN_Z2M_MAJOR = 2
 
@@ -84,6 +97,11 @@ GITHUB_API_LATEST = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest
 GITHUB_API_RELEASES = f"https://api.github.com/repos/{GITHUB_REPO}/releases?per_page=5"
 GITHUB_API_TAGS = f"https://api.github.com/repos/{GITHUB_REPO}/tags?per_page=30"
 GITHUB_RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases"
+Z2M_GITHUB_REPO = "Koenkk/zigbee2mqtt"
+Z2M_GITHUB_API_LATEST = f"https://api.github.com/repos/{Z2M_GITHUB_REPO}/releases/latest"
+Z2M_GITHUB_API_RELEASES = f"https://api.github.com/repos/{Z2M_GITHUB_REPO}/releases?per_page=5"
+Z2M_GITHUB_API_TAGS = f"https://api.github.com/repos/{Z2M_GITHUB_REPO}/tags?per_page=30"
+Z2M_GITHUB_RELEASES_URL = f"https://github.com/{Z2M_GITHUB_REPO}/releases"
 APP_UPDATE_CHECK_INTERVAL = timedelta(hours=12)
 
 
