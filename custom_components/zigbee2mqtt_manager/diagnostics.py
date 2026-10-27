@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6b6e7d364951c1becea2118fa46c5c9085e0b8cae13872b345d4dfa8e1f07d0a
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6fd16e169d2157164b6b83e7bd39648fdd701c151f1b4cb345e98568ee1c074d
 """Diagnose-Download (IEEE-Adressen und Namen werden geschwärzt)."""
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ async def async_get_config_entry_diagnostics(
             "available": d["available"],
             "disabled": d["disabled"],
             "stale": d["stale"],
+            "lost": d["lost"],
             "has_battery": d["battery"] is not None,
             "ota": {"capable": d["ota"]["capable"], "state": d["ota"]["state"]},
             "bindings": len(d["bindings"]),

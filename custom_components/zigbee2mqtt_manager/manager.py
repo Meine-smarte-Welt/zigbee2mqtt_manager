@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): a0e351056aac5e51affe4161e93dffe180066163bb9867e6a04fba9c1390f609
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): ce029b82795335d070a8c10329c4e4734fc651b58a1058e74718322e767b6515
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ from .const import (
     CONF_PROBLEM_UPDATES,
     CONF_SIDEBAR_PANEL,
     CONF_SIDEBAR_TITLE,
+    CONF_LOST_DAYS,
     CONF_STALE_HOURS,
     DEFAULT_CRITICAL_BATTERY,
     DEFAULT_FIRE_EVENTS,
@@ -40,6 +41,7 @@ from .const import (
     MAX_COMMENT_LENGTH,
     DEFAULT_PROBLEM_STALE,
     DEFAULT_PROBLEM_UPDATES,
+    DEFAULT_LOST_DAYS,
     DEFAULT_STALE_HOURS,
     DOMAIN,
     EVENT_BATTERY_LOW,
@@ -409,6 +411,10 @@ class Z2MManager:
     @property
     def stale_hours(self) -> int:
         return int(self.entry.options.get(CONF_STALE_HOURS, DEFAULT_STALE_HOURS))
+
+    @property
+    def lost_days(self) -> int:
+        return int(self.entry.options.get(CONF_LOST_DAYS, DEFAULT_LOST_DAYS))
 
     @property
     def problem_includes_updates(self) -> bool:
@@ -786,6 +792,7 @@ class Z2MManager:
             "ha_device_id": ha[0] if ha else None,
             "area": ha[2] if ha else None,
             "stale": False,
+            "lost": False,
             "ignore_offline": False,
             "type": snap.get("type"),
             "vendor": snap.get("vendor"),
@@ -857,7 +864,11 @@ class Z2MManager:
         if self._is_group(name):
             return
         self._states.setdefault(name, {}).update(payload)
-        self._last_msg[name] = dt_util.utcnow().isoformat(timespec="seconds")
+        # Gespeicherte (retained) Werte des Brokers sind keine neue Nachricht des Geräts: sie setzen die
+        # Zeit der letzten Nachricht nur, wenn noch keine bekannt ist (sonst würde ein verschwundenes
+        # Gerät bei jedem Start wieder „gerade gesehen“ wirken).
+        if not retained or name not in self._last_msg:
+            self._last_msg[name] = dt_util.utcnow().isoformat(timespec="seconds")
         if not retained:
             self._live_msg[name] = dt_util.utcnow()
         self._schedule_update()
@@ -990,6 +1001,11 @@ class Z2MManager:
         comment = comment.strip() if isinstance(comment, str) and comment.strip() else None
         ha = self._ha_devices().get(str(meta.get("ieee_address") or "").lower())
         availability = self._effective_availability(name)
+        # Lange keine Nachricht: als offline behandeln (Quelle "silent"); Z2M-Offline bleibt unverändert
+        lost = not meta.get("disabled", False) and self._is_lost(last_seen)
+        stale_availability = availability[0]
+        if lost and availability[0] is not False:
+            availability = (False, "silent")
 
         return {
             "ieee": meta.get("ieee_address"),
@@ -998,7 +1014,8 @@ class Z2MManager:
             "ha_device": ha[1] if ha else None,
             "ha_device_id": ha[0] if ha else None,
             "area": ha[2] if ha else None,
-            "stale": self._is_stale(last_seen, availability[0]),
+            "stale": self._is_stale(last_seen, stale_availability) and not lost,
+            "lost": lost,
             "ignore_offline": str(meta.get("ieee_address") or "").lower() in self._ignore_offline,
             "type": meta.get("type"),
             "vendor": definition.get("vendor"),
@@ -1152,6 +1169,7 @@ class Z2MManager:
         available = [d for d in active if d["ota"]["state"] == "available"]
         updating = [d for d in active if d["ota"]["state"] == "updating"]
         stale = [d for d in active if d["stale"]]
+        lost = [d for d in active if d["lost"] and not d["ignore_offline"]]
         groups = sorted(
             (self._serialize_group(g) for g in self._groups.values()),
             key=lambda g: (g["name"] or "").lower(),
@@ -1175,6 +1193,7 @@ class Z2MManager:
             "updates_available": [d["name"] for d in available],
             "critical_battery": [d["name"] for d in critical],
             "stale": [d["name"] for d in stale],
+            "lost": [d["name"] for d in lost],
             "disabled": [d["name"] for d in disabled],
             "missing": [d["name"] for d in missing],
         }
@@ -1220,6 +1239,8 @@ class Z2MManager:
                 "updating": len(updating),
                 "stale": len(stale),
                 "stale_hours": self.stale_hours,
+                "lost": len(lost),
+                "lost_days": self.lost_days,
                 "disabled": len(disabled),
                 "ignored_offline": len(ignored),
                 "missing": len(missing),
@@ -1556,8 +1577,23 @@ class Z2MManager:
 
     @callback
     def _stale_tick(self, _now: Any = None) -> None:
-        if self.stale_hours > 0:
+        if self.stale_hours > 0 or self.lost_days > 0:
             self._schedule_update()
+
+    def _is_lost(self, last_seen: str | None) -> bool:
+        """Seit mehr als der eingestellten Zahl an Tagen keine Nachricht: Gerät vermutlich nicht mehr im Netz.
+
+        Gilt unabhängig von der Z2M-Verfügbarkeit (die ist oft aus oder zeigt einen veralteten Wert).
+        """
+        days = self.lost_days
+        if days <= 0 or not last_seen:
+            return False
+        seen = dt_util.parse_datetime(last_seen)
+        if seen is None:
+            return False
+        if seen.tzinfo is None:
+            seen = seen.replace(tzinfo=UTC)
+        return (dt_util.utcnow() - seen).total_seconds() > days * 86400
 
     def _is_stale(self, last_seen: str | None, available: bool | None) -> bool:
         """Länger als die eingestellte Zeit keine Nachricht, Z2M meldet das Gerät aber nicht als offline."""

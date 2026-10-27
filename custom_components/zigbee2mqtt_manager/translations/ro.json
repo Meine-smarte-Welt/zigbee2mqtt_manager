@@ -1,0 +1,158 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Conectează managerul la instanța ta Zigbee2MQTT, implicit prin integrarea MQTT din Home Assistant. Opțional: un alt broker MQTT (câmpurile de mai jos).",
+        "data": {
+          "base_topic": "Topic de bază",
+          "low_battery_threshold": "Prag pentru „baterie slabă” (%)",
+          "broker_host": "Broker MQTT extern (adresă, opțional)",
+          "broker_port": "Portul brokerului extern",
+          "broker_username": "Nume utilizator (opțional)",
+          "broker_password": "Parolă (opțional)",
+          "broker_tls": "Conexiune criptată (TLS)"
+        },
+        "data_description": {
+          "base_topic": "Corespunde cu `mqtt.base_topic` din configurația Zigbee2MQTT (implicit: zigbee2mqtt).",
+          "broker_host": "Lasă gol dacă Zigbee2MQTT folosește brokerul MQTT al Home Assistant. Altfel introdu adresa brokerului, de ex. o a doua locație accesată prin VPN. Experimental, testat doar sumar."
+        }
+      },
+      "reconfigure": {
+        "title": "Schimbă topicul de bază",
+        "data": {
+          "base_topic": "Topic de bază",
+          "broker_host": "Broker MQTT extern (adresă, opțional)",
+          "broker_port": "Portul brokerului extern",
+          "broker_username": "Nume utilizator (opțional)",
+          "broker_password": "Parolă (opțional)",
+          "broker_tls": "Conexiune criptată (TLS)"
+        },
+        "data_description": {
+          "base_topic": "Trebuie să corespundă cu `mqtt.base_topic` din Zigbee2MQTT.",
+          "broker_host": "Lasă gol dacă Zigbee2MQTT folosește brokerul MQTT al Home Assistant. Altfel introdu adresa brokerului, de ex. o a doua locație accesată prin VPN. Experimental, testat doar sumar."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Topic de bază invalid (gol sau conține # ori +).",
+      "topic_overlap": "Topicurile de bază ale mai multor instanțe nu pot fi imbricate (de ex. „zigbee2mqtt” și „zigbee2mqtt/stick2”). Folosește topicuri separate, ca „zigbee2mqtt” și „zigbee2mqtt2”.",
+      "broker_unreachable": "Brokerul MQTT extern nu este accesibil sau refuză conexiunea."
+    },
+    "abort": {
+      "already_configured": "Există deja o intrare pentru acest topic de bază.",
+      "mqtt_unavailable": "Integrarea MQTT nu este configurată sau nu este conectată.",
+      "reconfigure_successful": "Topicul de bază a fost schimbat."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – setări",
+        "description": "Versiune instalată: **{version}**\n\nTopicul de bază al acestei instanțe: **{base_topic}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Prag pentru „baterie slabă” (%)",
+          "critical_battery_threshold": "Prag pentru „baterie critică” (%)",
+          "fire_events": "Generează evenimente Home Assistant",
+          "nc_enabled": "Trimite notificări către Notification Center",
+          "nc_types": "Tipuri de notificări",
+          "stale_hours": "„Fără semnal” după (ore)",
+          "lost_days": "„Pierdut” după (zile)",
+          "problem_include_updates": "Actualizările contează ca problemă",
+          "problem_include_stale": "„Fără semnal” contează ca problemă",
+          "sidebar_panel": "Intrare în bara laterală",
+          "sidebar_title": "Nume în bara laterală",
+          "network_url": "Adresa hărții rețelei (opțional)"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Trebuie să fie mai mic sau egal cu pragul de „baterie slabă”.",
+          "fire_events": "Generează de ex. zigbee2mqtt_manager_device_offline, _battery_low și _update_available – utilizabile ca declanșatoare în automatizări.",
+          "nc_enabled": "Are efect doar dacă integrarea „Notification Center” este instalată. Comutatorul principal pornește sau oprește toate notificările acestui manager.",
+          "nc_types": "Alege ce notificări se trimit. Lista este sortată după urgență, cele critice întâi.",
+          "stale_hours": "Ore fără mesaj după care un dispozitiv este considerat „fără semnal” (0 = dezactivat). Dispozitivele raportate deja offline de Zigbee2MQTT sunt numărate la offline.",
+          "lost_days": "Zile fără niciun mesaj după care un dispozitiv este considerat pierdut și tratat ca offline (0 = dezactivat). Util când Zigbee2MQTT nu raportează disponibilitatea și un dispozitiv își afișează în continuare ultimele valori. Pentru dispozitive individuale, dezactivează cu „Ignoră starea offline”.",
+          "problem_include_updates": "Senzorul „Problemă” se activează și când este disponibilă o actualizare de firmware.",
+          "problem_include_stale": "Senzorul „Problemă” se activează și când un dispozitiv a tăcut mai mult decât timpul setat. Atenție la dispozitivele care trimit rar.",
+          "sidebar_panel": "Afișează cardul ca pagină proprie în bara laterală (doar pentru administratori), fără să fie nevoie de un dashboard.",
+          "sidebar_title": "Eticheta intrării din bara laterală (implicit: „Zigbee2MQTT Manager”). Util dacă aplicația Z2M cu aceeași iconiță apare și ea acolo. Are efect imediat.",
+          "network_url": "Unde duce butonul „Rețea”, de ex. harta rețelei din interfața Zigbee2MQTT (http://… sau o cale ca /hassio/ingress/…). Lasă gol pentru a folosi adresa din configurația Z2M sau aplicația Zigbee2MQTT din bara laterală."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "Pragul critic nu poate depăși pragul „slabă”.",
+      "invalid_url": "Adresă invalidă. Sunt permise http://, https:// sau o cale care începe cu / (fără spații)."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Dispozitive"
+      },
+      "offline": {
+        "name": "Dispozitive offline"
+      },
+      "low_battery": {
+        "name": "Dispozitive cu baterie slabă"
+      },
+      "critical_battery": {
+        "name": "Dispozitive cu baterie critică"
+      },
+      "disabled": {
+        "name": "Dispozitive dezactivate"
+      },
+      "updates_available": {
+        "name": "Actualizări de firmware disponibile"
+      },
+      "groups": {
+        "name": "Grupuri"
+      },
+      "missing": {
+        "name": "Dispozitive lipsă"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problemă"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Controlează asocierea",
+      "description": "Pornește sau oprește modul de asociere pe bridge-ul Zigbee2MQTT.",
+      "fields": {
+        "entry_id": {
+          "name": "ID intrare",
+          "description": "Necesar doar cu mai multe instanțe."
+        },
+        "enabled": {
+          "name": "Activat",
+          "description": "Pornește sau oprește asocierea."
+        },
+        "duration": {
+          "name": "Durată",
+          "description": "Durata în secunde (10–254)."
+        },
+        "base_topic": {
+          "name": "Topic de bază",
+          "description": "Necesar doar cu mai multe instanțe. Alternativă la ID-ul intrării."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Verifică actualizările de firmware",
+      "description": "Verifică în fundal toate dispozitivele compatibile OTA pentru actualizări.",
+      "fields": {
+        "entry_id": {
+          "name": "ID intrare",
+          "description": "Necesar doar cu mai multe instanțe."
+        },
+        "base_topic": {
+          "name": "Topic de bază",
+          "description": "Necesar doar cu mai multe instanțe. Alternativă la ID-ul intrării."
+        }
+      }
+    }
+  }
+}

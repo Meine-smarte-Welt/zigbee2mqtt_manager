@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 80d167fe77747c5c97f166e3a21465255642c4980acdfd343ec53489302e72e1
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b2487bdb1a099a9c6a34ef968c498a717a40d7c09feaf860146acb272bbc81c3
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -37,6 +37,7 @@ from .const import (
     CONF_PROBLEM_UPDATES,
     CONF_SIDEBAR_PANEL,
     CONF_SIDEBAR_TITLE,
+    CONF_LOST_DAYS,
     CONF_STALE_HOURS,
     DEFAULT_BASE_TOPIC,
     DEFAULT_BROKER_PORT,
@@ -47,6 +48,7 @@ from .const import (
     DEFAULT_PROBLEM_UPDATES,
     DEFAULT_SIDEBAR_PANEL,
     DEFAULT_SIDEBAR_TITLE,
+    DEFAULT_LOST_DAYS,
     DEFAULT_STALE_HOURS,
     DOMAIN,
     MAX_SIDEBAR_TITLE,
@@ -61,6 +63,7 @@ from .notification_bridge import OPT_TYPES as NC_OPT_TYPES
 
 _BATTERY_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=1, max=99))
 _STALE_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=0, max=720))
+_LOST_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=0, max=365))
 
 
 def _valid_topic(base: str) -> bool:
@@ -338,6 +341,10 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                         CONF_STALE_HOURS,
                         default=opts.get(CONF_STALE_HOURS, DEFAULT_STALE_HOURS),
                     ): _STALE_VALIDATOR,
+                    vol.Required(
+                        CONF_LOST_DAYS,
+                        default=opts.get(CONF_LOST_DAYS, DEFAULT_LOST_DAYS),
+                    ): _LOST_VALIDATOR,
                     vol.Required(
                         CONF_PROBLEM_UPDATES,
                         default=opts.get(CONF_PROBLEM_UPDATES, DEFAULT_PROBLEM_UPDATES),

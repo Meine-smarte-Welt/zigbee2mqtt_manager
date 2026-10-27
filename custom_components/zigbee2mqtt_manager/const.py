@@ -1,16 +1,17 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 212dffed9844e344c7bab515c044776ff16523ad106479e4aa31136b08fdbf3e
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): d688d26ad75ea4b1d1194272c60c12d6bc7e3ed4172ef9fcb0e423a1d369c7f6
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.3.0b2"
+VERSION = "1.3.0b5"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
 CONF_CRITICAL_BATTERY = "critical_battery_threshold"
 CONF_FIRE_EVENTS = "fire_events"
 CONF_STALE_HOURS = "stale_hours"
+CONF_LOST_DAYS = "lost_days"
 CONF_PROBLEM_UPDATES = "problem_include_updates"
 CONF_PROBLEM_STALE = "problem_include_stale"
 CONF_WELCOME_SHOWN = "welcome_shown"
@@ -31,6 +32,7 @@ DEFAULT_CRITICAL_BATTERY = 10
 DEFAULT_FIRE_EVENTS = True
 # Stunden ohne Nachricht, ab denen ein Gerät als "lange nichts gehört" gilt (0 = aus)
 DEFAULT_STALE_HOURS = 24
+DEFAULT_LOST_DAYS = 7
 DEFAULT_PROBLEM_UPDATES = True
 DEFAULT_PROBLEM_STALE = False
 # Eigener Eintrag in der Seitenleiste (Panel), der die Karte als Seite zeigt
