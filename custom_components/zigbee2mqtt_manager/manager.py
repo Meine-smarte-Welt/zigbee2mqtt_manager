@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): ce029b82795335d070a8c10329c4e4734fc651b58a1058e74718322e767b6515
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8206397fc77af33759b326ec6e9b5823ae4cc766badc620e02521f4d0bd9d02b
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -995,9 +995,13 @@ class Z2MManager:
             icon = dev_icon
 
         config = self._device_config(meta)
-        comment = self._comment_pending.get(
-            str(meta.get("ieee_address") or "").lower(), config.get("description")
-        )
+        # Beschreibung (Z2M-Feld "description"): ein gerade gespeicherter Text gilt sofort, sonst
+        # der Wert aus den Einstellungen in bridge/info (Z2M veröffentlicht nach einer Änderung der
+        # Geräteoptionen nur bridge/info, nicht bridge/devices). Fehlt das Gerät dort, gilt ersatzweise
+        # das Feld "description" aus bridge/devices.
+        comment = self._comment_pending.get(str(meta.get("ieee_address") or "").lower())
+        if comment is None:
+            comment = config.get("description") if config else meta.get("description")
         comment = comment.strip() if isinstance(comment, str) and comment.strip() else None
         ha = self._ha_devices().get(str(meta.get("ieee_address") or "").lower())
         availability = self._effective_availability(name)

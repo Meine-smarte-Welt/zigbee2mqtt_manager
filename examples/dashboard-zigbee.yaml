@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2c6ebdce82ca7d877ed5784d1f7db985f96b15e95bfec8ce95456d057948ed71
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 54b88ebdb928ca47d14fa980852e8c0919ed25fd542c7c6cd335028bad35ef69
 # Fertiges Dashboard für Zigbee2MQTT Manager.
 # So geht's: Einstellungen → Dashboards → Dashboard hinzufügen (Titel „Zigbee“, URL-Pfad „zigbee“,
 # also /dashboard-zigbee) → Dashboard öffnen → ⋮ → Bearbeiten → ⋮ → Rohkonfigurationseditor →
@@ -14,4 +14,4 @@ views:
       - type: custom:zigbee2mqtt-manager-card
         title: Zigbee2MQTT Manager
         default_group_by: area
-        show_comment: true
+        show_description: true

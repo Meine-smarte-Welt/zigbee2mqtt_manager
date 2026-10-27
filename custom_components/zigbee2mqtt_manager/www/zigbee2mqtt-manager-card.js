@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): c2beaf410bd56f54b0420c735f3ba9c78642e5c0d93c56363b17020d7474ca8f
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8171160afe0fd972a0871a4487261e60949bf88c6e72b4da51f8d845639154b6
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -50,7 +50,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.3.0b5";
+const CARD_VERSION = "1.3.0";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 // Zoom der Netzwerkzeichnung (Faktor; 1 = Originalgröße)
@@ -237,7 +237,9 @@ const CONFIG_DEFAULTS = {
   show_ieee: false,
   show_lqi: true,
   show_area: true,
-  show_comment: true,
+  // Beschreibung (Z2M-Feld "description") in der Geraeteliste. Neuer Schluessel seit 1.3.0: Der alte Schluessel
+  // show_comment stand bis 1.2.2 auf false und wurde vom Editor in viele Konfigurationen geschrieben.
+  show_description: true,
   show_battery_value: true,
   show_last_seen: true,
   // Bearbeiten
@@ -348,7 +350,7 @@ const I18N = {
     options_device_hint: "Zigbee2MQTT speichert die Optionen in seiner Konfiguration.", no_changes: "Keine Änderungen.",
     remove_hint: "Entfernt das Gerät aus dem Zigbee-Netz. Es muss danach neu angelernt werden.",
     force_remove: "Erzwingen (auch wenn das Gerät nicht antwortet)", done_removed: "Gerät entfernt",
-    f_vendor: "Hersteller", f_model: "Modell", f_description: "Beschreibung", f_type: "Typ", f_ieee: "IEEE-Adresse", f_nwk: "Netzwerkadresse",
+    f_vendor: "Hersteller", f_model: "Modell", f_description: "Produktbeschreibung", f_type: "Typ", f_ieee: "IEEE-Adresse", f_nwk: "Netzwerkadresse",
     f_power: "Stromversorgung", f_firmware: "Firmware-Build", f_lqi: "Signalqualität", f_battery: "Batterie", f_voltage: "Spannung",
     f_available: "Erreichbar", f_last_seen: "Zuletzt gesehen",
     flt_missing: "Fehlt in Zigbee2MQTT", chip_missing: "Fehlt", status_missing: "Fehlt in Zigbee2MQTT (zuletzt bekanntes Gerät)", missing_badge: "fehlt", missing_hint: "Diese Geräte waren bekannt, fehlen aber aktuell in der Zigbee2MQTT-Geräteliste. Sie verschwinden von selbst, sobald sie zurückkehren.", missing_popup_hint: "Dieses Gerät steht nicht mehr in der Geräteliste von Zigbee2MQTT. Angezeigt werden die zuletzt bekannten Daten. Kommt es zurück, verschwindet die Markierung von selbst; mit „Vergessen“ entfernst du es aus dieser Liste.", forget: "Vergessen", forget_all: "Alle fehlenden vergessen", f_missing_since: "Fehlt seit", network: "Netzwerk", network_open: "Zigbee2MQTT-Netzwerkkarte öffnen", open_entity: "Entität in Home Assistant öffnen", open_device: "Gerät in Home Assistant öffnen", ev_device_missing: "Fehlt in Zigbee2MQTT", ev_device_back: "Wieder in der Geräteliste",
@@ -362,7 +364,7 @@ const I18N = {
     net_lqi: "Signal", ev_network_map: "Netzwerkkarte eingelesen", sec_monitor: "Überwachung", ignore_offline: "Offline-Status ignorieren",
     ignore_offline_hint: "Das Gerät gilt nicht als offline: keine Störung, keine Ereignisse, keine Meldung ans Notification Center. Sinnvoll z. B. für Lampen hinter einem Wandschalter.", ignored_badge: "Offline ignoriert", status_ignored: "Offline, wird ignoriert", flt_ignored: "Offline ignoriert",
     net_map_label: "Zigbee-Netzwerkkarte", net_native: "Zigbee2MQTT-Oberfläche öffnen",
-    net_zoom_label: "Zoom der Netzwerkkarte", net_zoom_out: "Verkleinern", net_zoom_in: "Vergrößern", net_zoom_fit: "Einpassen", net_zoom_reset: "Auf 100 % zurücksetzen", net_zoom_hint: "Zoom: Regler oder Knöpfe; am Smartphone mit zwei Fingern auseinanderziehen bzw. zusammenschieben, am Desktop Strg + Mausrad.",
+    net_zoom_label: "Zoom der Netzwerkkarte", net_zoom_out: "Verkleinern", net_zoom_in: "Vergrößern", net_zoom_fit: "Einpassen", net_zoom_reset: "Auf 100 % zurücksetzen", net_zoom_hint: "Zoom: Regler oder Knöpfe; am Smartphone mit zwei Fingern auseinanderziehen bzw. zusammenschieben, am Desktop Strg + Mausrad. Mit gedrückter Maustaste verschiebst du die Karte in alle Richtungen.",
     status_lost: "Offline – letzte Nachricht {t} (Grenze: {d} Tage), vermutlich nicht mehr im Netz.", lost_badge: "verloren", avail_silent: "nein (seit Tagen keine Nachricht)", flt_lost: "Verloren (lange keine Nachricht)",
     avail_activity: "ja (kürzlich Nachricht empfangen, trotz Offline-Meldung)",
     type_Router: "Router", type_EndDevice: "Endgerät",
@@ -378,8 +380,8 @@ const I18N = {
     instance: "Instanz (Stick)",
     // Gruppieren und Filtern (seit 1.1.0)
     group_by: "Gruppieren", group_none: "Keine Gruppierung", group_vendor: "Hersteller", group_class: "Geräteklasse", group_unknown: "Unbekannt",
-    chip_disabled: "Deaktiviert", sec_comment: "Kommentar", comment_ph: "Kommentar zum Gerät (z. B. Standort, Zweck)", comment_hint: "Zigbee2MQTT speichert den Kommentar in der Geräteeinstellung „description“ (höchstens 500 Zeichen). Leer lassen entfernt ihn.", done_comment: "Kommentar gespeichert",
-    flt_disabled: "Deaktiviert", flt_stale: "Lange nichts gehört", chip_stale: "Lange still", stale_badge: "lange still", status_disabled: "In Zigbee2MQTT deaktiviert", group_area: "Raum", group_no_area: "Ohne Raum", f_area: "Raum", f_ha_device: "HA-Gerät", f_comment: "Kommentar", status_silent: "Online laut Zigbee2MQTT, aber lange nichts gehört – zuletzt gesehen {t}.",
+    chip_disabled: "Deaktiviert", sec_comment: "Beschreibung", comment_ph: "Beschreibung zum Gerät (z. B. Standort, Datum des Batteriewechsels)", comment_hint: "Zigbee2MQTT speichert den Text im Feld „Beschreibung“ (Geräteeinstellung „description“, höchstens 500 Zeichen). Leer lassen entfernt ihn.", done_comment: "Beschreibung gespeichert",
+    flt_disabled: "Deaktiviert", flt_stale: "Lange nichts gehört", chip_stale: "Lange still", stale_badge: "lange still", status_disabled: "In Zigbee2MQTT deaktiviert", group_area: "Raum", group_no_area: "Ohne Raum", f_area: "Raum", f_ha_device: "HA-Gerät", f_comment: "Beschreibung", status_silent: "Online laut Zigbee2MQTT, aber lange nichts gehört – zuletzt gesehen {t}.",
     expand_all: "Alle aufklappen", collapse_all: "Alle zuklappen",
     filters: "Filter", filter_active: "{n} aktiv", filter_reset: "Alle Filter zurücksetzen", filter_remove: "Filter entfernen",
     flt_all: "Alle", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
@@ -470,7 +472,7 @@ const I18N = {
     options_device_hint: "Zigbee2MQTT stores these options in its configuration.", no_changes: "No changes.",
     remove_hint: "Removes the device from the Zigbee network. It has to be paired again afterwards.",
     force_remove: "Force (even if the device does not respond)", done_removed: "Device removed",
-    f_vendor: "Vendor", f_model: "Model", f_description: "Description", f_type: "Type", f_ieee: "IEEE address", f_nwk: "Network address",
+    f_vendor: "Vendor", f_model: "Model", f_description: "Product description", f_type: "Type", f_ieee: "IEEE address", f_nwk: "Network address",
     f_power: "Power source", f_firmware: "Firmware build", f_lqi: "Link quality", f_battery: "Battery", f_voltage: "Voltage",
     f_available: "Reachable", f_last_seen: "Last seen",
     flt_missing: "Missing in Zigbee2MQTT", chip_missing: "Missing", status_missing: "Missing in Zigbee2MQTT (last known device)", missing_badge: "missing", missing_hint: "These devices were known but are currently missing from the Zigbee2MQTT device list. They disappear from here by themselves once they return.", missing_popup_hint: "This device is no longer in the Zigbee2MQTT device list. The last known data is shown. If it comes back, the marker disappears by itself; use \"Forget\" to remove it from this list.", forget: "Forget", forget_all: "Forget all missing", f_missing_since: "Missing since", network: "Network", network_open: "Open the Zigbee2MQTT network map", open_entity: "Open entity in Home Assistant", open_device: "Open device in Home Assistant", ev_device_missing: "Missing in Zigbee2MQTT", ev_device_back: "Back in the device list",
@@ -484,7 +486,7 @@ const I18N = {
     net_lqi: "Signal", ev_network_map: "Network map read", sec_monitor: "Monitoring", ignore_offline: "Ignore offline status",
     ignore_offline_hint: "The device does not count as offline: no problem state, no events, no Notification Center message. Useful e.g. for lamps behind a wall switch.", ignored_badge: "Offline ignored", status_ignored: "Offline, ignored", flt_ignored: "Offline ignored",
     net_map_label: "Zigbee network map", net_native: "Open the Zigbee2MQTT interface",
-    net_zoom_label: "Network map zoom", net_zoom_out: "Zoom out", net_zoom_in: "Zoom in", net_zoom_fit: "Fit", net_zoom_reset: "Reset to 100 %", net_zoom_hint: "Zoom: slider or buttons; on a phone pinch with two fingers, on desktop Ctrl + mouse wheel.",
+    net_zoom_label: "Network map zoom", net_zoom_out: "Zoom out", net_zoom_in: "Zoom in", net_zoom_fit: "Fit", net_zoom_reset: "Reset to 100 %", net_zoom_hint: "Zoom: slider or buttons; on a phone pinch with two fingers, on desktop Ctrl + mouse wheel. Hold the mouse button and drag to move the map in any direction.",
     status_lost: "Offline – last message {t} (limit: {d} days), probably no longer in the network.", lost_badge: "lost", avail_silent: "no (no message for days)", flt_lost: "Lost (no message for a long time)",
     avail_activity: "yes (message received recently, despite offline report)",
     type_Router: "Router", type_EndDevice: "End device",
@@ -498,8 +500,8 @@ const I18N = {
     instance: "Instance (stick)",
     // Grouping and filters (since 1.1.0)
     group_by: "Group by", group_none: "No grouping", group_vendor: "Manufacturer", group_class: "Device class", group_unknown: "Unknown",
-    chip_disabled: "Disabled", sec_comment: "Comment", comment_ph: "Comment for this device (e.g. location, purpose)", comment_hint: "Zigbee2MQTT stores the comment in the device setting \"description\" (up to 500 characters). Leave it empty to remove it.", done_comment: "Comment saved",
-    flt_disabled: "Disabled", flt_stale: "Not heard for long", chip_stale: "Silent", stale_badge: "silent", status_disabled: "Disabled in Zigbee2MQTT", group_area: "Area", group_no_area: "No area", f_area: "Area", f_ha_device: "HA device", f_comment: "Comment", status_silent: "Online according to Zigbee2MQTT, but not heard from in a long time – last seen {t}.",
+    chip_disabled: "Disabled", sec_comment: "Description", comment_ph: "Description for this device (e.g. location, battery change date)", comment_hint: "Zigbee2MQTT stores the text in the \"Description\" field, i.e. the device setting \"description\" (up to 500 characters). Leave it empty to remove it.", done_comment: "Description saved",
+    flt_disabled: "Disabled", flt_stale: "Not heard for long", chip_stale: "Silent", stale_badge: "silent", status_disabled: "Disabled in Zigbee2MQTT", group_area: "Area", group_no_area: "No area", f_area: "Area", f_ha_device: "HA device", f_comment: "Description", status_silent: "Online according to Zigbee2MQTT, but not heard from in a long time – last seen {t}.",
     expand_all: "Expand all", collapse_all: "Collapse all",
     filters: "Filters", filter_active: "{n} active", filter_reset: "Reset all filters", filter_remove: "Remove filter",
     flt_all: "All", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
@@ -594,7 +596,7 @@ const I18N = {
     options_device_hint: "Zigbee2MQTT slaat de opties op in zijn configuratie.", no_changes: "Geen wijzigingen.",
     remove_hint: "Verwijdert het apparaat uit het Zigbee-netwerk. Daarna moet het opnieuw worden aangemeld.",
     force_remove: "Forceren (ook als het apparaat niet reageert)", done_removed: "Apparaat verwijderd",
-    f_vendor: "Fabrikant", f_model: "Model", f_description: "Beschrijving", f_type: "Type", f_ieee: "IEEE-adres", f_nwk: "Netwerkadres",
+    f_vendor: "Fabrikant", f_model: "Model", f_description: "Productbeschrijving", f_type: "Type", f_ieee: "IEEE-adres", f_nwk: "Netwerkadres",
     f_power: "Voeding", f_firmware: "Firmware-build", f_lqi: "Signaalkwaliteit", f_battery: "Batterij", f_voltage: "Spanning",
     f_available: "Bereikbaar", f_last_seen: "Laatst gezien",
     flt_missing: "Ontbreekt in Zigbee2MQTT", chip_missing: "Ontbreekt", status_missing: "Ontbreekt in Zigbee2MQTT (laatst bekend apparaat)", missing_badge: "ontbreekt", missing_hint: "Deze apparaten waren bekend, maar ontbreken nu in de apparatenlijst van Zigbee2MQTT. Ze verdwijnen vanzelf zodra ze terugkomen.", missing_popup_hint: "Dit apparaat staat niet meer in de apparatenlijst van Zigbee2MQTT. De laatst bekende gegevens worden getoond. Komt het terug, dan verdwijnt de markering vanzelf; met „Vergeten” haal je het uit deze lijst.", forget: "Vergeten", forget_all: "Alle ontbrekende vergeten", f_missing_since: "Ontbreekt sinds", network: "Netwerk", network_open: "Zigbee2MQTT-netwerkkaart openen", open_entity: "Entiteit openen in Home Assistant", open_device: "Apparaat openen in Home Assistant", ev_device_missing: "Ontbreekt in Zigbee2MQTT", ev_device_back: "Weer in de apparatenlijst",
@@ -608,7 +610,7 @@ const I18N = {
     net_lqi: "Signaal", ev_network_map: "Netwerkkaart ingelezen", sec_monitor: "Bewaking", ignore_offline: "Offline-status negeren",
     ignore_offline_hint: "Het apparaat geldt niet als offline: geen storing, geen gebeurtenissen, geen melding aan het Notification Center. Handig bijv. voor lampen achter een wandschakelaar.", ignored_badge: "Offline genegeerd", status_ignored: "Offline, wordt genegeerd", flt_ignored: "Offline genegeerd",
     net_map_label: "Zigbee-netwerkkaart", net_native: "Zigbee2MQTT-interface openen",
-    net_zoom_label: "Zoom van de netwerkkaart", net_zoom_out: "Uitzoomen", net_zoom_in: "Inzoomen", net_zoom_fit: "Passend maken", net_zoom_reset: "Terugzetten op 100 %", net_zoom_hint: "Zoom: schuifregelaar of knoppen; op een smartphone met twee vingers knijpen, op desktop Ctrl + muiswiel.",
+    net_zoom_label: "Zoom van de netwerkkaart", net_zoom_out: "Uitzoomen", net_zoom_in: "Inzoomen", net_zoom_fit: "Passend maken", net_zoom_reset: "Terugzetten op 100 %", net_zoom_hint: "Zoom: schuifregelaar of knoppen; op een smartphone met twee vingers knijpen, op desktop Ctrl + muiswiel. Houd de muisknop ingedrukt en sleep om de kaart in elke richting te verschuiven.",
     status_lost: "Offline – laatste bericht {t} (grens: {d} dagen), waarschijnlijk niet meer in het netwerk.", lost_badge: "verloren", avail_silent: "nee (al dagen geen bericht)", flt_lost: "Verloren (lang geen bericht)",
     avail_activity: "ja (recent bericht ontvangen, ondanks offline-melding)",
     type_Router: "Router", type_EndDevice: "Eindapparaat",
@@ -624,8 +626,8 @@ const I18N = {
     instance: "Instantie (stick)",
     // Groeperen en filteren (sinds 1.1.0)
     group_by: "Groeperen", group_none: "Geen groepering", group_vendor: "Fabrikant", group_class: "Apparaatklasse", group_unknown: "Onbekend",
-    chip_disabled: "Uitgeschakeld", sec_comment: "Opmerking", comment_ph: "Opmerking bij het apparaat (bijv. locatie, doel)", comment_hint: "Zigbee2MQTT slaat de opmerking op in de apparaatinstelling „description” (maximaal 500 tekens). Leeg laten verwijdert haar.", done_comment: "Opmerking opgeslagen",
-    flt_disabled: "Uitgeschakeld", flt_stale: "Lang niets gehoord", chip_stale: "Stil", stale_badge: "stil", status_disabled: "Uitgeschakeld in Zigbee2MQTT", group_area: "Ruimte", group_no_area: "Zonder ruimte", f_area: "Ruimte", f_ha_device: "HA-apparaat", f_comment: "Opmerking", status_silent: "Online volgens Zigbee2MQTT, maar lang niets gehoord – laatst gezien {t}.",
+    chip_disabled: "Uitgeschakeld", sec_comment: "Beschrijving", comment_ph: "Beschrijving van het apparaat (bijv. locatie, datum batterijwissel)", comment_hint: "Zigbee2MQTT slaat de tekst op in het veld „Beschrijving” (apparaatinstelling „description”, maximaal 500 tekens). Leeg laten verwijdert haar.", done_comment: "Beschrijving opgeslagen",
+    flt_disabled: "Uitgeschakeld", flt_stale: "Lang niets gehoord", chip_stale: "Stil", stale_badge: "stil", status_disabled: "Uitgeschakeld in Zigbee2MQTT", group_area: "Ruimte", group_no_area: "Zonder ruimte", f_area: "Ruimte", f_ha_device: "HA-apparaat", f_comment: "Beschrijving", status_silent: "Online volgens Zigbee2MQTT, maar lang niets gehoord – laatst gezien {t}.",
     expand_all: "Alles uitklappen", collapse_all: "Alles inklappen",
     filters: "Filters", filter_active: "{n} actief", filter_reset: "Alle filters wissen", filter_remove: "Filter verwijderen",
     flt_all: "Alle", flt_status: "Status", flt_online: "Online", flt_offline: "Offline",
@@ -721,7 +723,7 @@ const I18N = {
     options_device_hint: "Zigbee2MQTT enregistre ces options dans sa configuration.", no_changes: "Aucune modification.",
     remove_hint: "Retire l'appareil du réseau Zigbee. Il devra ensuite être appairé de nouveau.",
     force_remove: "Forcer (même si l'appareil ne répond pas)", done_removed: "Appareil supprimé",
-    f_vendor: "Fabricant", f_model: "Modèle", f_description: "Description", f_type: "Type", f_ieee: "Adresse IEEE", f_nwk: "Adresse réseau",
+    f_vendor: "Fabricant", f_model: "Modèle", f_description: "Description du produit", f_type: "Type", f_ieee: "Adresse IEEE", f_nwk: "Adresse réseau",
     f_power: "Alimentation", f_firmware: "Build du firmware", f_lqi: "Qualité du signal", f_battery: "Batterie", f_voltage: "Tension",
     f_available: "Joignable", f_last_seen: "Dernière activité",
     flt_missing: "Absent de Zigbee2MQTT", chip_missing: "Absents", status_missing: "Absent de Zigbee2MQTT (dernier appareil connu)", missing_badge: "absent", missing_hint: "Ces appareils étaient connus mais manquent actuellement dans la liste d'appareils de Zigbee2MQTT. Ils disparaissent d'ici dès qu'ils reviennent.", missing_popup_hint: "Cet appareil ne figure plus dans la liste d'appareils de Zigbee2MQTT. Les dernières données connues sont affichées. S'il revient, le repère disparaît de lui-même ; avec « Oublier », tu le retires de cette liste.", forget: "Oublier", forget_all: "Oublier tous les absents", f_missing_since: "Absent depuis", network: "Réseau", network_open: "Ouvrir la carte du réseau Zigbee2MQTT", open_entity: "Ouvrir l'entité dans Home Assistant", open_device: "Ouvrir l'appareil dans Home Assistant", ev_device_missing: "Absent de Zigbee2MQTT", ev_device_back: "De retour dans la liste",
@@ -735,7 +737,7 @@ const I18N = {
     net_lqi: "Signal", ev_network_map: "Carte du réseau lue", sec_monitor: "Surveillance", ignore_offline: "Ignorer l'état hors ligne",
     ignore_offline_hint: "L'appareil n'est pas considéré hors ligne : pas de défaut, pas d'événements, pas de message au Notification Center. Utile p. ex. pour des lampes derrière un interrupteur mural.", ignored_badge: "Hors ligne ignoré", status_ignored: "Hors ligne, ignoré", flt_ignored: "Hors ligne ignoré",
     net_map_label: "Carte du réseau Zigbee", net_native: "Ouvrir l'interface Zigbee2MQTT",
-    net_zoom_label: "Zoom de la carte du réseau", net_zoom_out: "Dézoomer", net_zoom_in: "Zoomer", net_zoom_fit: "Ajuster", net_zoom_reset: "Revenir à 100 %", net_zoom_hint: "Zoom : curseur ou boutons ; sur smartphone, pince à deux doigts ; sur ordinateur, Ctrl + molette.",
+    net_zoom_label: "Zoom de la carte du réseau", net_zoom_out: "Dézoomer", net_zoom_in: "Zoomer", net_zoom_fit: "Ajuster", net_zoom_reset: "Revenir à 100 %", net_zoom_hint: "Zoom : curseur ou boutons ; sur smartphone, pince à deux doigts ; sur ordinateur, Ctrl + molette. Maintiens le bouton de la souris enfoncé et fais glisser pour déplacer la carte dans toutes les directions.",
     status_lost: "Hors ligne – dernier message {t} (limite : {d} jours), probablement plus dans le réseau.", lost_badge: "perdu", avail_silent: "non (aucun message depuis des jours)", flt_lost: "Perdu (longtemps sans message)",
     avail_activity: "oui (message reçu récemment, malgré le signalement hors ligne)",
     type_Router: "Routeur", type_EndDevice: "Appareil terminal",
@@ -751,8 +753,8 @@ const I18N = {
     instance: "Instance (clé)",
     // Regrouper et filtrer (depuis 1.1.0)
     group_by: "Regrouper", group_none: "Aucun regroupement", group_vendor: "Fabricant", group_class: "Classe d'appareil", group_unknown: "Inconnu",
-    chip_disabled: "Désactivés", sec_comment: "Commentaire", comment_ph: "Commentaire sur l'appareil (p. ex. emplacement, usage)", comment_hint: "Zigbee2MQTT enregistre le commentaire dans le paramètre d'appareil « description » (500 caractères maximum). Laisse le champ vide pour le supprimer.", done_comment: "Commentaire enregistré",
-    flt_disabled: "Désactivé", flt_stale: "Silencieux depuis longtemps", chip_stale: "Silencieux", stale_badge: "silencieux", status_disabled: "Désactivé dans Zigbee2MQTT", group_area: "Pièce", group_no_area: "Sans pièce", f_area: "Pièce", f_ha_device: "Appareil HA", f_comment: "Commentaire", status_silent: "En ligne selon Zigbee2MQTT, mais sans nouvelles depuis longtemps – dernière activité {t}.",
+    chip_disabled: "Désactivés", sec_comment: "Description", comment_ph: "Description de l'appareil (p. ex. emplacement, date de changement de pile)", comment_hint: "Zigbee2MQTT enregistre le texte dans le champ « Description » (paramètre d'appareil « description », 500 caractères maximum). Laisse le champ vide pour le supprimer.", done_comment: "Description enregistrée",
+    flt_disabled: "Désactivé", flt_stale: "Silencieux depuis longtemps", chip_stale: "Silencieux", stale_badge: "silencieux", status_disabled: "Désactivé dans Zigbee2MQTT", group_area: "Pièce", group_no_area: "Sans pièce", f_area: "Pièce", f_ha_device: "Appareil HA", f_comment: "Description", status_silent: "En ligne selon Zigbee2MQTT, mais sans nouvelles depuis longtemps – dernière activité {t}.",
     expand_all: "Tout déplier", collapse_all: "Tout replier",
     filters: "Filtres", filter_active: "{n} actifs", filter_reset: "Réinitialiser tous les filtres", filter_remove: "Retirer le filtre",
     flt_all: "Tous", flt_status: "État", flt_online: "En ligne", flt_offline: "Hors ligne",
@@ -848,7 +850,7 @@ const I18N = {
     options_device_hint: "Zigbee2MQTT guarda estas opciones en su configuración.", no_changes: "Sin cambios.",
     remove_hint: "Quita el dispositivo de la red Zigbee. Después hay que emparejarlo de nuevo.",
     force_remove: "Forzar (aunque el dispositivo no responda)", done_removed: "Dispositivo eliminado",
-    f_vendor: "Fabricante", f_model: "Modelo", f_description: "Descripción", f_type: "Tipo", f_ieee: "Dirección IEEE", f_nwk: "Dirección de red",
+    f_vendor: "Fabricante", f_model: "Modelo", f_description: "Descripción del producto", f_type: "Tipo", f_ieee: "Dirección IEEE", f_nwk: "Dirección de red",
     f_power: "Alimentación", f_firmware: "Build del firmware", f_lqi: "Calidad de señal", f_battery: "Batería", f_voltage: "Tensión",
     f_available: "Accesible", f_last_seen: "Última actividad",
     flt_missing: "Falta en Zigbee2MQTT", chip_missing: "Ausentes", status_missing: "Falta en Zigbee2MQTT (último dispositivo conocido)", missing_badge: "ausente", missing_hint: "Estos dispositivos eran conocidos, pero ahora faltan en la lista de dispositivos de Zigbee2MQTT. Desaparecen de aquí solos en cuanto vuelven.", missing_popup_hint: "Este dispositivo ya no está en la lista de dispositivos de Zigbee2MQTT. Se muestran los últimos datos conocidos. Si vuelve, la marca desaparece sola; con «Olvidar» lo quitas de esta lista.", forget: "Olvidar", forget_all: "Olvidar todos los ausentes", f_missing_since: "Ausente desde", network: "Red", network_open: "Abrir el mapa de red de Zigbee2MQTT", open_entity: "Abrir la entidad en Home Assistant", open_device: "Abrir el dispositivo en Home Assistant", ev_device_missing: "Falta en Zigbee2MQTT", ev_device_back: "De nuevo en la lista",
@@ -862,7 +864,7 @@ const I18N = {
     net_lqi: "Señal", ev_network_map: "Mapa de red leído", sec_monitor: "Supervisión", ignore_offline: "Ignorar estado sin conexión",
     ignore_offline_hint: "El dispositivo no cuenta como sin conexión: sin avería, sin eventos, sin aviso al Notification Center. Útil p. ej. para lámparas tras un interruptor de pared.", ignored_badge: "Sin conexión ignorado", status_ignored: "Sin conexión, ignorado", flt_ignored: "Sin conexión ignorado",
     net_map_label: "Mapa de red Zigbee", net_native: "Abrir la interfaz de Zigbee2MQTT",
-    net_zoom_label: "Zoom del mapa de red", net_zoom_out: "Alejar", net_zoom_in: "Acercar", net_zoom_fit: "Ajustar", net_zoom_reset: "Restablecer al 100 %", net_zoom_hint: "Zoom: control deslizante o botones; en el móvil, pellizca con dos dedos; en el ordenador, Ctrl + rueda del ratón.",
+    net_zoom_label: "Zoom del mapa de red", net_zoom_out: "Alejar", net_zoom_in: "Acercar", net_zoom_fit: "Ajustar", net_zoom_reset: "Restablecer al 100 %", net_zoom_hint: "Zoom: control deslizante o botones; en el móvil, pellizca con dos dedos; en el ordenador, Ctrl + rueda del ratón. Mantén pulsado el botón del ratón y arrastra para mover el mapa en cualquier dirección.",
     status_lost: "Sin conexión – último mensaje {t} (límite: {d} días), probablemente ya no está en la red.", lost_badge: "perdido", avail_silent: "no (sin mensajes desde hace días)", flt_lost: "Perdido (mucho tiempo sin mensajes)",
     avail_activity: "sí (mensaje reciente, a pesar de figurar sin conexión)",
     type_Router: "Router", type_EndDevice: "Dispositivo final",
@@ -878,8 +880,8 @@ const I18N = {
     instance: "Instancia (clave)",
     // Agrupar y filtrar (desde 1.1.0)
     group_by: "Agrupar", group_none: "Sin agrupar", group_vendor: "Fabricante", group_class: "Clase de dispositivo", group_unknown: "Desconocido",
-    chip_disabled: "Desactivados", sec_comment: "Comentario", comment_ph: "Comentario sobre el dispositivo (p. ej. ubicación, uso)", comment_hint: "Zigbee2MQTT guarda el comentario en el ajuste del dispositivo «description» (máximo 500 caracteres). Déjalo vacío para quitarlo.", done_comment: "Comentario guardado",
-    flt_disabled: "Desactivado", flt_stale: "Sin noticias desde hace tiempo", chip_stale: "Silencioso", stale_badge: "silencioso", status_disabled: "Desactivado en Zigbee2MQTT", group_area: "Área", group_no_area: "Sin área", f_area: "Área", f_ha_device: "Dispositivo HA", f_comment: "Comentario", status_silent: "En línea según Zigbee2MQTT, pero sin noticias desde hace tiempo – última actividad {t}.",
+    chip_disabled: "Desactivados", sec_comment: "Descripción", comment_ph: "Descripción del dispositivo (p. ej. ubicación, fecha del cambio de pilas)", comment_hint: "Zigbee2MQTT guarda el texto en el campo «Descripción» (ajuste del dispositivo «description», máximo 500 caracteres). Déjalo vacío para quitarlo.", done_comment: "Descripción guardada",
+    flt_disabled: "Desactivado", flt_stale: "Sin noticias desde hace tiempo", chip_stale: "Silencioso", stale_badge: "silencioso", status_disabled: "Desactivado en Zigbee2MQTT", group_area: "Área", group_no_area: "Sin área", f_area: "Área", f_ha_device: "Dispositivo HA", f_comment: "Descripción", status_silent: "En línea según Zigbee2MQTT, pero sin noticias desde hace tiempo – última actividad {t}.",
     expand_all: "Desplegar todo", collapse_all: "Plegar todo",
     filters: "Filtros", filter_active: "{n} activos", filter_reset: "Restablecer todos los filtros", filter_remove: "Quitar filtro",
     flt_all: "Todos", flt_status: "Estado", flt_online: "En línea", flt_offline: "Sin conexión",
@@ -910,7 +912,7 @@ const I18N = {
   },
   // Română
   ro: {
-    net_zoom_label: "Zoomul hărții rețelei", net_zoom_out: "Micșorează", net_zoom_in: "Mărește", net_zoom_fit: "Potrivește", net_zoom_reset: "Resetează la 100 %", net_zoom_hint: "Zoom: cursor sau butoane; pe telefon ciupește cu două degete, pe desktop Ctrl + rotița mouse-ului.",
+    net_zoom_label: "Zoomul hărții rețelei", net_zoom_out: "Micșorează", net_zoom_in: "Mărește", net_zoom_fit: "Potrivește", net_zoom_reset: "Resetează la 100 %", net_zoom_hint: "Zoom: cursor sau butoane; pe telefon ciupește cu două degete, pe desktop Ctrl + rotița mouse-ului. Ține apăsat butonul mouse-ului și trage pentru a muta harta în orice direcție.",
     status_lost: "Offline – ultimul mesaj {t} (limită: {d} zile), probabil nu mai este în rețea.", lost_badge: "pierdut", avail_silent: "nu (niciun mesaj de zile)", flt_lost: "Pierdut (mult timp fără mesaje)",
     connecting: "Conectare …",
     error_generic: "Acțiunea a eșuat.",
@@ -972,7 +974,7 @@ const I18N = {
     options_device_hint: "Zigbee2MQTT salvează aceste opțiuni în configurația sa.", no_changes: "Nicio modificare.",
     remove_hint: "Elimină dispozitivul din rețeaua Zigbee. Va trebui asociat din nou după aceea.",
     force_remove: "Forțat (chiar dacă dispozitivul nu răspunde)", done_removed: "Dispozitiv eliminat",
-    f_vendor: "Producător", f_model: "Model", f_description: "Descriere", f_type: "Tip", f_ieee: "Adresă IEEE", f_nwk: "Adresă de rețea",
+    f_vendor: "Producător", f_model: "Model", f_description: "Descrierea produsului", f_type: "Tip", f_ieee: "Adresă IEEE", f_nwk: "Adresă de rețea",
     f_power: "Alimentare", f_firmware: "Build firmware", f_lqi: "Calitate legătură", f_battery: "Baterie", f_voltage: "Tensiune",
     f_available: "Accesibil", f_last_seen: "Văzut ultima dată",
     flt_missing: "Lipsă din Zigbee2MQTT", chip_missing: "Lipsă", status_missing: "Lipsă din Zigbee2MQTT (ultimul dispozitiv cunoscut)", missing_badge: "lipsă", missing_hint: "Aceste dispozitive erau cunoscute, dar lipsesc acum din lista de dispozitive Zigbee2MQTT. Dispar singure de aici când revin.", missing_popup_hint: "Acest dispozitiv nu mai este în lista de dispozitive Zigbee2MQTT. Se afișează ultimele date cunoscute. Dacă revine, marcajul dispare singur; folosește „Uită” pentru a-l elimina din această listă.", forget: "Uită", forget_all: "Uită toate lipsă", f_missing_since: "Lipsă din", network: "Rețea", network_open: "Deschide harta rețelei Zigbee2MQTT", open_entity: "Deschide entitatea în Home Assistant", open_device: "Deschide dispozitivul în Home Assistant", ev_device_missing: "Lipsă din Zigbee2MQTT", ev_device_back: "Din nou în lista de dispozitive",
@@ -988,8 +990,8 @@ const I18N = {
     ex_g_light: "Lumină", ex_g_switch: "Întrerupător", ex_g_fan: "Ventilator", ex_g_cover: "Jaluzea", ex_g_lock: "Încuietoare", ex_g_climate: "Climatizare",
     instance: "Instanță (stick)",
     group_by: "Grupează după", group_none: "Fără grupare", group_vendor: "Producător", group_class: "Clasă dispozitiv", group_unknown: "Necunoscut",
-    chip_disabled: "Dezactivate", sec_comment: "Comentariu", comment_ph: "Comentariu pentru acest dispozitiv (ex. locație, scop)", comment_hint: "Zigbee2MQTT salvează comentariul în setarea „description” a dispozitivului (max. 500 de caractere). Lasă gol pentru a-l șterge.", done_comment: "Comentariu salvat",
-    flt_disabled: "Dezactivate", flt_stale: "Fără semnal de mult", chip_stale: "Tăcute", stale_badge: "tăcut", status_disabled: "Dezactivat în Zigbee2MQTT", group_area: "Zonă", group_no_area: "Fără zonă", f_area: "Zonă", f_ha_device: "Dispozitiv HA", f_comment: "Comentariu", status_silent: "Online conform Zigbee2MQTT, dar fără semnal de mult timp – văzut ultima dată {t}.",
+    chip_disabled: "Dezactivate", sec_comment: "Descriere", comment_ph: "Descrierea dispozitivului (ex. locație, data schimbării bateriei)", comment_hint: "Zigbee2MQTT salvează textul în câmpul „Descriere” (setarea „description” a dispozitivului, max. 500 de caractere). Lasă gol pentru a-l șterge.", done_comment: "Descriere salvată",
+    flt_disabled: "Dezactivate", flt_stale: "Fără semnal de mult", chip_stale: "Tăcute", stale_badge: "tăcut", status_disabled: "Dezactivat în Zigbee2MQTT", group_area: "Zonă", group_no_area: "Fără zonă", f_area: "Zonă", f_ha_device: "Dispozitiv HA", f_comment: "Descriere", status_silent: "Online conform Zigbee2MQTT, dar fără semnal de mult timp – văzut ultima dată {t}.",
     expand_all: "Extinde tot", collapse_all: "Restrânge tot",
     filters: "Filtre", filter_active: "{n} active", filter_reset: "Resetează toate filtrele", filter_remove: "Elimină filtrul",
     flt_all: "Toate", flt_status: "Stare", flt_online: "Online", flt_offline: "Offline",
@@ -1077,7 +1079,7 @@ const I18N = {
     net_lqi: "Сигнал", ev_network_map: "Мапа мреже учитана", sec_monitor: "Надзор", ignore_offline: "Игнориши статус ван мреже",
     ignore_offline_hint: "Уређај се не рачуна као ван мреже: без сметње, без догађаја, без поруке за Notification Center. Корисно нпр. за лампе иза зидног прекидача.", ignored_badge: "Ван мреже игнорисано", status_ignored: "Ван мреже, игнорише се", flt_ignored: "Ван мреже игнорисано",
     net_map_label: "Zigbee мапа мреже", net_native: "Отвори Zigbee2MQTT интерфејс",
-    net_zoom_label: "Зум мрежне мапе", net_zoom_out: "Умањи", net_zoom_in: "Увећај", net_zoom_fit: "Прилагоди", net_zoom_reset: "Врати на 100 %", net_zoom_hint: "Зум: клизач или дугмад; на телефону са два прста, на рачунару Ctrl + точкић миша.",
+    net_zoom_label: "Зум мрежне мапе", net_zoom_out: "Умањи", net_zoom_in: "Увећај", net_zoom_fit: "Прилагоди", net_zoom_reset: "Врати на 100 %", net_zoom_hint: "Зум: клизач или дугмад; на телефону са два прста, на рачунару Ctrl + точкић миша. Држи притиснуто дугме миша и превлачи да помераш мапу у свим смеровима.",
     status_lost: "Офлајн – последња порука {t} (граница: {d} дана), вероватно више није у мрежи.", lost_badge: "изгубљен", avail_silent: "не (дани без поруке)", flt_lost: "Изгубљен (дуго без поруке)",
     z2m_update_available: "Ажурирање доступно: {v}", z2m_update_hint: "Ажурирај Zigbee2MQTT ручно на његовом серверу или у Docker контејнеру, не преко HACS-а.", z2m_check_now: "Провери сада", z2m_check_failed: "Провера није могућа", z2m_release: "Погледај издање",
   },
@@ -1121,7 +1123,7 @@ const I18N = {
     net_lqi: "Signal", ev_network_map: "Mapa mreže učitana", sec_monitor: "Nadzor", ignore_offline: "Ignoriši status van mreže",
     ignore_offline_hint: "Uređaj se ne računa kao van mreže: bez smetnje, bez događaja, bez poruke za Notification Center. Korisno npr. za lampe iza zidnog prekidača.", ignored_badge: "Van mreže ignorisano", status_ignored: "Van mreže, ignoriše se", flt_ignored: "Van mreže ignorisano",
     net_map_label: "Zigbee mapa mreže", net_native: "Otvori Zigbee2MQTT interfejs",
-    net_zoom_label: "Zum mrežne mape", net_zoom_out: "Umanji", net_zoom_in: "Uvećaj", net_zoom_fit: "Prilagodi", net_zoom_reset: "Vrati na 100 %", net_zoom_hint: "Zum: klizač ili dugmad; na telefonu sa dva prsta, na računaru Ctrl + točkić miša.",
+    net_zoom_label: "Zum mrežne mape", net_zoom_out: "Umanji", net_zoom_in: "Uvećaj", net_zoom_fit: "Prilagodi", net_zoom_reset: "Vrati na 100 %", net_zoom_hint: "Zum: klizač ili dugmad; na telefonu sa dva prsta, na računaru Ctrl + točkić miša. Drži pritisnuto dugme miša i prevlači da pomeraš mapu u svim smerovima.",
     status_lost: "Oflajn – poslednja poruka {t} (granica: {d} dana), verovatno više nije u mreži.", lost_badge: "izgubljen", avail_silent: "ne (dani bez poruke)", flt_lost: "Izgubljen (dugo bez poruke)",
     z2m_update_available: "Ažuriranje dostupno: {v}", z2m_update_hint: "Ažuriraj Zigbee2MQTT ručno na njegovom serveru ili u Docker kontejneru, ne preko HACS-a.", z2m_check_now: "Proveri sada", z2m_check_failed: "Provera nije moguća", z2m_release: "Pogledaj izdanje",
   },
@@ -1265,6 +1267,12 @@ const BASE_CARD_STYLES = `
   .row-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .row-secondary { display: flex; gap: 8px; font-size: 0.85em; color: var(--secondary-text-color, #727272); overflow: hidden; white-space: nowrap; }
   .row-secondary span { overflow: hidden; text-overflow: ellipsis; }
+  .row-secondary.row-comment { white-space: normal; }
+  .row-secondary.row-comment span { overflow: visible; text-overflow: clip; overflow-wrap: anywhere; font-style: italic; }
+  .popup-desc { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-left: 3px solid var(--zmm-color-tab-active); border-radius: 6px; background: var(--secondary-background-color, rgba(127, 127, 127, 0.1)); }
+  .popup-desc ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; color: var(--zmm-color-tab-active); }
+  .popup-desc-label { font-size: 0.8em; color: var(--secondary-text-color, #727272); }
+  .popup-desc-text { white-space: pre-wrap; overflow-wrap: anywhere; }
   .row-extra { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 0.8em; color: var(--secondary-text-color, #727272); text-align: right; }
   .badge {
     font-size: 0.7em; padding: 0 6px; border-radius: 8px; white-space: nowrap;
@@ -1312,6 +1320,10 @@ const BASE_CARD_STYLES = `
   .settings-label { color: var(--secondary-text-color, #727272); }
   /* Netzwerk: Zeichnung (SVG) und Verbindungslisten */
   .nm-wrap { overflow-x: auto; padding: 0 2px; margin: 4px 0; touch-action: pan-x pan-y; }
+  @media (hover: hover) and (pointer: fine) {
+    .nm-wrap { overflow: auto; max-height: min(78vh, 760px); cursor: grab; user-select: none; -webkit-user-select: none; }
+    .nm-wrap.nm-dragging, .nm-wrap.nm-dragging * { cursor: grabbing !important; }
+  }
   .nm-zoom { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 4px 0 2px; }
   .nm-zoom input[type=range] { flex: 1 1 120px; min-width: 90px; max-width: 320px; accent-color: var(--zmm-color-tab-active); }
   .nm-zoomval { min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; }
@@ -2586,7 +2598,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       <div class="row-main">
         <div class="row-primary"><span class="row-name">${esc(d.name)}</span>${badges}</div>
         <div class="row-secondary">${secondary}</div>
-        ${cfg.show_comment && d.comment ? `<div class="row-secondary row-comment"><span>${esc(d.comment)}</span></div>` : ""}
+        ${cfg.show_description !== false && d.comment ? `<div class="row-secondary row-comment"><span>${esc(d.comment)}</span></div>` : ""}
       </div>
       <div class="row-extra">${extra}</div>
     </div>`;
@@ -2737,7 +2749,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   // Zoom setzen, ohne neu zu zeichnen (Bedienung bleibt flüssig). anchorX = Bildschirmposition (clientX),
   // die beim Zoomen an derselben Stelle bleiben soll.
-  _setNetZoom(value, anchorX) {
+  _setNetZoom(value, anchorX, anchorY) {
     const z = Math.min(NET_ZOOM_MAX, Math.max(NET_ZOOM_MIN, Number(value) || 1));
     const root = this.shadowRoot;
     const svg = root.querySelector(".nm-svg");
@@ -2750,10 +2762,19 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       if (wrap) {
         const rect = wrap.getBoundingClientRect();
         const ax = anchorX === undefined ? rect.left + wrap.clientWidth / 2 : anchorX;
-        focus = { off: ax - rect.left, content: (wrap.scrollLeft + ax - rect.left) / old };
+        const ay = anchorY === undefined ? rect.top + wrap.clientHeight / 2 : anchorY;
+        focus = {
+          off: ax - rect.left,
+          content: (wrap.scrollLeft + ax - rect.left) / old,
+          offY: ay - rect.top,
+          contentY: (wrap.scrollTop + ay - rect.top) / old,
+        };
       }
       svg.style.width = `${Math.round(vbw * z)}px`;
-      if (wrap && focus) wrap.scrollLeft = Math.max(0, focus.content * z - focus.off);
+      if (wrap && focus) {
+        wrap.scrollLeft = Math.max(0, focus.content * z - focus.off);
+        wrap.scrollTop = Math.max(0, focus.contentY * z - focus.offY);
+      }
     }
     const slider = root.querySelector("[data-nmzoom]");
     if (slider) slider.value = String(Math.round(z * 100));
@@ -2772,6 +2793,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (!svg || !wrap) return;
     this._setNetZoom((wrap.clientWidth - 6) / svg.viewBox.baseVal.width, wrap.getBoundingClientRect().left);
     wrap.scrollLeft = 0;
+    wrap.scrollTop = 0;
   }
 
   // Zwei-Finger-Geste (Smartphone) und Strg + Mausrad (Desktop) auf der Zeichnung
@@ -2792,7 +2814,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         if (!pinch || e.touches.length !== 2) return;
         e.preventDefault();
         const d = dist(e.touches[0], e.touches[1]);
-        if (pinch.d0 > 0) this._setNetZoom(pinch.z0 * (d / pinch.d0), (e.touches[0].clientX + e.touches[1].clientX) / 2);
+        if (pinch.d0 > 0) this._setNetZoom(pinch.z0 * (d / pinch.d0), (e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
       },
       { passive: false }
     );
@@ -2806,9 +2828,64 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       (e) => {
         if (!(e.ctrlKey || e.metaKey) || !e.target.closest?.(".nm-wrap")) return;
         e.preventDefault();
-        this._setNetZoom(this._netZoomValue() * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX);
+        this._setNetZoom(this._netZoomValue() * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX, e.clientY);
       },
       { passive: false }
+    );
+
+    // Mit gedrückter linker Maustaste die Zeichnung in alle Richtungen verschieben (nur Maus;
+    // Touch scrollt nativ). Erst ab 4 px Bewegung gilt es als Ziehen, ein einfacher Klick auf
+    // einen Router öffnet weiter das Popup. Nach dem Ziehen wird der Klick unterdrückt.
+    let drag = null;
+    const endDrag = (e) => {
+      if (!drag || (e && e.pointerId !== undefined && e.pointerId !== drag.id)) return;
+      if (drag.moved) {
+        this._netDragEndedAt = Date.now();
+        drag.wrap.classList.remove("nm-dragging");
+        try {
+          drag.wrap.releasePointerCapture(drag.id);
+        } catch (_e) {
+          /* schon freigegeben */
+        }
+      }
+      drag = null;
+    };
+    root.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse" || e.button !== 0) return;
+      const wrap = e.target.closest?.(".nm-wrap");
+      if (!wrap) return;
+      drag = { wrap, id: e.pointerId, x: e.clientX, y: e.clientY, sl: wrap.scrollLeft, st: wrap.scrollTop, moved: false };
+    });
+    root.addEventListener("pointermove", (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      if (e.buttons === 0) return endDrag(e);
+      const dx = e.clientX - drag.x;
+      const dy = e.clientY - drag.y;
+      if (!drag.moved) {
+        if (Math.hypot(dx, dy) < 4) return;
+        drag.moved = true;
+        drag.wrap.classList.add("nm-dragging");
+        try {
+          drag.wrap.setPointerCapture(drag.id);
+        } catch (_e) {
+          /* ohne Pointer-Capture: Ziehen funktioniert weiter, solange die Maus über der Karte bleibt */
+        }
+      }
+      drag.wrap.scrollLeft = drag.sl - dx;
+      drag.wrap.scrollTop = drag.st - dy;
+      e.preventDefault();
+    });
+    root.addEventListener("pointerup", endDrag);
+    root.addEventListener("pointercancel", endDrag);
+    root.addEventListener(
+      "click",
+      (e) => {
+        if (Date.now() - (this._netDragEndedAt || 0) < 80) {
+          e.stopPropagation();
+          e.preventDefault();
+        }
+      },
+      true
     );
   }
 
@@ -3643,7 +3720,6 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       [t("f_vendor"), d.vendor],
       [t("f_model"), d.model],
       [t("f_description"), d.description],
-      [t("f_comment"), d.comment],
       [t("f_area"), d.area],
       [t("f_ha_device"), d.ha_device],
       [t("f_type"), d.type ? (I18N[this._lang]?.[`type_${d.type}`] ?? d.type) : null],
@@ -3999,7 +4075,11 @@ class Zigbee2MqttManagerCard extends HTMLElement {
             : ""
         }
         <button class="popup-close" data-act="close" aria-label="${esc(t("close"))}"><ha-icon icon="mdi:close"></ha-icon></button></div>
-      <div class="popup-body">${sections.join("")}</div>`;
+      <div class="popup-body">${
+        d.comment
+          ? `<div class="popup-desc"><ha-icon icon="mdi:text-box-outline"></ha-icon><div><div class="popup-desc-label">${esc(t("f_comment"))}</div><div class="popup-desc-text">${esc(d.comment)}</div></div></div>`
+          : ""
+      }${sections.join("")}</div>`;
     backdrop.hidden = false;
     // Ein frisch gezeichnetes <details open> löst selbst ein "toggle" aus; der zentrale Handler
     // in _build() wertet nur echte Änderungen aus (sonst Endlosschleife beim Neuzeichnen).
@@ -4048,7 +4128,7 @@ const EDITOR_I18N = {
     show_group_by: "Auswahl 'Gruppieren' anzeigen (Hersteller / Geräteklasse)", default_group_by: "Standard-Gruppierung der Listen",
     show_filters: "Filter-Bereich anzeigen (Status, Batterie, Signal, …)", show_model: "Modell anzeigen", show_vendor: "Hersteller anzeigen",
     show_ieee: "IEEE-Adresse anzeigen", show_lqi: "Signalqualität anzeigen", show_area: "Raum (aus Home Assistant) anzeigen",
-    show_comment: "Kommentar aus Zigbee2MQTT anzeigen", show_battery_value: "Batteriestand anzeigen", show_last_seen: "'Zuletzt gesehen' anzeigen",
+    show_description: "Beschreibung aus Zigbee2MQTT in der Liste anzeigen", show_battery_value: "Batteriestand anzeigen", show_last_seen: "'Zuletzt gesehen' anzeigen",
     read_only: "Nur lesen (alle Bedienelemente zum Ändern ausblenden)", show_pairing: "Pairing-Schaltfläche in der Geräteliste anzeigen",
     show_network_link: "Knopf 'Netzwerk' (Zigbee2MQTT-Netzwerkkarte) anzeigen", network_url: "Adresse der Netzwerkkarte (optional)",
     h_entry_id: "Welche Zigbee2MQTT-Instanz diese Karte anzeigt. „Automatisch“: Gibt es mehrere Instanzen, erscheint oben in der Karte ein Umschalter. Für eine Karte je Stick hier die Instanz festlegen.",
@@ -4082,7 +4162,7 @@ const EDITOR_I18N = {
     show_group_by: "Show 'Group by' selection (vendor / device class)", default_group_by: "Default grouping of the lists",
     show_filters: "Show filter area (status, battery, signal, …)", show_model: "Show model", show_vendor: "Show vendor",
     show_ieee: "Show IEEE address", show_lqi: "Show signal quality", show_area: "Show area (from Home Assistant)",
-    show_comment: "Show comment from Zigbee2MQTT", show_battery_value: "Show battery level", show_last_seen: "Show 'Last seen'",
+    show_description: "Show description from Zigbee2MQTT in the list", show_battery_value: "Show battery level", show_last_seen: "Show 'Last seen'",
     read_only: "Read only (hide all controls that change something)", show_pairing: "Show pairing button in the device list",
     show_network_link: "Show 'Network' button (Zigbee2MQTT network map)", network_url: "Address of the network map (optional)",
     h_entry_id: "Which Zigbee2MQTT instance this card shows. “Automatic”: with several instances a switcher appears at the top of the card. Set the instance here for one card per stick.",
@@ -4116,7 +4196,7 @@ const EDITOR_I18N = {
     show_group_by: "Keuze 'Groeperen' tonen (fabrikant / apparaatklasse)", default_group_by: "Standaardgroepering van de lijsten",
     show_filters: "Filtergebied tonen (status, batterij, signaal, …)", show_model: "Model tonen", show_vendor: "Fabrikant tonen",
     show_ieee: "IEEE-adres tonen", show_lqi: "Signaalkwaliteit tonen", show_area: "Ruimte (uit Home Assistant) tonen",
-    show_comment: "Opmerking uit Zigbee2MQTT tonen", show_battery_value: "Batterijniveau tonen", show_last_seen: "'Laatst gezien' tonen",
+    show_description: "Beschrijving uit Zigbee2MQTT in de lijst tonen", show_battery_value: "Batterijniveau tonen", show_last_seen: "'Laatst gezien' tonen",
     read_only: "Alleen lezen (alle bedieningselementen om te wijzigen verbergen)", show_pairing: "Pairing-knop in de apparatenlijst tonen",
     show_network_link: "Knop 'Netwerk' (Zigbee2MQTT-netwerkkaart) tonen", network_url: "Adres van de netwerkkaart (optioneel)",
     h_entry_id: "Welke Zigbee2MQTT-instantie deze kaart toont. „Automatisch“: bij meerdere instanties verschijnt bovenaan de kaart een schakelaar. Stel hier de instantie in voor één kaart per stick.",
@@ -4150,7 +4230,7 @@ const EDITOR_I18N = {
     show_group_by: "Afficher le choix « Grouper » (fabricant / classe d'appareil)", default_group_by: "Regroupement par défaut des listes",
     show_filters: "Afficher la zone de filtres (état, batterie, signal, …)", show_model: "Afficher le modèle", show_vendor: "Afficher le fabricant",
     show_ieee: "Afficher l'adresse IEEE", show_lqi: "Afficher la qualité du signal", show_area: "Afficher la pièce (depuis Home Assistant)",
-    show_comment: "Afficher le commentaire de Zigbee2MQTT", show_battery_value: "Afficher le niveau de batterie", show_last_seen: "Afficher « Dernière vue »",
+    show_description: "Afficher la description de Zigbee2MQTT dans la liste", show_battery_value: "Afficher le niveau de batterie", show_last_seen: "Afficher « Dernière vue »",
     read_only: "Lecture seule (masquer toutes les commandes de modification)", show_pairing: "Afficher le bouton d'appairage dans la liste d'appareils",
     show_network_link: "Afficher le bouton « Réseau » (carte du réseau Zigbee2MQTT)", network_url: "Adresse de la carte du réseau (facultatif)",
     h_entry_id: "Quelle instance Zigbee2MQTT cette carte affiche. « Automatique » : avec plusieurs instances, un sélecteur apparaît en haut de la carte. Définissez ici l'instance pour une carte par clé.",
@@ -4184,7 +4264,7 @@ const EDITOR_I18N = {
     show_group_by: "Mostrar selección 'Agrupar' (fabricante / clase de dispositivo)", default_group_by: "Agrupación predeterminada de las listas",
     show_filters: "Mostrar área de filtros (estado, batería, señal, …)", show_model: "Mostrar modelo", show_vendor: "Mostrar fabricante",
     show_ieee: "Mostrar dirección IEEE", show_lqi: "Mostrar calidad de señal", show_area: "Mostrar zona (de Home Assistant)",
-    show_comment: "Mostrar comentario de Zigbee2MQTT", show_battery_value: "Mostrar nivel de batería", show_last_seen: "Mostrar 'Visto por última vez'",
+    show_description: "Mostrar la descripción de Zigbee2MQTT en la lista", show_battery_value: "Mostrar nivel de batería", show_last_seen: "Mostrar 'Visto por última vez'",
     read_only: "Solo lectura (ocultar todos los controles que modifican algo)", show_pairing: "Mostrar botón de emparejamiento en la lista de dispositivos",
     show_network_link: "Mostrar botón 'Red' (mapa de red de Zigbee2MQTT)", network_url: "Dirección del mapa de red (opcional)",
     h_entry_id: "Qué instancia de Zigbee2MQTT muestra esta tarjeta. «Automático»: con varias instancias aparece un selector arriba en la tarjeta. Define aquí la instancia para una tarjeta por stick.",
@@ -4218,7 +4298,7 @@ const EDITOR_I18N = {
     show_group_by: "Afișează selecția „Grupare” (producător / clasă de dispozitiv)", default_group_by: "Gruparea implicită a listelor",
     show_filters: "Afișează zona de filtre (stare, baterie, semnal, …)", show_model: "Afișează modelul", show_vendor: "Afișează producătorul",
     show_ieee: "Afișează adresa IEEE", show_lqi: "Afișează calitatea semnalului", show_area: "Afișează încăperea (din Home Assistant)",
-    show_comment: "Afișează comentariul din Zigbee2MQTT", show_battery_value: "Afișează nivelul bateriei", show_last_seen: "Afișează „Văzut ultima dată”",
+    show_description: "Afișează descrierea din Zigbee2MQTT în listă", show_battery_value: "Afișează nivelul bateriei", show_last_seen: "Afișează „Văzut ultima dată”",
     read_only: "Doar citire (ascunde toate comenzile de modificare)", show_pairing: "Afișează butonul de asociere în lista de dispozitive",
     show_network_link: "Afișează butonul „Rețea” (harta rețelei Zigbee2MQTT)", network_url: "Adresa hărții rețelei (opțional)",
     h_entry_id: "Ce instanță Zigbee2MQTT afișează acest card. „Automat”: cu mai multe instanțe apare un comutator sus în card. Setează aici instanța pentru un card per stick.",
@@ -4325,7 +4405,7 @@ function buildEditorSchema(lang, instances) {
         bool("show_ieee"),
         bool("show_lqi"),
         bool("show_area"),
-        bool("show_comment"),
+        bool("show_description"),
         bool("show_battery_value"),
         bool("show_last_seen"),
       ]),

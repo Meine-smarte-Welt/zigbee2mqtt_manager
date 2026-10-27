@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b2487bdb1a099a9c6a34ef968c498a717a40d7c09feaf860146acb272bbc81c3
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 47ab99a47befe47106de883a489040d882241f1e89042cb7746f9dc16ab275e3
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -17,6 +17,9 @@ from homeassistant.config_entries import (
 from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -61,9 +64,26 @@ from .nc_catalog import NC_TYPE_IDS, nc_type_labels
 from .notification_bridge import OPT_ENABLED as NC_OPT_ENABLED
 from .notification_bridge import OPT_TYPES as NC_OPT_TYPES
 
-_BATTERY_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=1, max=99))
-_STALE_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=0, max=720))
-_LOST_VALIDATOR = vol.All(vol.Coerce(int), vol.Range(min=0, max=365))
+
+
+def _slider(minimum: int, maximum: int, unit: str) -> NumberSelector:
+    """Schieberegler MIT Eingabefeld daneben (Zahl direkt tippen); der Wert kommt als Zahl zurück."""
+    return NumberSelector(
+        NumberSelectorConfig(
+            min=minimum,
+            max=maximum,
+            step=1,
+            mode=NumberSelectorMode.SLIDER,
+            unit_of_measurement=unit,
+        )
+    )
+
+
+_BATTERY_VALIDATOR = _slider(1, 99, "%")
+_STALE_VALIDATOR = _slider(0, 720, "h")
+_LOST_VALIDATOR = _slider(0, 365, "d")
+# Optionen, die als ganze Zahl gespeichert werden (der Zahlenwähler liefert Fließkommazahlen)
+_INT_OPTIONS = (CONF_LOW_BATTERY, CONF_CRITICAL_BATTERY, CONF_STALE_HOURS, CONF_LOST_DAYS)
 
 
 def _valid_topic(base: str) -> bool:
@@ -180,9 +200,9 @@ class Z2MManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                     + (f" @ {broker[CONF_BROKER_HOST]}" if broker else ""),
                     data={CONF_BASE_TOPIC: base, **broker},
                     options={
-                        CONF_LOW_BATTERY: user_input[CONF_LOW_BATTERY],
+                        CONF_LOW_BATTERY: int(user_input[CONF_LOW_BATTERY]),
                         CONF_CRITICAL_BATTERY: min(
-                            DEFAULT_CRITICAL_BATTERY, user_input[CONF_LOW_BATTERY]
+                            DEFAULT_CRITICAL_BATTERY, int(user_input[CONF_LOW_BATTERY])
                         ),
                         CONF_FIRE_EVENTS: DEFAULT_FIRE_EVENTS,
                     },
@@ -264,6 +284,10 @@ class Z2MManagerOptionsFlow(OptionsFlow):
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
+            user_input = {
+                **user_input,
+                **{key: int(user_input[key]) for key in _INT_OPTIONS if key in user_input},
+            }
             network_url = str(user_input.get(CONF_NETWORK_URL) or "").strip()
             if user_input[CONF_CRITICAL_BATTERY] > user_input[CONF_LOW_BATTERY]:
                 errors[CONF_CRITICAL_BATTERY] = "critical_above_low"
