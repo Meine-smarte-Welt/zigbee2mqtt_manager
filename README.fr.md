@@ -344,6 +344,7 @@ Chaque fichier `.py`, `.js` et `.yaml` porte en première ligne un hash SHA-256 
 | `custom_components/zigbee2mqtt_manager/translations/es.json` | `32ed1f7a0567b3a859ae74b6fcbb129aaae81bb8117b047ff468753ce6be86f8` |
 | `custom_components/zigbee2mqtt_manager/translations/sr.json` | `c101a5d913202a6a34b2351b2f628196ecabc6e24f26040d6262ed0541139769` |
 | `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `e04494d6d680f513f8d03973e4c89ba731e4b8ce23818d05bebb852ae2bf7776` |
+| `custom_components/zigbee2mqtt_manager/translations/ro.json` | `955b7cfc792416bf23c94db8a369d0133faef022cbfc33004ac051d87e4c348f` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Licence

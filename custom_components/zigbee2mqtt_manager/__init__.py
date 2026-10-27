@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): e12809a5f29cb9858bbf1395f397f02cfb79e2e3b04f81e56663c39d1e99f752
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 1e7d9f275b9312bccaa8e6c528cb995a98b6a499c6c1ee89f36983f44dce24b8
 """Zigbee2MQTT Manager – Verwaltung von Zigbee2MQTT direkt in Home Assistant."""
 
 from __future__ import annotations
@@ -75,6 +75,12 @@ _WELCOME = {
         "La tarjeta está disponible enseguida en la barra lateral bajo **{title}** (nombre y visibilidad modificables en *Configurar*). Para tu propio panel: **Editar panel → Añadir tarjeta → «Zigbee2MQTT Manager»**.\n\n"
         f"[Abrir paneles]({_DASHBOARDS}) · Una plantilla de panel lista para usar está en el README (carpeta `examples`).\n\n"
         "Para tu página de inicio existe el sensor binario «Problema» con todos los contadores como atributos.",
+    ),
+    "ro": (
+        "Zigbee2MQTT Manager este configurat",
+        "Cardul este disponibil imediat în bara laterală sub **{title}** (numele și afișarea se pot schimba la *Configurează*). Pentru propriul dashboard: **Editează dashboard → Adaugă card → „Zigbee2MQTT Manager”**.\n\n"
+        f"[Deschide dashboard-urile]({_DASHBOARDS}) · Un șablon de dashboard gata făcut se află în README (folderul `examples`).\n\n"
+        "Pentru pagina de start există senzorul binar „Problemă” cu toate contoarele ca atribute.",
     ),
     "sr": (
         "Zigbee2MQTT Manager је подешен",
