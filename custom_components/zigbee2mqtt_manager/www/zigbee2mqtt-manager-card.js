@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8171160afe0fd972a0871a4487261e60949bf88c6e72b4da51f8d845639154b6
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 756619cb36c34f1b0a7ef527a233e87bf61eff11096fa923b7137fee8ddec151
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -50,7 +50,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.3.0";
+const CARD_VERSION = "1.3.1";
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 // Zoom der Netzwerkzeichnung (Faktor; 1 = Originalgröße)
@@ -2036,17 +2036,60 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     if (!f) return;
     const el = this.shadowRoot.querySelector(`[data-fk="${CSS.escape(f.fk)}"]`);
     if (!el) return;
-    el.focus();
+    // Hat das Feld den Fokus noch (der Abgleich fasst fokussierte Felder nicht an), nichts tun:
+    // Ein erneutes focus() scrollt je nach Browser (Firefox, Safari, Companion-App) das Feld
+    // wieder ins Bild, die Liste sprang dadurch bei jedem Neuzeichnen nach oben (1.3.1).
+    // Wurde das Feld ersetzt, den Fokus zurückgeben, aber ohne Scrollen.
+    if (this.shadowRoot.activeElement !== el) el.focus({ preventScroll: true });
     try {
-      if (f.start !== null && f.start !== undefined) el.setSelectionRange(f.start, f.end);
+      if (
+        f.start !== null &&
+        f.start !== undefined &&
+        (el.selectionStart !== f.start || el.selectionEnd !== f.end)
+      ) {
+        el.setSelectionRange(f.start, f.end);
+      }
     } catch (_e) {
       /* nicht jedes Eingabefeld unterstützt Selektion */
+    }
+  }
+
+  // Scroll-Container oberhalb der Karte (Fenster, Ansicht, Seitenleisten-Panel), auch über
+  // Shadow-DOM-Grenzen hinweg. Wird vor dem Neuzeichnen gemerkt und danach zurückgesetzt, falls
+  // etwas anderes (Browser, Home Assistant) die Position verschoben hat (1.3.1).
+  _scrollSnapshot() {
+    const out = [];
+    try {
+      let node = this;
+      while (node) {
+        if (node.nodeType === 1 && node.scrollTop > 0) out.push({ el: node, top: node.scrollTop, left: node.scrollLeft });
+        node = node.assignedSlot || node.parentNode || node.host || null;
+      }
+      const root = document.scrollingElement;
+      if (root && !out.some((s) => s.el === root) && root.scrollTop > 0) {
+        out.push({ el: root, top: root.scrollTop, left: root.scrollLeft });
+      }
+    } catch (_e) {
+      /* ohne Schutz weiterzeichnen */
+    }
+    return out;
+  }
+
+  _restoreScroll(snapshot) {
+    for (const s of snapshot || []) {
+      try {
+        if (Math.abs(s.el.scrollTop - s.top) > 1) s.el.scrollTop = s.top;
+        if (Math.abs(s.el.scrollLeft - s.left) > 1) s.el.scrollLeft = s.left;
+      } catch (_e) {
+        /* Element nicht mehr vorhanden */
+      }
     }
   }
 
   _render() {
     if (!this._config || !this._built) return;
     const focus = this._captureFocus();
+    const scrollSnap = this._scrollSnapshot();
     const visible = this._visibleTabs();
     if (!visible.includes(this._tab)) this._tab = visible[0];
 
@@ -2090,6 +2133,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     }
 
     this._restoreFocus(focus);
+    this._restoreScroll(scrollSnap);
     this._renderPopup();
   }
 
@@ -4089,7 +4133,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       this._manualFocus = false;
       const manual = popup.querySelector(".manual-copy");
       if (manual) {
-        manual.focus();
+        manual.focus({ preventScroll: true });
         manual.select();
       }
     }
