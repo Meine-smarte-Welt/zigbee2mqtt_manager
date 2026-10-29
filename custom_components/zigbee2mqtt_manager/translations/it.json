@@ -1,0 +1,158 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zigbee2MQTT Manager",
+        "description": "Collega il manager alla tua istanza di Zigbee2MQTT, per impostazione predefinita tramite l'integrazione MQTT di Home Assistant. Facoltativo: un altro broker MQTT (campi qui sotto).",
+        "data": {
+          "base_topic": "Topic di base",
+          "low_battery_threshold": "Soglia per “batteria scarica” (%)",
+          "broker_host": "Broker MQTT esterno (indirizzo, facoltativo)",
+          "broker_port": "Porta del broker esterno",
+          "broker_username": "Nome utente (facoltativo)",
+          "broker_password": "Password (facoltativa)",
+          "broker_tls": "Connessione cifrata (TLS)"
+        },
+        "data_description": {
+          "base_topic": "Corrisponde a `mqtt.base_topic` nella configurazione di Zigbee2MQTT (predefinito: zigbee2mqtt).",
+          "broker_host": "Lascia vuoto se Zigbee2MQTT usa il broker MQTT di Home Assistant. Altrimenti inserisci l'indirizzo del broker, ad es. di una seconda sede raggiunta tramite VPN. Sperimentale, testato solo in parte."
+        }
+      },
+      "reconfigure": {
+        "title": "Cambia il topic di base",
+        "data": {
+          "base_topic": "Topic di base",
+          "broker_host": "Broker MQTT esterno (indirizzo, facoltativo)",
+          "broker_port": "Porta del broker esterno",
+          "broker_username": "Nome utente (facoltativo)",
+          "broker_password": "Password (facoltativa)",
+          "broker_tls": "Connessione cifrata (TLS)"
+        },
+        "data_description": {
+          "base_topic": "Deve corrispondere a `mqtt.base_topic` in Zigbee2MQTT.",
+          "broker_host": "Lascia vuoto se Zigbee2MQTT usa il broker MQTT di Home Assistant. Altrimenti inserisci l'indirizzo del broker, ad es. di una seconda sede raggiunta tramite VPN. Sperimentale, testato solo in parte."
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Topic di base non valido (vuoto o contenente # o +).",
+      "topic_overlap": "I topic di base di più istanze non devono essere annidati (ad es. “zigbee2mqtt” e “zigbee2mqtt/stick2”). Usane di separati, come “zigbee2mqtt” e “zigbee2mqtt2”.",
+      "broker_unreachable": "Il broker MQTT esterno non è raggiungibile o rifiuta la connessione."
+    },
+    "abort": {
+      "already_configured": "Esiste già una voce per questo topic di base.",
+      "mqtt_unavailable": "L'integrazione MQTT non è configurata o non è connessa.",
+      "reconfigure_successful": "Il topic di base è stato cambiato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Zigbee2MQTT Manager – impostazioni",
+        "description": "Versione installata: **{version}**\n\nTopic di base di questa istanza: **{base_topic}**\n\n{update_info}",
+        "data": {
+          "low_battery_threshold": "Soglia per “batteria scarica” (%)",
+          "critical_battery_threshold": "Soglia per “batteria critica” (%)",
+          "fire_events": "Genera eventi di Home Assistant",
+          "nc_enabled": "Invia notifiche al Notification Center",
+          "nc_types": "Tipi di notifica",
+          "stale_hours": "“Nessun segnale” dopo (ore)",
+          "lost_days": "“Perso” dopo (giorni)",
+          "problem_include_updates": "Gli aggiornamenti contano come problema",
+          "problem_include_stale": "“Nessun segnale” conta come problema",
+          "sidebar_panel": "Voce nella barra laterale",
+          "sidebar_title": "Nome nella barra laterale",
+          "network_url": "Indirizzo della mappa di rete (facoltativo)"
+        },
+        "data_description": {
+          "critical_battery_threshold": "Deve essere minore o uguale alla soglia di “batteria scarica”.",
+          "fire_events": "Genera ad es. zigbee2mqtt_manager_device_offline, _battery_low e _update_available – utilizzabili come trigger nelle automazioni.",
+          "nc_enabled": "Ha effetto solo se è installata l'integrazione “Notification Center”. L'interruttore principale attiva o disattiva tutte le notifiche di questo manager.",
+          "nc_types": "Scegli quali notifiche vengono inviate. L'elenco è ordinato per urgenza, prima quelle critiche.",
+          "stale_hours": "Ore senza messaggi dopo le quali un dispositivo conta come “nessun segnale” (0 = disattivato). I dispositivi che Zigbee2MQTT segnala già come offline sono contati tra gli offline.",
+          "lost_days": "Giorni senza messaggi dopo i quali un dispositivo conta come perso ed è trattato come offline (0 = disattivato). Utile quando Zigbee2MQTT non segnala la disponibilità e un dispositivo continua a mostrare gli ultimi valori. Per singoli dispositivi si disattiva con “Ignora lo stato offline”.",
+          "problem_include_updates": "Il sensore “Problema” si attiva anche quando è disponibile un aggiornamento firmware.",
+          "problem_include_stale": "Il sensore “Problema” si attiva anche quando un dispositivo tace più a lungo del tempo impostato. Attenzione ai dispositivi che trasmettono di rado.",
+          "sidebar_panel": "Mostra la scheda come pagina a sé nella barra laterale (solo amministratori), così non serve costruire una plancia.",
+          "sidebar_title": "Etichetta della voce nella barra laterale (predefinita: “Zigbee2MQTT Manager”). Utile se lì c'è anche l'app Z2M con la stessa icona. Ha effetto subito.",
+          "network_url": "Dove porta il pulsante “Rete”, ad es. la mappa di rete della tua interfaccia di Zigbee2MQTT (http://… o un percorso come /hassio/ingress/…). Lascia vuoto per usare l'indirizzo dalla configurazione di Z2M o dall'app Zigbee2MQTT nella barra laterale."
+        }
+      }
+    },
+    "error": {
+      "critical_above_low": "La soglia critica non deve superare la soglia di “batteria scarica”.",
+      "invalid_url": "Indirizzo non valido. Sono consentiti http://, https:// o un percorso che inizia con / (senza spazi)."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "devices": {
+        "name": "Dispositivi"
+      },
+      "offline": {
+        "name": "Dispositivi offline"
+      },
+      "low_battery": {
+        "name": "Dispositivi con batteria scarica"
+      },
+      "critical_battery": {
+        "name": "Dispositivi con batteria critica"
+      },
+      "disabled": {
+        "name": "Dispositivi disattivati"
+      },
+      "updates_available": {
+        "name": "Aggiornamenti firmware disponibili"
+      },
+      "groups": {
+        "name": "Gruppi"
+      },
+      "missing": {
+        "name": "Dispositivi mancanti"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problema"
+      }
+    }
+  },
+  "services": {
+    "permit_join": {
+      "name": "Gestisci l'abbinamento",
+      "description": "Avvia o interrompe la modalità di abbinamento sul bridge Zigbee2MQTT.",
+      "fields": {
+        "entry_id": {
+          "name": "ID della voce",
+          "description": "Serve solo con più istanze."
+        },
+        "enabled": {
+          "name": "Attivo",
+          "description": "Attiva o disattiva l'abbinamento."
+        },
+        "duration": {
+          "name": "Durata",
+          "description": "Durata in secondi (10–254)."
+        },
+        "base_topic": {
+          "name": "Topic di base",
+          "description": "Serve solo con più istanze. In alternativa all'ID della voce."
+        }
+      }
+    },
+    "check_updates": {
+      "name": "Cerca aggiornamenti firmware",
+      "description": "Verifica in background gli aggiornamenti di tutti i dispositivi che supportano OTA.",
+      "fields": {
+        "entry_id": {
+          "name": "ID della voce",
+          "description": "Serve solo con più istanze."
+        },
+        "base_topic": {
+          "name": "Topic di base",
+          "description": "Serve solo con più istanze. In alternativa all'ID della voce."
+        }
+      }
+    }
+  }
+}

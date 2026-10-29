@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): c12569eb7d7b2728cb378de4fad12d5f4e2f3113bdcd1f5374918dfd311a6d70
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): eed82d9c6c0eb6718474bb888b341a2732944836d6bcf82cb4fc91252c77a9ce
 """Brücke zum optionalen Notification Center (Schnittstelle Schema 1).
 
 Identisch in allen Integrationen. Nur aus dem Event-Loop aufrufen.
@@ -21,7 +21,7 @@ EVENT_REGISTER = "notification_center_register"
 EVENT_SYNC = "notification_center_sync"
 EVENT_PING = "notification_center_ping"
 SEVERITIES = ("critical", "warning", "info", "ok")
-LANGUAGES = ("de", "en", "nl", "fr", "es", "ro")
+LANGUAGES = ("de", "en", "nl", "fr", "es", "ro", "it")
 OPT_ENABLED = "nc_enabled"
 OPT_TYPES = "nc_types"
 
