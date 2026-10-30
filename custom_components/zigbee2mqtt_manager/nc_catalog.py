@@ -61,6 +61,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "Zigbee2MQTT ({bridge}) este offline",
                 "message": "Zigbee2MQTT ({bridge}) nu este accesibil.",
             },
+            "sr-Latn": {
+                "label": "Bridge nije na mreži",
+                "title": "Zigbee2MQTT ({bridge}) nije na mreži",
+                "message": "Zigbee2MQTT ({bridge}) nije dostupan.",
+            },
+            "sr": {
+                "label": "Бриџ није на мрежи",
+                "title": "Zigbee2MQTT ({bridge}) није на мрежи",
+                "message": "Zigbee2MQTT ({bridge}) није доступан.",
+            },  
         },
     },
     {
@@ -99,6 +109,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "label": "Baterie critică",
                 "title": "{name}: baterie critică",
                 "message": "{name} mai are doar {battery} % baterie. Înlocuiește-o curând.",
+            },
+            "sr-Latn": {
+                "label": "Kritičan nivo baterije",
+                "title": "{name}: kritičan nivo baterije",
+                "message": "Baterija uređaja {name} je na samo {battery} %. Molimo vas da je uskoro zamenite.",
+            },
+            "sr": {
+                "label": "Критичан ниво батерије",
+                "title": "{name}: критичан ниво батерије",
+                "message": "Батерија уређаја {name} је на само {battery} %. Молимо вас да је ускоро замените.",
             },
         },
     },
@@ -139,6 +159,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name} este offline",
                 "message": "{name} nu este accesibil.",
             },
+            "sr-Latn": {
+                "label": "Uređaj van mreže",
+                "title": "{name} je van mreže",
+                "message": "{name} nije dostupan.",
+            },
+            "sr": {
+                "label": "Уређај ван мреже",
+                "title": "{name} је ван мреже",
+                "message": "{name} није доступан.",
+            },            
         },
     },
     {
@@ -178,6 +208,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name} lipsește din Zigbee2MQTT",
                 "message": "{name} a dispărut din lista de dispozitive Zigbee2MQTT.",
             },
+            "sr-Latn": {
+                "label": "Uređaj nedostaje u Zigbee2MQTT",
+                "title": "{name} nedostaje u Zigbee2MQTT",
+                "message": "{name} je nestao sa liste uređaja u Zigbee2MQTT.",
+            },
+            "sr": {
+                "label": "Уређај недостаје у Zigbee2MQTT",
+                "title": "{name} недостаје у Zigbee2MQTT",
+                "message": "{name} је нестао са листе уређаја у Zigbee2MQTT.",
+            },            
         },
     },
     {
@@ -217,6 +257,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name}: baterie slabă",
                 "message": "{name} mai are {battery} % baterie.",
             },
+            "sr-Latn": {
+                "label": "Slaba baterija",
+                "title": "{name}: slaba baterija",
+                "message": "Baterija uređaja {name} je na {battery} %.",
+            },
+            "sr": {
+                "label": "Слаба батерија",
+                "title": "{name}: слаба батерија",
+                "message": "Батерија уређаја {name} је на {battery} %.",
+            },            
         },
     },
     {
@@ -256,6 +306,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name}: actualizare de firmware disponibilă",
                 "message": "Este disponibilă o actualizare de firmware pentru {name}.",
             },
+            "sr-Latn": {
+                "label": "Dostupno ažuriranje firmvera",
+                "title": "{name}: dostupno ažuriranje firmvera",
+                "message": "Dostupno je ažuriranje firmvera za {name}.",
+            },
+            "sr": {
+                "label": "Доступно ажурирање фирмвера",
+                "title": "{name}: доступно ажурирање фирмвера",
+                "message": "Доступно је ажурирање фирмвера за {name}.",
+            },            
         },
     },
     {
@@ -295,6 +355,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "Dispozitiv nou: {name}",
                 "message": "{name} s-a alăturat rețelei Zigbee.",
             },
+            "sr-Latn": {
+                "label": "Novi uređaj",
+                "title": "Novi uređaj: {name}",
+                "message": "{name} se pridružio Zigbee mreži.",
+            },
+            "sr": {
+                "label": "Нови уређај",
+                "title": "Нови уређај: {name}",
+                "message": "{name} се придружио Zigbee мрежи.",
+            },            
         },
     },
     {
@@ -334,6 +404,16 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name} a părăsit rețeaua",
                 "message": "{name} a părăsit rețeaua Zigbee.",
             },
+            "sr-Latn": {
+                "label": "Uređaj je napustio mrežu",
+                "title": "{name} je napustio mrežu",
+                "message": "{name} je napustio Zigbee mrežu.",
+            },
+            "sr": {
+                "label": "Уређај је напустио мрежу",
+                "title": "{name} је напустио мрежу",
+                "message": "{name} је напустио Zigbee мрежу.",
+            },            
         },
     },
 ]
