@@ -21,7 +21,7 @@ EVENT_REGISTER = "notification_center_register"
 EVENT_SYNC = "notification_center_sync"
 EVENT_PING = "notification_center_ping"
 SEVERITIES = ("critical", "warning", "info", "ok")
-LANGUAGES = ("de", "en", "nl", "fr", "es", "ro")
+LANGUAGES = ("de", "en", "nl", "fr", "es", "ro", "sr-Latn", "sr" )
 OPT_ENABLED = "nc_enabled"
 OPT_TYPES = "nc_types"
 
