@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 47ab99a47befe47106de883a489040d882241f1e89042cb7746f9dc16ab275e3
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 21c5a67fbea7291c7ce3a659ea6b6ebc0afec4c283b018212745219bba09bffc
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -321,6 +321,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "nl": f"⚠️ Nieuwe versie beschikbaar: **{latest}** – {link}",
                 "fr": f"⚠️ Nouvelle version disponible : **{latest}** – {link}",
                 "es": f"⚠️ Nueva versión disponible: **{latest}** – {link}",
+                "it": f"⚠️ Nuova versione disponibile: **{latest}** – {link}",
                 "sr": f"⚠️ Доступна је нова верзија: **{latest}** – {link}",
                 "sr-Latn": f"⚠️ Dostupna je nova verzija: **{latest}** – {link}",
             }.get(lang, f"⚠️ New version available: **{latest}** – {link}")
@@ -330,6 +331,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "nl": "✅ Actueel",
                 "fr": "✅ À jour",
                 "es": "✅ Actualizado",
+                "it": "✅ Aggiornato",
                 "sr": "✅ Ажурно",
                 "sr-Latn": "✅ Ažurno",
             }.get(lang, "✅ Up to date")
