@@ -1,5 +1,5 @@
-| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | 🇫🇷<br>**Français** | [🇪🇸<br>**Español**](README.es.md) | [🇷🇸<br>**Српски**](README.sr.md) |
-|:-:|:-:|:-:|:-:|:-:|:-:|
+| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | 🇫🇷<br>**Français** | [🇪🇸<br>**Español**](README.es.md) | [🇮🇹<br>**Italiano**](README.it.md) | [🇷🇸<br>**Српски**](README.sr.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 
 ![Zigbee2MQTT Manager – bannière](docs/images/zigbee2mqtt_manager.webp)
 
@@ -12,6 +12,7 @@ Gérer Zigbee2MQTT sans quitter Home Assistant : appareils, batteries, mises à 
 ## Sommaire
 
 - [Fonctionnalités](#fonctionnalités)
+- [Nouveau dans la 1.4.0](#nouveau-dans-la-140)
 - [Nouveau dans la 1.3.0](#nouveau-dans-la-130)
 - [Nouveau dans la 1.2.1](#nouveau-dans-la-121)
 - [Captures d'écran](#captures-décran)
@@ -69,6 +70,17 @@ Autres points :
 - **Zoom :** `zoom` met toute la carte à l'échelle.
 - **Langues :** allemand, anglais, néerlandais, français et espagnol (selon la langue de Home Assistant).
 - **Téléchargement de diagnostic** avec noms et adresses IEEE anonymisés.
+
+## Nouveau dans la 1.4.0
+
+> **État des tests :** Vérifié avec des programmes de test (backend Python dans un vrai environnement de test Home Assistant) et dans Chrome (headless) avec des données produites par le backend. **Pas** sur du matériel réel, pas dans une installation Home Assistant en fonctionnement, pas dans l'application compagnon (voir [Limitations connues](#limitations-connues)).
+
+- **Fonctions expérimentales (nouveau) :** Les nouvelles fonctions sont désormais d'abord **expérimentales** et **masquées par défaut**. Trois niveaux : (1) l'**interrupteur principal** *Fonctions expérimentales* sous **Configurer** (par défaut : désactivé), (2) la clé de carte `show_experimental` (par défaut : désactivée ; dans l'éditeur sous **Expérimental** ; le panneau latéral l'active toujours), (3) un **interrupteur par fonction** dans la carte sous **Bridge → Expérimental** (par défaut : désactivé). Si l'un des trois est désactivé, rien ne change par rapport à la 1.3.1. La liste des fonctions figure dans `EXPERIMENTELL.md`.
+- **Définir directement des valeurs numériques (issue #26, expérimental `expose_numeric_edit`) :** Dans la fenêtre, sous **Fonctions (expose)**, les nombres modifiables obtiennent un champ avec un bouton **Définir** (Entrée fonctionne aussi). Min, max et pas viennent de Zigbee2MQTT ; le backend revérifie nombre, plage et pas. Administrateurs uniquement, pas en lecture seule ; les fonctions imbriquées (p. ex. la couleur) sont exclues.
+- **Liste des appareils sur plusieurs colonnes (issue #24, expérimental `list_columns`) :** Nouvelle clé `list_columns` (`auto`, `1`, `2`, `3`, `4` ; par défaut `auto`), active seulement si la fonction est activée. Le nombre de colonnes suit la **largeur de la carte** : 2 colonnes dès 640 px, 3 dès 960 px. Vaut aussi pour les listes groupées.
+- **Italien (merci à Salvatore Scalzi, PR #25) :** Nouvelle langue `it` pour l'intégration, la carte et le Notification Center. Le README italien est abrégé. Les textes des nouvelles fonctions ont été ajoutés par moi sans locuteur natif.
+- **Serbe, textes du Notification Center et noms d'entités (merci à Brano, PR #28) :** `sr` et `sr-Latn` dans le Notification Center, noms d'entités corrigés (hors ligne). La partie « carte » de la pull request n'a pas été reprise car elle ne concernait que le fichier obsolète `frontend/zigbee2mqtt-manager-card.js`.
+- **1.3.1 → 1.4.0 est entièrement rétrocompatible :** rien n'a été supprimé ni renommé.
 
 ## Nouveau dans la 1.3.0
 
@@ -306,6 +318,7 @@ Toutes les actions en écriture (renommer, options, commuter des fonctions, supp
 - **Nouveau dans la 1.2.1, état des tests :** bouton réseau, liens d'entité et d'appareil, appareils absents grisés et boîte de dialogue du nom ont été vérifiés avec des données simulées, **pas sur du matériel réel ni sur une vraie installation Home Assistant**. La carte serbe n'est que partiellement traduite.
 - **État des tests 1.3.0 :** Ont été testés le traitement de la carte du réseau (lecture des nœuds et liaisons, construction de l'arbre, réponses défectueuses) avec un programme de test, et la carte dans un navigateur headless (Chromium) avec des données simulées (10 routeurs, 40 appareils terminaux, un routeur sans connexion) : tous les onglets, la fenêtre de l'appareil avec l'interrupteur, les accordéons, la confirmation en deux clics, l'état de chargement et le mode lecture seule dans les sept langues. **Non testé :** sur du matériel réel et avec la vraie réponse de Zigbee2MQTT (format, durée, charge du réseau), avec de très grands réseaux, dans l'application compagnon iOS/Android. La partie Python (demande de la carte du réseau, stockage, ignorer hors ligne, configuration, **broker externe**, **vérification des mises à jour Z2M**) n'a été contrôlée qu'avec `py_compile` et `pyflakes` (erreurs de syntaxe, noms inconnus) et **n'a pas été exécutée dans Home Assistant** ; il en va de même pour la partie Notification Center de l'interrupteur. Le dessin du réseau est une approximation des routes réelles. La carte serbe n'est traduite que partiellement. Également testé : l'icône du titre (activée/désactivée, fichier image défectueux, titre vide ou masqué, titre avec caractères spéciaux) et l'éditeur de carte dans toutes les langues ont été vérifiés dans un navigateur headless ; l'éditeur dans une vraie installation Home Assistant (vrai `ha-form`) n'est **pas** testé. Également testé dans un navigateur headless avec des données simulées : le glissement de la carte du réseau à la souris (horizontal et vertical, clic supprimé après le glissement, un clic normal ouvre la fenêtre), la description dans la liste et la fenêtre (aussi avec un ancien `show_comment: false` dans la configuration), l'éditeur de carte et tous les onglets dans les huit variantes de langue. **Non testé :** la boîte de dialogue des options avec curseur et champ de saisie dans Home Assistant, le glissement sur de vrais appareils et au toucher, et la lecture de la description depuis `bridge/devices` avec un vrai Zigbee2MQTT.
 - **État des tests 1.3.1 :** Dans Chromium, le saut de la liste n'a pu être reproduit qu'en faisant défiler `focus()` comme dans Firefox/Safari (la 1.3.0 sautait, la 1.3.1 non). Ce n'est **pas testé** dans Firefox, Safari, l'application compagnon ni sur une vraie installation Home Assistant avec 97 appareils. Vos retours sont les bienvenus (indiquez le navigateur ou l'application).
+- **État des tests 1.4.0 :** Backend avec 50 cas de test dans un vrai environnement de test Home Assistant ; carte dans Chrome (headless) : les sept onglets, la fenêtre, les neuf variantes de langue, le nombre de colonnes à sept largeurs, le champ numérique, l'éditeur, sans erreur JavaScript. **Non vérifié :** matériel réel, installation Home Assistant en fonctionnement, Firefox, Safari, application compagnon. **L'italien et le serbe** ne sont **pas vérifiés par des locuteurs natifs**.
 
 ## Dépannage
 
@@ -327,6 +340,7 @@ Toutes les actions en écriture (renommer, options, commuter des fonctions, supp
 
 | Version | Modifications |
 |---|---|
+| **1.4.0** | Nouveau (expérimental, désactivé par défaut) : définir les **valeurs numériques** des fonctions modifiables dans la fenêtre (issue #26) et **liste des appareils sur plusieurs colonnes** (issue #24) ; interrupteur principal, clé `show_experimental` et interrupteur par fonction (voir `EXPERIMENTELL.md`). Nouveau : langue **italien** (PR #25, Salvatore Scalzi), **serbe** dans le Notification Center (PR #28, Brano). |
 | **1.3.1** | Corrigé : la **liste des appareils remontait sans cesse en haut pendant le défilement** (peu utilisable avec 97 appareils). Cause supposée : à chaque redessin, la carte redonnait le focus au dernier champ utilisé (recherche, tri, regroupement, filtre) avec `focus()` ; Firefox, Safari et l'application compagnon font alors défiler ce champ dans la vue, donc vers le haut. Un champ qui a encore le focus n'est désormais plus touché, un champ remplacé retrouve le focus sans défilement, et la carte rétablit la position de défilement après chaque redessin. |
 | **1.3.0** | Nouveau : **carte du réseau** dans la catégorie Réseau (coordinateur, routeurs et nuages d'appareils terminaux en dessin, en dessous un accordéon par routeur avec les connexions ; lecture via « Relire le réseau »), avec **zoom** (barre de zoom, geste à deux doigts, Ctrl + molette) et **déplacement en maintenant le bouton de la souris** dans toutes les directions. Nouveau : la **description** de Zigbee2MQTT dans la liste des appareils et en haut de la fenêtre de l'appareil (issue #16 ; option de carte désormais `show_description`, le texte du fabricant s'appelle **Description du produit**). Nouveau : **champs numériques dans la boîte de dialogue des options avec un champ de saisie à côté du curseur** (issue #17) ; `max_rows` et `zoom` sont des champs de saisie dans l'éditeur de carte. Nouveau : **appareils perdus** (aucun message depuis des jours) considérés hors ligne, réglage « Perdu » après (jours). Nouveau : **ignorer l'état hors ligne** par appareil (issue #15). Nouveau : **broker MQTT externe** en option (issue #14, expérimental). Nouveau : **vérification des mises à jour de Zigbee2MQTT avec avis et notification** (PR #18, @seebaer1976). Nouveau : **icône de l'intégration à côté du titre de la carte** (`show_title_icon`). Nouveau : **éditeur de carte en plusieurs langues** (issue #22). Nouveau : langue **roumain** (PR #21, merci à @robex2005). Les issues #12 et #13 étaient déjà corrigées en 1.2.2. |
 | **1.2.2** | Nouveau : catégorie **Réseau** dans la barre de la carte (explique comment saisir l'adresse de la carte du réseau, `show_network`). Corrigé : avec la langue Home Assistant **serbe (latin, `sr-Latn`)**, la carte, le message de bienvenue et l'avis de version s'affichaient en cyrillique car seule la partie « sr » était évaluée ; il existe maintenant un bloc de textes latin. |
@@ -343,17 +357,18 @@ Chaque fichier `.py`, `.js` et `.yaml` porte en première ligne un hash SHA-256 
 
 | Fichier | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `c8d664a526850e818abf38b028d155e9022e261b0cee9d05145dab6f8020cf14` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `3921c4b01e2e3fca583882d3a883c2019214047581868faee897b7e3307a3825` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `fdddc3a81a622d97b76ea750053325adfce990efefe2bef3a65c6dcfc3f745d7` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `3921c4b01e2e3fca583882d3a883c2019214047581868faee897b7e3307a3825` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `8dcea0ab3f34b5a2226f25a3e1d91a44423dc5f0f35e1ab0565e96abcbba7312` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `8db26c0986d9d9e9a5065333ef30df75ba9118f344888ec45d11a505841fd4a3` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `3986ca1dc4a18b2a0d0b8a00c64b6db82c287d1065a5c772030fc92b3db4ce97` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `29a6c7348566e15615e4255967b2b2997996c456cd933311f22c6d63faf9454e` |
-| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `f61a2804048df76e6b02959a4e4ffa055873c873f7619d71fd442cb856ef49ef` |
-| `custom_components/zigbee2mqtt_manager/translations/ro.json` | `c784629c98cdd1be67b9d9385c5d8a059bd7a78aaacba28ab728784930c4add2` |
-| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `3f9409ca40f49be3f353d8eac7c2945cf3b6c42994557ef85e06d14a337934a1` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `156ed4810d8669cf7902636b448d67324f0bb62c5fc126e4d8fa31abf7c8447c` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `9e43b07849b258ef69c4b3f82c2d4998c1c95ef4c85932d1621cfefcf8a21762` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `71149bccf71eb7dc0f76c7e5c5f8b481fff648788df480919e54378d29d758f0` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `b9de6d40aa8a6d9c905843f26e332055584c14dde4e98b27cb8caa8bf2898166` |
+| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `53a6c405a41276e4215524df283f8c296290c67563c5748c1989f058432f007a` |
+| `custom_components/zigbee2mqtt_manager/translations/ro.json` | `d01f64e5b3e368d0fe8a684cf22279159d851a58ef72d484da487bd045dc6582` |
+| `custom_components/zigbee2mqtt_manager/translations/it.json` | `8983ec8962217c1985769261a9c3e64cb2842b005c9045613e44c918cbe5ec38` |
+| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `6d156b4dee22f211910aad8e591bfe62952337d5e4b2e470a79617db234a31e7` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Licence

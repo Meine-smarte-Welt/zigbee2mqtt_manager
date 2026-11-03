@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8206397fc77af33759b326ec6e9b5823ae4cc766badc620e02521f4d0bd9d02b
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8f1c806b9fa4dce3e87d0915ac1b63586f9c5269daff81d682c14789f4cabd2c
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import re
 from collections import deque
 from collections.abc import Callable
@@ -26,6 +27,8 @@ from .const import (
     APP_UPDATE_CHECK_INTERVAL,
     CONF_BASE_TOPIC,
     CONF_CRITICAL_BATTERY,
+    CONF_EXPERIMENTAL,
+    CONF_EXPERIMENTAL_FEATURES,
     CONF_FIRE_EVENTS,
     CONF_LOW_BATTERY,
     CONF_NETWORK_URL,
@@ -52,6 +55,9 @@ from .const import (
     EVENT_DEVICE_ONLINE,
     EVENT_UPDATE_AVAILABLE,
     EXPECTED_GONE_SECONDS,
+    EXPERIMENTAL_FEATURES,
+    EXPERIMENTAL_KEYS,
+    FEATURE_NUMERIC_EDIT,
     FLUSH_DELAY,
     GITHUB_RELEASES_URL,
     Z2M_GITHUB_RELEASES_URL,
@@ -172,6 +178,31 @@ def _state_value(state: dict[str, Any], path: tuple[str, ...]) -> tuple[bool, An
     return True, node
 
 
+def _checked_number(row: dict[str, Any], value: Any) -> int | float:
+    """Zahlenwert einer Funktion prüfen (experimentell): Typ, Bereich, Schrittweite."""
+    prop = row.get("property")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"Ungültiger Wert für '{prop}': eine Zahl ist erforderlich")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"Ungültiger Wert für '{prop}': keine endliche Zahl")
+    low, high, step = row.get("min"), row.get("max"), row.get("step")
+    nums = [x for x in (low, high, step) if x is not None]
+    if any(isinstance(x, bool) or not isinstance(x, (int, float)) for x in nums):
+        raise ValueError(f"Die Funktion '{prop}' hat einen ungültigen Wertebereich")
+    if low is not None and number < low:
+        raise ValueError(f"Wert für '{prop}' unter dem Minimum ({low})")
+    if high is not None and number > high:
+        raise ValueError(f"Wert für '{prop}' über dem Maximum ({high})")
+    if step:
+        base = low if low is not None else 0
+        n = (number - base) / step
+        if abs(n - round(n)) > 1e-6:
+            raise ValueError(f"Wert für '{prop}' passt nicht zur Schrittweite ({step})")
+    # Ganze Zahlen als Ganzzahl senden (3.0 -> 3), sonst bleibt die Kommazahl erhalten
+    return int(number) if number.is_integer() else number
+
+
 def _flatten_exposes(
     exposes: Any,
     state: dict[str, Any],
@@ -180,8 +211,13 @@ def _flatten_exposes(
     endpoint: str | None = None,
     out: list[dict[str, Any]] | None = None,
     depth: int = 0,
+    numeric_edit: bool = False,
 ) -> list[dict[str, Any]]:
-    """Expose-Baum eines Geräts als flache Liste inkl. aktueller Werte."""
+    """Expose-Baum eines Geräts als flache Liste inkl. aktueller Werte.
+
+    numeric_edit: experimentelle Funktion "Zahlenwerte bearbeiten" ist eingeschaltet;
+    nur dann gelten schreibbare Zahlenfunktionen auf oberster Ebene als bearbeitbar.
+    """
     rows: list[dict[str, Any]] = out if out is not None else []
     if not isinstance(exposes, list) or depth > _EXPOSE_MAX_DEPTH:
         return rows
@@ -196,7 +232,7 @@ def _flatten_exposes(
 
         if kind in _EXPOSE_GROUP_TYPES and isinstance(features, list):
             _flatten_exposes(
-                features, state, path, kind, own_endpoint, rows, depth + 1
+                features, state, path, kind, own_endpoint, rows, depth + 1, numeric_edit
             )
             continue
         if kind == "composite" and isinstance(features, list):
@@ -204,7 +240,7 @@ def _flatten_exposes(
             sub_path = path + (prop,) if prop else path
             label = expose.get("label") or expose.get("name") or prop or group
             _flatten_exposes(
-                features, state, sub_path, label, own_endpoint, rows, depth + 1
+                features, state, sub_path, label, own_endpoint, rows, depth + 1, numeric_edit
             )
             continue
 
@@ -223,6 +259,8 @@ def _flatten_exposes(
             # Schalter: Ja/Nein-Funktion mit Schreibzugriff auf oberster Ebene (nicht in einem
             # zusammengesetzten Objekt). Nur diese lassen sich in der Karte direkt umlegen.
             "switchable": kind == "binary" and bool(access & 2) and not path,
+            # Zahlenfunktion mit Schreibzugriff auf oberster Ebene (experimentell, siehe EXPERIMENTELL.md)
+            "settable": numeric_edit and kind == "numeric" and bool(access & 2) and not path,
             "unit": expose.get("unit"),
             "description": expose.get("description"),
             "category": expose.get("category"),
@@ -1256,6 +1294,7 @@ class Z2MManager:
             "app": dict(self.app),
             "z2m": dict(self.z2m),
             "nc": self.nc.snapshot(),
+            "experimental": self._experimental_snapshot(),
             "events": list(self._events),
             "groups": groups,
             "devices": devices,
@@ -1332,7 +1371,7 @@ class Z2MManager:
     @staticmethod
     def _core_of(options: Any) -> dict[str, Any]:
         return {
-            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES, CONF_SIDEBAR_PANEL, CONF_SIDEBAR_TITLE)
+            k: v for k, v in dict(options).items() if k not in (NC_OPT_ENABLED, NC_OPT_TYPES, CONF_SIDEBAR_PANEL, CONF_SIDEBAR_TITLE, CONF_EXPERIMENTAL, CONF_EXPERIMENTAL_FEATURES)
         }
 
     def core_options_changed(self) -> bool:
@@ -1512,6 +1551,47 @@ class Z2MManager:
         self._nc_write_options(None, {nc_type: enabled})
 
     # ------------------------------------------------------------------
+    # Experimentelle Funktionen (ungeprüft, standardmäßig aus, siehe EXPERIMENTELL.md)
+    # ------------------------------------------------------------------
+    @property
+    def experimental_enabled(self) -> bool:
+        """Hauptschalter (Optionen-Dialog). Aus = Backend still, Karte zeigt nichts davon."""
+        return self.entry.options.get(CONF_EXPERIMENTAL) is True
+
+    def experimental_active(self, key: str) -> bool:
+        """True, wenn der Hauptschalter und der Schalter dieser Funktion eingeschaltet sind."""
+        if key not in EXPERIMENTAL_KEYS or not self.experimental_enabled:
+            return False
+        chosen = self.entry.options.get(CONF_EXPERIMENTAL_FEATURES)
+        return isinstance(chosen, dict) and chosen.get(key) is True
+
+    def _experimental_snapshot(self) -> dict[str, Any]:
+        """Für die Karte: Hauptschalter und (nur wenn an) die Funktionen mit Schalterstand."""
+        if not self.experimental_enabled:
+            return {"enabled": False, "features": []}
+        return {
+            "enabled": True,
+            "features": [
+                {**f, "enabled": self.experimental_active(f["key"])}
+                for f in EXPERIMENTAL_FEATURES
+            ],
+        }
+
+    async def async_experimental_set_feature(self, feature: Any, enabled: Any) -> None:
+        if feature not in EXPERIMENTAL_KEYS:
+            raise ValueError(f"Unbekannte experimentelle Funktion: {feature}")
+        if not isinstance(enabled, bool):
+            raise ValueError("Ungültiger Wert für die experimentelle Funktion")
+        if not self.experimental_enabled:
+            raise ValueError("Experimentelle Funktionen sind nicht aktiviert")
+        options = dict(self.entry.options)
+        current = options.get(CONF_EXPERIMENTAL_FEATURES)
+        merged = dict(current) if isinstance(current, dict) else {}
+        merged[feature] = enabled
+        options[CONF_EXPERIMENTAL_FEATURES] = merged
+        self.hass.config_entries.async_update_entry(self.entry, options=options)
+
+    # ------------------------------------------------------------------
     # Details auf Anforderung (Optionen-Schema, Entitäten)
     # ------------------------------------------------------------------
     def _options_schema(self, ieee: str | None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -1561,7 +1641,11 @@ class Z2MManager:
             raise ValueError(f"Unbekanntes Gerät: {ieee}")
         definition = meta.get("definition") or {}
         state = self._states.get(meta.get("friendly_name") or "", {})
-        return _flatten_exposes(definition.get("exposes"), state)
+        return _flatten_exposes(
+            definition.get("exposes"),
+            state,
+            numeric_edit=self.experimental_active(FEATURE_NUMERIC_EDIT),
+        )
 
     def device_details(self, ieee: str | None) -> dict[str, Any]:
         """Optionen-Schema + Expose-Funktionen + aktuelle Werte + HA-Entitäten."""
@@ -1730,11 +1814,13 @@ class Z2MManager:
         )
 
     async def async_set_expose(self, ieee: str | None, prop: Any, value: Any) -> None:
-        """Einen Schalter (binäre Funktion mit Schreibzugriff) eines Geräts umlegen.
+        """Eine Funktion eines Geräts setzen: Schalter (binär) oder, experimentell, Zahlenwert.
 
         Geprüft wird alles im Backend: Das Gerät muss bekannt sein, die Funktion muss
-        in seinen Expose-Funktionen stehen, ein schreibbarer Schalter auf oberster
-        Ebene sein, und der Wert muss genau der Ein- oder Aus-Wert dieser Funktion sein.
+        in seinen Expose-Funktionen stehen und auf oberster Ebene schreibbar sein.
+        Schalter: der Wert muss genau der Ein- oder Aus-Wert dieser Funktion sein.
+        Zahlen: nur mit eingeschalteter experimenteller Funktion; der Wert muss eine endliche
+        Zahl (kein Wahrheitswert) innerhalb von Minimum und Maximum und passend zur Schrittweite sein.
         """
         name = self._name_of(ieee)
         if not isinstance(prop, str) or not prop:
@@ -1742,12 +1828,19 @@ class Z2MManager:
         row = next((r for r in self._exposes_of(ieee) if r["property"] == prop), None)
         if row is None:
             raise ValueError(f"Unbekannte Funktion: {prop}")
-        if not row.get("switchable"):
-            raise ValueError(f"Die Funktion '{prop}' lässt sich nicht schalten")
-        value_on = True if row.get("value_on") is None else row["value_on"]
-        value_off = False if row.get("value_off") is None else row["value_off"]
-        if not (_same_value(value, value_on) or _same_value(value, value_off)):
-            raise ValueError(f"Ungültiger Wert für '{prop}'")
+        if row.get("type") == "numeric":
+            if not self.experimental_active(FEATURE_NUMERIC_EDIT):
+                raise ValueError("Experimentelle Funktion nicht aktiviert: Zahlenwerte bearbeiten")
+            if not row.get("settable"):
+                raise ValueError(f"Die Funktion '{prop}' lässt sich nicht ändern")
+            value = _checked_number(row, value)
+        else:
+            if not row.get("switchable"):
+                raise ValueError(f"Die Funktion '{prop}' lässt sich nicht schalten")
+            value_on = True if row.get("value_on") is None else row["value_on"]
+            value_off = False if row.get("value_off") is None else row["value_off"]
+            if not (_same_value(value, value_on) or _same_value(value, value_off)):
+                raise ValueError(f"Ungültiger Wert für '{prop}'")
         await self._transport.async_publish(
             f"{self.base_topic}/{name}/set", json.dumps({prop: value})
         )

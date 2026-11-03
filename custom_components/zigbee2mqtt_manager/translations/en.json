@@ -62,7 +62,8 @@
           "problem_include_stale": "“Not heard from” counts as a problem",
           "sidebar_panel": "Sidebar entry",
           "sidebar_title": "Sidebar name",
-          "network_url": "Network map address (optional)"
+          "network_url": "Network map address (optional)",
+          "experimental_enabled": "Show experimental features"
         },
         "data_description": {
           "critical_battery_threshold": "Must be less than or equal to the “low battery” threshold.",
@@ -75,7 +76,8 @@
           "problem_include_stale": "The “Problem” sensor also turns on when a device has been silent longer than the set time. Be careful with devices that rarely send.",
           "sidebar_panel": "Shows the card as its own page in the sidebar (administrators only), so no dashboard has to be built.",
           "sidebar_title": "Label of the sidebar entry (default: “Zigbee2MQTT Manager”). Handy if the Z2M app with the same icon is also listed there. Takes effect immediately.",
-          "network_url": "Where the “Network” button leads, e.g. the network map of your Zigbee2MQTT interface (http://… or a path like /hassio/ingress/…). Leave empty to use the address from the Z2M configuration or the Zigbee2MQTT sidebar app."
+          "network_url": "Where the “Network” button leads, e.g. the network map of your Zigbee2MQTT interface (http://… or a path like /hassio/ingress/…). Leave empty to use the address from the Z2M configuration or the Zigbee2MQTT sidebar app.",
+          "experimental_enabled": "Unlocks untested features (editing numeric values, multi-column device list). Off by default. Each feature is then switched on separately in the card under Settings → Experimental, and the card needs “Show experimental features” turned on."
         }
       }
     },

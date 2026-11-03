@@ -1,5 +1,5 @@
-| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | 🇳🇱<br>**Nederlands** | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | [🇷🇸<br>**Српски**](README.sr.md) |
-|:-:|:-:|:-:|:-:|:-:|:-:|
+| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | 🇳🇱<br>**Nederlands** | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | [🇮🇹<br>**Italiano**](README.it.md) | [🇷🇸<br>**Српски**](README.sr.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 
 ![Zigbee2MQTT Manager – banner](docs/images/zigbee2mqtt_manager.webp)
 
@@ -12,6 +12,7 @@ Beheer Zigbee2MQTT zonder Home Assistant te verlaten: apparaten, batterijen, fir
 ## Inhoud
 
 - [Functies](#functies)
+- [Nieuw in 1.4.0](#nieuw-in-140)
 - [Nieuw in 1.3.0](#nieuw-in-130)
 - [Nieuw in 1.2.1](#nieuw-in-121)
 - [Afbeeldingen](#afbeeldingen)
@@ -69,6 +70,17 @@ Verdere punten:
 - **Zoom:** `zoom` schaalt de hele kaart.
 - **Talen:** Duits, Engels, Nederlands, Frans en Spaans (volgens de taal van Home Assistant).
 - **Diagnose-download** met geanonimiseerde namen en IEEE-adressen.
+
+## Nieuw in 1.4.0
+
+> **Teststatus:** Gecontroleerd met testprogramma's (Python-backend in een echte Home Assistant-testomgeving) en in Chrome (headless) met gegevens die de backend zelf heeft gemaakt. **Niet** op echte hardware, niet in een draaiende Home Assistant-installatie, niet in de companion-app (zie [Bekende beperkingen](#bekende-beperkingen)).
+
+- **Experimentele functies (nieuw):** Nieuwe functies zijn voortaan eerst **experimenteel** en **standaard verborgen**. Drie niveaus: (1) de **hoofdschakelaar** *Experimentele functies* onder **Configureren** (standaard uit), (2) de kaartsleutel `show_experimental` (standaard uit; in de editor onder **Experimenteel**; het zijpaneel schakelt hem altijd in), (3) een **schakelaar per functie** in de kaart onder **Bridge → Experimenteel** (standaard uit). Staat een van de drie uit, dan verandert er niets ten opzichte van 1.3.1. De lijst met functies staat in `EXPERIMENTELL.md`.
+- **Getalwaarden direct instellen (issue #26, experimenteel `expose_numeric_edit`):** In de pop-up onder **Functies (expose)** krijgen schrijfbare getallen een invoerveld met knop **Instellen** (Enter werkt ook). Min, max en stap komen van Zigbee2MQTT; de backend controleert getal, bereik en stap opnieuw. Alleen beheerders, niet in de leesmodus; geneste functies (bijv. kleur) zijn uitgesloten.
+- **Apparatenlijst in meerdere kolommen (issue #24, experimenteel `list_columns`):** Nieuwe kaartsleutel `list_columns` (`auto`, `1`, `2`, `3`, `4`; standaard `auto`), alleen actief als de functie is ingeschakeld. Het aantal kolommen volgt de **breedte van de kaart**: 2 kolommen vanaf 640 px, 3 vanaf 960 px. Geldt ook voor gegroepeerde lijsten.
+- **Italiaans (dank aan Salvatore Scalzi, PR #25):** Nieuwe taal `it` voor integratie, kaart en Notification Center. De Italiaanse README is ingekort. De teksten van de nieuwe functies heb ik zonder moedertaalspreker toegevoegd.
+- **Servisch, Notification Center-teksten en entiteitsnamen (dank aan Brano, PR #28):** `sr` en `sr-Latn` in het Notification Center, gecorrigeerde entiteitsnamen (offline). Het kaartdeel van de pull request is niet overgenomen omdat het alleen het verouderde bestand `frontend/zigbee2mqtt-manager-card.js` betrof.
+- **1.3.1 → 1.4.0 is volledig achterwaarts compatibel:** er is niets verwijderd of hernoemd.
 
 ## Nieuw in 1.3.0
 
@@ -306,6 +318,7 @@ Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware,
 - **Nieuw in 1.2.1, teststatus:** netwerkknop, entiteits- en apparaatlinks, grijze ontbrekende apparaten en het naamdialoogvenster zijn getest met gesimuleerde gegevens, **niet op echte hardware of een echte Home Assistant-installatie**. De Servische kaart is maar gedeeltelijk vertaald.
 - **Teststand 1.3.0:** Getest zijn de verwerking van de netwerkkaart (knopen en verbindingen inlezen, boom opbouwen, defecte antwoorden) met een testprogramma en de kaart in een headless browser (Chromium) met gesimuleerde gegevens (10 routers, 40 eindapparaten, een router zonder verbinding): alle tabbladen, het apparaat-popup met de schakelaar, accordeons, bevestiging met twee klikken, laadtoestand en alleen-lezen-modus in alle zeven talen. **Niet getest:** op echte hardware en met het echte antwoord van Zigbee2MQTT (formaat, duur, belasting van het netwerk), met zeer grote netwerken, in de iOS-/Android-companion-app. Het Python-deel (opvragen van de netwerkkaart, opslag, offline negeren, installatie, **externe broker**, **Z2M-updatecontrole**) is alleen met `py_compile` en `pyflakes` op syntaxisfouten en onbekende namen gecontroleerd en **niet in Home Assistant uitgevoerd**; hetzelfde geldt voor het Notification-Center-deel van de schakelaar. De netwerktekening is een benadering van de echte routes. De Servische kaart is maar gedeeltelijk vertaald. Ook getest: het titelpictogram (aan/uit, kapot beeldbestand, lege of verborgen titel, titel met speciale tekens) en de kaarteditor in alle talen zijn in een headless browser getest; de editor in een echte Home Assistant-installatie (echt `ha-form`) is **niet** getest. Ook getest in een headless browser met gesimuleerde gegevens: het slepen van de netwerkkaart met de muis (horizontaal en verticaal, klik na het slepen onderdrukt, een gewone klik opent de popup), de beschrijving in lijst en popup (ook met een oude `show_comment: false` in de configuratie), de kaarteditor en alle tabbladen in alle acht taalvarianten. **Niet getest:** het optiesvenster met schuifregelaar en invoerveld in Home Assistant, slepen op echte apparaten en met touch, en het lezen van de beschrijving uit `bridge/devices` bij een echte Zigbee2MQTT.
 - **Teststand 1.3.1:** Het springen van de lijst kon in Chromium alleen worden nagebootst door `focus()` te laten scrollen zoals in Firefox/Safari (1.3.0 sprong, 1.3.1 niet). In Firefox, Safari, de companion-app en op een echte Home Assistant-installatie met 97 apparaten is het **niet getest**. Feedback is uitdrukkelijk welkom (vermeld de browser of app).
+- **Teststatus 1.4.0:** Backend met 50 testgevallen in een echte Home Assistant-testomgeving; kaart in Chrome (headless): alle zeven tabbladen, pop-up, alle negen taalvarianten, kolomaantal bij zeven breedtes, getalveld, editor, zonder JavaScript-fouten. **Niet gecontroleerd:** echte hardware, een draaiende Home Assistant-installatie, Firefox, Safari, companion-app. **Italiaans en Servisch** zijn **niet door moedertaalsprekers gecontroleerd**.
 
 ## Probleemoplossing
 
@@ -327,6 +340,7 @@ Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware,
 
 | Versie | Wijzigingen |
 |---|---|
+| **1.4.0** | Nieuw (experimenteel, standaard uit): **getalwaarden** van schrijfbare functies instellen in de pop-up (issue #26) en **apparatenlijst in meerdere kolommen** (issue #24); hoofdschakelaar, kaartsleutel `show_experimental` en schakelaar per functie (zie `EXPERIMENTELL.md`). Nieuw: taal **Italiaans** (PR #25, Salvatore Scalzi), **Servisch** in het Notification Center (PR #28, Brano). |
 | **1.3.1** | Opgelost: de **apparatenlijst sprong tijdens het scrollen steeds terug naar boven** (met 97 apparaten nauwelijks bruikbaar). Vermoedelijke oorzaak: bij elke hertekening gaf de kaart het laatst gebruikte veld (zoeken, sortering, groeperen, filter) met `focus()` weer de focus; Firefox, Safari en de companion-app scrollen dat veld dan in beeld, dus naar boven. Een veld dat nog focus heeft blijft nu ongemoeid, een vervangen veld krijgt de focus terug zonder te scrollen, en de kaart herstelt na elke hertekening de scrollpositie. |
 | **1.3.0** | Nieuw: **netwerkkaart** in de categorie Netwerk (coördinator, routers en eindapparaat-wolken als tekening, daaronder per router een accordeon met de verbindingen; inlezen met „Netwerk opnieuw inlezen”), met **zoom** (zoombalk, twee-vingergebaar, Ctrl + muiswiel) en **slepen met ingedrukte muisknop** in alle richtingen. Nieuw: de **beschrijving** uit Zigbee2MQTT in de apparatenlijst en bovenaan de apparaat-popup (issue #16; kaartoptie nu `show_description`, de fabrikanttekst heet nu **Productbeschrijving**). Nieuw: **getalvelden in het optiesvenster met invoerveld naast de schuifregelaar** (issue #17); `max_rows` en `zoom` zijn invoervelden in de kaarteditor. Nieuw: **verloren apparaten** (al dagen geen bericht) gelden als offline, instelling „Verloren” na (dagen). Nieuw: **offline-status negeren** per apparaat (issue #15). Nieuw: optionele **externe MQTT-broker** (issue #14, experimenteel). Nieuw: **Zigbee2MQTT-updatecontrole met melding en notificatie** (PR #18, @seebaer1976). Nieuw: **pictogram van de integratie naast de kaarttitel** (`show_title_icon`). Nieuw: **kaarteditor in meerdere talen** (issue #22). Nieuw: taal **Roemeens** (PR #21, dank aan @robex2005). De issues #12 en #13 waren al met 1.2.2 opgelost. |
 | **1.2.2** | Nieuw: eigen categorie **Netwerk** in de kaartbalk (legt uit hoe je het adres van de netwerkkaart invult, `show_network`). Opgelost: bij Home Assistant-taal **Servisch (Latijns, `sr-Latn`)** toonden kaart, welkomstmelding en versiemelding Cyrillisch omdat alleen het taaldeel „sr” werd gebruikt; er is nu een Latijns tekstblok. |
@@ -343,17 +357,18 @@ Elk `.py`-, `.js`- en `.yaml`-bestand heeft op de eerste regel een SHA-256-hash 
 
 | Bestand | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `c8d664a526850e818abf38b028d155e9022e261b0cee9d05145dab6f8020cf14` |
-| `custom_components/zigbee2mqtt_manager/strings.json` | `3921c4b01e2e3fca583882d3a883c2019214047581868faee897b7e3307a3825` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `fdddc3a81a622d97b76ea750053325adfce990efefe2bef3a65c6dcfc3f745d7` |
+| `custom_components/zigbee2mqtt_manager/strings.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
-| `custom_components/zigbee2mqtt_manager/translations/de.json` | `3921c4b01e2e3fca583882d3a883c2019214047581868faee897b7e3307a3825` |
-| `custom_components/zigbee2mqtt_manager/translations/en.json` | `8dcea0ab3f34b5a2226f25a3e1d91a44423dc5f0f35e1ab0565e96abcbba7312` |
-| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `8db26c0986d9d9e9a5065333ef30df75ba9118f344888ec45d11a505841fd4a3` |
-| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `3986ca1dc4a18b2a0d0b8a00c64b6db82c287d1065a5c772030fc92b3db4ce97` |
-| `custom_components/zigbee2mqtt_manager/translations/es.json` | `29a6c7348566e15615e4255967b2b2997996c456cd933311f22c6d63faf9454e` |
-| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `f61a2804048df76e6b02959a4e4ffa055873c873f7619d71fd442cb856ef49ef` |
-| `custom_components/zigbee2mqtt_manager/translations/ro.json` | `c784629c98cdd1be67b9d9385c5d8a059bd7a78aaacba28ab728784930c4add2` |
-| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `3f9409ca40f49be3f353d8eac7c2945cf3b6c42994557ef85e06d14a337934a1` |
+| `custom_components/zigbee2mqtt_manager/translations/de.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |
+| `custom_components/zigbee2mqtt_manager/translations/en.json` | `156ed4810d8669cf7902636b448d67324f0bb62c5fc126e4d8fa31abf7c8447c` |
+| `custom_components/zigbee2mqtt_manager/translations/nl.json` | `9e43b07849b258ef69c4b3f82c2d4998c1c95ef4c85932d1621cfefcf8a21762` |
+| `custom_components/zigbee2mqtt_manager/translations/fr.json` | `71149bccf71eb7dc0f76c7e5c5f8b481fff648788df480919e54378d29d758f0` |
+| `custom_components/zigbee2mqtt_manager/translations/es.json` | `b9de6d40aa8a6d9c905843f26e332055584c14dde4e98b27cb8caa8bf2898166` |
+| `custom_components/zigbee2mqtt_manager/translations/sr.json` | `53a6c405a41276e4215524df283f8c296290c67563c5748c1989f058432f007a` |
+| `custom_components/zigbee2mqtt_manager/translations/ro.json` | `d01f64e5b3e368d0fe8a684cf22279159d851a58ef72d484da487bd045dc6582` |
+| `custom_components/zigbee2mqtt_manager/translations/it.json` | `8983ec8962217c1985769261a9c3e64cb2842b005c9045613e44c918cbe5ec38` |
+| `custom_components/zigbee2mqtt_manager/translations/sr-Latn.json` | `6d156b4dee22f211910aad8e591bfe62952337d5e4b2e470a79617db234a31e7` |
 | `hacs.json` | `8939982e245783f7a41fb7f76e3da661b7250b5cec9385085ab68f19cea5cfda` |
 
 ## Licentie

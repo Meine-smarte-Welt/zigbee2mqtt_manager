@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 47ab99a47befe47106de883a489040d882241f1e89042cb7746f9dc16ab275e3
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): b74f74529e19f0a262440795ffdcddae5abbe82fb379dfbc42ddbb9c3dc1c6d9
 """Config Flow für Zigbee2MQTT Manager."""
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ from .const import (
     CONF_BROKER_TLS,
     CONF_BROKER_USERNAME,
     CONF_CRITICAL_BATTERY,
+    CONF_EXPERIMENTAL,
     CONF_FIRE_EVENTS,
     CONF_LOW_BATTERY,
     CONF_NETWORK_URL,
@@ -45,6 +46,7 @@ from .const import (
     DEFAULT_BASE_TOPIC,
     DEFAULT_BROKER_PORT,
     DEFAULT_CRITICAL_BATTERY,
+    DEFAULT_EXPERIMENTAL,
     DEFAULT_FIRE_EVENTS,
     DEFAULT_LOW_BATTERY,
     DEFAULT_PROBLEM_STALE,
@@ -321,6 +323,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "nl": f"⚠️ Nieuwe versie beschikbaar: **{latest}** – {link}",
                 "fr": f"⚠️ Nouvelle version disponible : **{latest}** – {link}",
                 "es": f"⚠️ Nueva versión disponible: **{latest}** – {link}",
+                "it": f"⚠️ Nuova versione disponibile: **{latest}** – {link}",
                 "sr": f"⚠️ Доступна је нова верзија: **{latest}** – {link}",
                 "sr-Latn": f"⚠️ Dostupna je nova verzija: **{latest}** – {link}",
             }.get(lang, f"⚠️ New version available: **{latest}** – {link}")
@@ -330,6 +333,7 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                 "nl": "✅ Actueel",
                 "fr": "✅ À jour",
                 "es": "✅ Actualizado",
+                "it": "✅ Aggiornato",
                 "sr": "✅ Ажурно",
                 "sr-Latn": "✅ Ažurno",
             }.get(lang, "✅ Up to date")
@@ -400,6 +404,11 @@ class Z2MManagerOptionsFlow(OptionsFlow):
                         NC_OPT_TYPES,
                         default=[t for t in NC_TYPE_IDS if nc_chosen.get(t, True)],
                     ): cv.multi_select(nc_type_labels(str(self.hass.config.language))),
+                    # Experimentelle (ungeprüfte) Funktionen: Hauptschalter, Standard aus
+                    vol.Required(
+                        CONF_EXPERIMENTAL,
+                        default=opts.get(CONF_EXPERIMENTAL, DEFAULT_EXPERIMENTAL),
+                    ): bool,
                 }
             ),
             errors=errors,

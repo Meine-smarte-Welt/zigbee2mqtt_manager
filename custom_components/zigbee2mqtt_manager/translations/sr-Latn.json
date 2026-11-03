@@ -62,7 +62,8 @@
           "problem_include_stale": "Nema odziva se računa kao problem",
           "sidebar_panel": "Unos u bočnoj traci",
           "sidebar_title": "Naziv u bočnoj traci",
-          "network_url": "Adresa mape mreže (opciono)"
+          "network_url": "Adresa mape mreže (opciono)",
+          "experimental_enabled": "Prikaži eksperimentalne funkcije"
         },
         "data_description": {
           "critical_battery_threshold": "Mora biti manji ili jednak pragu za nizak nivo baterije.",
@@ -75,7 +76,8 @@
           "problem_include_stale": "Senzor Problem se takođe uključuje kada uređaj ćuti duže od podešenog vremena. Budite oprezni sa uređajima koji retko šalju podatke.",
           "sidebar_panel": "Prikazuje karticu kao zasebnu stranicu u bočnoj traci (samo za administratore), tako da nema potrebe za pravljenjem kontrolne table.",
           "sidebar_title": "Naziv unosa u bočnoj traci (podrazumevano: „Zigbee2MQTT Manager“). Korisno ako se tamo nalazi i Z2M aplikacija sa istom ikonom. Deluje odmah.",
-          "network_url": "Kuda vodi dugme „Mreža“, na primer na mapu mreže vašeg Zigbee2MQTT interfejsa (http://… ili putanja kao /hassio/ingress/…). Ostavite prazno da se koristi adresa iz Z2M konfiguracije ili Zigbee2MQTT aplikacija iz bočne trake."
+          "network_url": "Kuda vodi dugme „Mreža“, na primer na mapu mreže vašeg Zigbee2MQTT interfejsa (http://… ili putanja kao /hassio/ingress/…). Ostavite prazno da se koristi adresa iz Z2M konfiguracije ili Zigbee2MQTT aplikacija iz bočne trake.",
+          "experimental_enabled": "Omogućava neproverene funkcije (uređivanje numeričkih vrednosti, lista uređaja u više kolona). Podrazumevano isključeno. Svaka funkcija se zatim posebno uključuje u kartici, pod Podešavanja → Eksperimentalno, a u kartici mora biti uključeno „Prikaži eksperimentalne funkcije“."
         }
       }
     },
@@ -90,7 +92,7 @@
         "name": "Uređaji"
       },
       "offline": {
-        "name": "Oflajn uređaji"
+        "name": "Uređaji van mreže"
       },
       "low_battery": {
         "name": "Uređaji sa niskim nivoom baterije"

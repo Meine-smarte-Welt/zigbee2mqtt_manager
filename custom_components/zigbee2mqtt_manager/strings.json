@@ -62,7 +62,8 @@
           "problem_include_stale": "„Lange nichts gehört“ zählt als Störung",
           "sidebar_panel": "Eintrag in der Seitenleiste",
           "sidebar_title": "Name in der Seitenleiste",
-          "network_url": "Adresse der Netzwerkkarte (optional)"
+          "network_url": "Adresse der Netzwerkkarte (optional)",
+          "experimental_enabled": "Experimentelle Funktionen anzeigen"
         },
         "data_description": {
           "critical_battery_threshold": "Muss kleiner oder gleich der Schwelle für „Batterie niedrig“ sein.",
@@ -75,7 +76,8 @@
           "problem_include_stale": "Der Sensor „Störung“ geht auch an, wenn ein Gerät länger als die eingestellte Zeit still ist. Vorsicht bei Geräten, die selten senden.",
           "sidebar_panel": "Zeigt die Karte als eigene Seite in der Seitenleiste (nur für Administratoren). So ist kein eigenes Dashboard nötig.",
           "sidebar_title": "Beschriftung des Eintrags in der Seitenleiste (Standard: „Zigbee2MQTT Manager“). Praktisch, wenn zusätzlich die Z2M-App mit demselben Symbol dort steht. Wirkt sofort.",
-          "network_url": "Wohin der Knopf „Netzwerk“ führt, z. B. die Netzwerkkarte deiner Zigbee2MQTT-Oberfläche (http://… oder ein Pfad wie /hassio/ingress/…). Leer lassen: Die Adresse aus der Z2M-Konfiguration bzw. die Seitenleisten-App von Zigbee2MQTT wird verwendet."
+          "network_url": "Wohin der Knopf „Netzwerk“ führt, z. B. die Netzwerkkarte deiner Zigbee2MQTT-Oberfläche (http://… oder ein Pfad wie /hassio/ingress/…). Leer lassen: Die Adresse aus der Z2M-Konfiguration bzw. die Seitenleisten-App von Zigbee2MQTT wird verwendet.",
+          "experimental_enabled": "Schaltet ungeprüfte Funktionen frei (Zahlenwerte bearbeiten, mehrspaltige Geräteliste). Standard aus. Jede Funktion wird danach in der Karte unter Einstellungen → Experimentell einzeln eingeschaltet, und in der Karte muss „Experimentelle Funktionen anzeigen“ aktiv sein."
         }
       }
     },

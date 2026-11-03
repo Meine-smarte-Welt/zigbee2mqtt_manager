@@ -62,7 +62,8 @@
           "problem_include_stale": "„Lang niets gehoord” telt als storing",
           "sidebar_panel": "Item in de zijbalk",
           "sidebar_title": "Naam in de zijbalk",
-          "network_url": "Adres van de netwerkkaart (optioneel)"
+          "network_url": "Adres van de netwerkkaart (optioneel)",
+          "experimental_enabled": "Experimentele functies tonen"
         },
         "data_description": {
           "critical_battery_threshold": "Moet kleiner dan of gelijk aan de drempel voor „batterij laag” zijn.",
@@ -75,7 +76,8 @@
           "problem_include_stale": "De sensor „Storing” gaat ook aan als een apparaat langer dan de ingestelde tijd stil is. Pas op bij apparaten die zelden zenden.",
           "sidebar_panel": "Toont de kaart als eigen pagina in de zijbalk (alleen voor beheerders), zodat er geen eigen dashboard nodig is.",
           "sidebar_title": "Naam van het item in de zijbalk (standaard: „Zigbee2MQTT Manager”). Handig als daar ook de Z2M-app met hetzelfde pictogram staat. Werkt direct.",
-          "network_url": "Waar de knop „Netwerk” naartoe leidt, bijvoorbeeld de netwerkkaart van je Zigbee2MQTT-interface (http://… of een pad zoals /hassio/ingress/…). Laat leeg om het adres uit de Z2M-configuratie of de Zigbee2MQTT-zijbalk-app te gebruiken."
+          "network_url": "Waar de knop „Netwerk” naartoe leidt, bijvoorbeeld de netwerkkaart van je Zigbee2MQTT-interface (http://… of een pad zoals /hassio/ingress/…). Laat leeg om het adres uit de Z2M-configuratie of de Zigbee2MQTT-zijbalk-app te gebruiken.",
+          "experimental_enabled": "Schakelt niet-geteste functies vrij (numerieke waarden bewerken, apparatenlijst met meerdere kolommen). Standaard uit. Elke functie schakel je daarna apart in op de kaart onder Instellingen → Experimenteel; de kaart moet ook “Experimentele functies tonen” aan hebben."
         }
       }
     },

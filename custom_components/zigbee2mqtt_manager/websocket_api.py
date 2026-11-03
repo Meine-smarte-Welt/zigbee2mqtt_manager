@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8272902f9f108738aef7690375d221a2222cabbc58fe22f9cf686d2d3cb71e0a
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 77b268d6cfe685d90a015bcebfc184fd051e5f4967acc8fa2f18696d3640f56f
 """WebSocket-API zwischen Lovelace-Karte und Integration."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN, WS_ACTION, WS_SUBSCRIBE
+from .const import DOMAIN, EXPERIMENTAL_KEYS, WS_ACTION, WS_SUBSCRIBE
 from .manager import Z2MManager
 from .nc_catalog import NC_TYPE_IDS
 
@@ -45,6 +45,8 @@ ACTIONS = [
     # Notification Center (optional)
     "nc_set_master",
     "nc_set_type",
+    # Experimentelle Funktionen (nur wenn der Hauptschalter in den Optionen an ist)
+    "experimental_set_feature",
     # Gruppen
     "group_add",
     "group_rename",
@@ -152,6 +154,7 @@ async def ws_details(
         vol.Optional("value"): vol.Any(str, bool, int, float, dict),
         vol.Optional("enabled"): bool,
         vol.Optional("nc_type"): vol.In(NC_TYPE_IDS),
+        vol.Optional("feature"): vol.In(EXPERIMENTAL_KEYS),
     }
 )
 @websocket_api.async_response
@@ -214,6 +217,8 @@ async def ws_action(
             await manager.async_nc_set_master(msg.get("enabled"))
         elif action == "nc_set_type":
             await manager.async_nc_set_type(msg.get("nc_type"), msg.get("enabled"))
+        elif action == "experimental_set_feature":
+            await manager.async_experimental_set_feature(msg.get("feature"), msg.get("enabled"))
         elif action == "group_add":
             await manager.async_group_add(str(value or ""))
         elif action == "group_rename":

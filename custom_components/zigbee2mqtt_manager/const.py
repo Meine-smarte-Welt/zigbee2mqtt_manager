@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): a0b078c2a77e4efb26a092b62cc0b9f73ce3237fc4c498f61305af754272a1c4
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): cb09daa3a7979c0007424f811f5a3a8d5e81a659e85ef404521c8abcad635a51
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.3.1"
+VERSION = "1.4.0"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
@@ -18,6 +18,9 @@ CONF_WELCOME_SHOWN = "welcome_shown"
 CONF_SIDEBAR_PANEL = "sidebar_panel"
 CONF_SIDEBAR_TITLE = "sidebar_title"
 CONF_NETWORK_URL = "network_url"
+# Experimentelle (ungeprüfte) Funktionen: Hauptschalter in den Optionen (Standard aus) und je Funktion ein Schalter
+CONF_EXPERIMENTAL = "experimental_enabled"
+CONF_EXPERIMENTAL_FEATURES = "experimental_features"
 # Optionaler externer MQTT-Broker (leer = MQTT-Integration von Home Assistant)
 CONF_BROKER_HOST = "broker_host"
 CONF_BROKER_PORT = "broker_port"
@@ -25,6 +28,7 @@ CONF_BROKER_USERNAME = "broker_username"
 CONF_BROKER_PASSWORD = "broker_password"
 CONF_BROKER_TLS = "broker_tls"
 DEFAULT_BROKER_PORT = 1883
+DEFAULT_EXPERIMENTAL = False
 
 DEFAULT_BASE_TOPIC = "zigbee2mqtt"
 DEFAULT_LOW_BATTERY = 20
@@ -121,3 +125,13 @@ def clean_title(value: object, default: str, limit: int) -> str:
     """Beschriftung bereinigen: ohne Steuerzeichen und spitze Klammern, begrenzt, sonst Standard."""
     text = "".join(c for c in str(value or "") if c.isprintable() and c not in "<>").strip()
     return text[:limit] if text else default
+
+# Experimentelle Funktionen (Stand 1.4.0): ungeprüft, standardmäßig ausgeblendet, jede mit eigenem Schalter
+# (Standard aus). Die Registry steht schlüsselgleich in der Karte (EXPERIMENTAL). Siehe EXPERIMENTELL.md.
+FEATURE_NUMERIC_EDIT = "expose_numeric_edit"
+FEATURE_LIST_COLUMNS = "list_columns"
+EXPERIMENTAL_FEATURES: tuple[dict[str, str], ...] = (
+    {"key": FEATURE_NUMERIC_EDIT, "since": "1.4.0", "icon": "mdi:numeric"},
+    {"key": FEATURE_LIST_COLUMNS, "since": "1.4.0", "icon": "mdi:view-column-outline"},
+)
+EXPERIMENTAL_KEYS: tuple[str, ...] = tuple(f["key"] for f in EXPERIMENTAL_FEATURES)

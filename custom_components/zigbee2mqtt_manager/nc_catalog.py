@@ -1,8 +1,8 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 64d8c53a1d05f0b1906a2d64cde795672e81e60d4b86da41189579643f410ae2
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 73df1c55899bb1406c17d3f8b7fa429ce297724d4c73e8872c283529ebf274b5
 """Katalog der Meldungsarten für das optionale Notification Center (Schema 1).
 
 Nur Meldungsarten, die der Zigbee2MQTT Manager aus seinen vorhandenen Zuständen
-und Schwellen ableitet. Texte in allen sechs Sprachen; Platzhalter in {geschweiften Klammern}.
+und Schwellen ableitet. Texte in allen sieben Sprachen; Platzhalter in {geschweiften Klammern}.
 """
 
 from __future__ import annotations
@@ -61,6 +61,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "Zigbee2MQTT ({bridge}) este offline",
                 "message": "Zigbee2MQTT ({bridge}) nu este accesibil.",
             },
+            "it": {
+                "label": "Bridge offline",
+                "title": "Zigbee2MQTT ({bridge}) è offline",
+                "message": "Zigbee2MQTT ({bridge}) non è raggiungibile.",
+            },
+            "sr-Latn": {
+                "label": "Bridge nije na mreži",
+                "title": "Zigbee2MQTT ({bridge}) nije na mreži",
+                "message": "Zigbee2MQTT ({bridge}) nije dostupan.",
+            },
+            "sr": {
+                "label": "Бриџ није на мрежи",
+                "title": "Zigbee2MQTT ({bridge}) није на мрежи",
+                "message": "Zigbee2MQTT ({bridge}) није доступан.",
+            },
         },
     },
     {
@@ -99,6 +114,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "label": "Baterie critică",
                 "title": "{name}: baterie critică",
                 "message": "{name} mai are doar {battery} % baterie. Înlocuiește-o curând.",
+            },
+            "it": {
+                "label": "Batteria critica",
+                "title": "{name}: batteria critica",
+                "message": "{name} ha solo il {battery} % di batteria. Sostituiscila presto.",
+            },
+            "sr-Latn": {
+                "label": "Kritičan nivo baterije",
+                "title": "{name}: kritičan nivo baterije",
+                "message": "Baterija uređaja {name} je na samo {battery} %. Molimo vas da je uskoro zamenite.",
+            },
+            "sr": {
+                "label": "Критичан ниво батерије",
+                "title": "{name}: критичан ниво батерије",
+                "message": "Батерија уређаја {name} је на само {battery} %. Молимо вас да је ускоро замените.",
             },
         },
     },
@@ -139,6 +169,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name} este offline",
                 "message": "{name} nu este accesibil.",
             },
+            "it": {
+                "label": "Dispositivo offline",
+                "title": "{name} è offline",
+                "message": "{name} non è raggiungibile.",
+            },
+            "sr-Latn": {
+                "label": "Uređaj van mreže",
+                "title": "{name} je van mreže",
+                "message": "{name} nije dostupan.",
+            },
+            "sr": {
+                "label": "Уређај ван мреже",
+                "title": "{name} је ван мреже",
+                "message": "{name} није доступан.",
+            },
         },
     },
     {
@@ -177,6 +222,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "label": "Dispozitiv lipsă din Zigbee2MQTT",
                 "title": "{name} lipsește din Zigbee2MQTT",
                 "message": "{name} a dispărut din lista de dispozitive Zigbee2MQTT.",
+            },
+            "it": {
+                "label": "Dispositivo mancante in Zigbee2MQTT",
+                "title": "{name} manca in Zigbee2MQTT",
+                "message": "{name} è sparito dall'elenco dei dispositivi di Zigbee2MQTT.",
+            },
+            "sr-Latn": {
+                "label": "Uređaj nedostaje u Zigbee2MQTT",
+                "title": "{name} nedostaje u Zigbee2MQTT",
+                "message": "{name} je nestao sa liste uređaja u Zigbee2MQTT.",
+            },
+            "sr": {
+                "label": "Уређај недостаје у Zigbee2MQTT",
+                "title": "{name} недостаје у Zigbee2MQTT",
+                "message": "{name} је нестао са листе уређаја у Zigbee2MQTT.",
             },
         },
     },
@@ -217,6 +277,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name}: baterie slabă",
                 "message": "{name} mai are {battery} % baterie.",
             },
+            "it": {
+                "label": "Batteria scarica",
+                "title": "{name}: batteria scarica",
+                "message": "A {name} resta il {battery} % di batteria.",
+            },
+            "sr-Latn": {
+                "label": "Slaba baterija",
+                "title": "{name}: slaba baterija",
+                "message": "Baterija uređaja {name} je na {battery} %.",
+            },
+            "sr": {
+                "label": "Слаба батерија",
+                "title": "{name}: слаба батерија",
+                "message": "Батерија уређаја {name} је на {battery} %.",
+            },
         },
     },
     {
@@ -255,6 +330,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "label": "Actualizare de firmware disponibilă",
                 "title": "{name}: actualizare de firmware disponibilă",
                 "message": "Este disponibilă o actualizare de firmware pentru {name}.",
+            },
+            "it": {
+                "label": "Aggiornamento firmware disponibile",
+                "title": "{name}: aggiornamento firmware disponibile",
+                "message": "È disponibile un aggiornamento firmware per {name}.",
+            },
+            "sr-Latn": {
+                "label": "Dostupno ažuriranje firmvera",
+                "title": "{name}: dostupno ažuriranje firmvera",
+                "message": "Dostupno je ažuriranje firmvera za {name}.",
+            },
+            "sr": {
+                "label": "Доступно ажурирање фирмвера",
+                "title": "{name}: доступно ажурирање фирмвера",
+                "message": "Доступно је ажурирање фирмвера за {name}.",
             },
         },
     },
@@ -295,6 +385,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "Dispozitiv nou: {name}",
                 "message": "{name} s-a alăturat rețelei Zigbee.",
             },
+            "it": {
+                "label": "Nuovo dispositivo",
+                "title": "Nuovo dispositivo: {name}",
+                "message": "{name} è entrato nella rete Zigbee.",
+            },
+            "sr-Latn": {
+                "label": "Novi uređaj",
+                "title": "Novi uređaj: {name}",
+                "message": "{name} se pridružio Zigbee mreži.",
+            },
+            "sr": {
+                "label": "Нови уређај",
+                "title": "Нови уређај: {name}",
+                "message": "{name} се придружио Zigbee мрежи.",
+            },
         },
     },
     {
@@ -334,6 +439,21 @@ NC_CATALOG: list[dict[str, Any]] = [
                 "title": "{name} a părăsit rețeaua",
                 "message": "{name} a părăsit rețeaua Zigbee.",
             },
+            "it": {
+                "label": "Dispositivo uscito dalla rete",
+                "title": "{name} è uscito dalla rete",
+                "message": "{name} è uscito dalla rete Zigbee.",
+            },
+            "sr-Latn": {
+                "label": "Uređaj je napustio mrežu",
+                "title": "{name} je napustio mrežu",
+                "message": "{name} je napustio Zigbee mrežu.",
+            },
+            "sr": {
+                "label": "Уређај је напустио мрежу",
+                "title": "{name} је напустио мрежу",
+                "message": "{name} је напустио Zigbee мрежу.",
+            },
         },
     },
 ]
@@ -343,5 +463,10 @@ NC_TYPE_IDS = [item["type"] for item in NC_CATALOG]
 
 def nc_type_labels(language: str) -> dict[str, str]:
     """Beschriftungen der Meldungsarten (nach Dringlichkeit sortiert) für den Optionen-Dialog."""
-    lang = language[:2] if language[:2] in ("de", "en", "nl", "fr", "es", "ro") else "en"
+    raw = str(language or "").replace("_", "-")
+    # Sprach-Tag nie blind kürzen: "sr-Latn" (Serbisch, Lateinisch) bleibt erhalten
+    if raw.lower().startswith("sr-latn"):
+        lang = "sr-Latn"
+    else:
+        lang = raw[:2] if raw[:2] in ("de", "en", "nl", "fr", "es", "ro", "it", "sr") else "en"
     return {item["type"]: item["texts"][lang]["label"] for item in NC_CATALOG}

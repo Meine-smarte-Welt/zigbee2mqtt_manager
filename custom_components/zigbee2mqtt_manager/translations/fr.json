@@ -62,7 +62,8 @@
           "problem_include_stale": "« Sans nouvelles » compte comme problème",
           "sidebar_panel": "Entrée dans la barre latérale",
           "sidebar_title": "Nom dans la barre latérale",
-          "network_url": "Adresse de la carte du réseau (facultatif)"
+          "network_url": "Adresse de la carte du réseau (facultatif)",
+          "experimental_enabled": "Afficher les fonctions expérimentales"
         },
         "data_description": {
           "critical_battery_threshold": "Doit être inférieur ou égal au seuil « batterie faible ».",
@@ -75,7 +76,8 @@
           "problem_include_stale": "Le capteur « Problème » s'active aussi lorsqu'un appareil reste silencieux plus longtemps que la durée définie. Prudence avec les appareils qui émettent rarement.",
           "sidebar_panel": "Affiche la carte comme page à part dans la barre latérale (administrateurs uniquement), sans devoir créer de tableau de bord.",
           "sidebar_title": "Libellé de l'entrée dans la barre latérale (par défaut : « Zigbee2MQTT Manager »). Pratique si l'app Z2M avec la même icône y figure aussi. Effet immédiat.",
-          "network_url": "Destination du bouton « Réseau », par exemple la carte du réseau de ton interface Zigbee2MQTT (http://… ou un chemin comme /hassio/ingress/…). Laisse vide pour utiliser l'adresse de la configuration Z2M ou l'app Zigbee2MQTT de la barre latérale."
+          "network_url": "Destination du bouton « Réseau », par exemple la carte du réseau de ton interface Zigbee2MQTT (http://… ou un chemin comme /hassio/ingress/…). Laisse vide pour utiliser l'adresse de la configuration Z2M ou l'app Zigbee2MQTT de la barre latérale.",
+          "experimental_enabled": "Débloque des fonctions non testées (modifier les valeurs numériques, liste d'appareils sur plusieurs colonnes). Désactivé par défaut. Chaque fonction s'active ensuite séparément dans la carte sous Réglages → Expérimental, et la carte doit avoir « Afficher les fonctions expérimentales » activé."
         }
       }
     },

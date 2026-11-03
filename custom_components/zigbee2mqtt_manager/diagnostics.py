@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 6fd16e169d2157164b6b83e7bd39648fdd701c151f1b4cb345e98568ee1c074d
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): cf1001e038a873907349a0c622a4631f9d44507395974e94db3b45bf33260d54
 """Diagnose-Download (IEEE-Adressen und Namen werden geschwärzt)."""
 
 from __future__ import annotations
@@ -60,6 +60,11 @@ async def async_get_config_entry_diagnostics(
         },
         "external_broker": bool(getattr(manager._transport, "external", False)),
         "app": data["app"],
+        # Nur Schalterstand der experimentellen Funktionen
+        "experimental": {
+            "enabled": data["experimental"]["enabled"],
+            "features": {f["key"]: f["enabled"] for f in data["experimental"]["features"]},
+        },
         # Nur Schalterstand und Anzahl gesendeter Meldungen je Art, keine Namen oder Texte
         "notification_center": {
             "available": data["nc"]["available"],

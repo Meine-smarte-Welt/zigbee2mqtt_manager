@@ -62,7 +62,8 @@
           "problem_include_stale": "„Fără semnal” contează ca problemă",
           "sidebar_panel": "Intrare în bara laterală",
           "sidebar_title": "Nume în bara laterală",
-          "network_url": "Adresa hărții rețelei (opțional)"
+          "network_url": "Adresa hărții rețelei (opțional)",
+          "experimental_enabled": "Afișează funcțiile experimentale"
         },
         "data_description": {
           "critical_battery_threshold": "Trebuie să fie mai mic sau egal cu pragul de „baterie slabă”.",
@@ -75,7 +76,8 @@
           "problem_include_stale": "Senzorul „Problemă” se activează și când un dispozitiv a tăcut mai mult decât timpul setat. Atenție la dispozitivele care trimit rar.",
           "sidebar_panel": "Afișează cardul ca pagină proprie în bara laterală (doar pentru administratori), fără să fie nevoie de un dashboard.",
           "sidebar_title": "Eticheta intrării din bara laterală (implicit: „Zigbee2MQTT Manager”). Util dacă aplicația Z2M cu aceeași iconiță apare și ea acolo. Are efect imediat.",
-          "network_url": "Unde duce butonul „Rețea”, de ex. harta rețelei din interfața Zigbee2MQTT (http://… sau o cale ca /hassio/ingress/…). Lasă gol pentru a folosi adresa din configurația Z2M sau aplicația Zigbee2MQTT din bara laterală."
+          "network_url": "Unde duce butonul „Rețea”, de ex. harta rețelei din interfața Zigbee2MQTT (http://… sau o cale ca /hassio/ingress/…). Lasă gol pentru a folosi adresa din configurația Z2M sau aplicația Zigbee2MQTT din bara laterală.",
+          "experimental_enabled": "Deblochează funcții netestate (editarea valorilor numerice, listă de dispozitive pe mai multe coloane). Implicit dezactivat. Fiecare funcție se activează apoi separat în card, la Setări → Experimental, iar cardul trebuie să aibă activat „Afișează funcțiile experimentale”."
         }
       }
     },
