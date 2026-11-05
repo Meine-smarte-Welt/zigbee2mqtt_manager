@@ -1,5 +1,5 @@
-| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | [🇫🇷<br>**Français**](README.fr.md) | 🇪🇸<br>**Español** | [🇮🇹<br>**Italiano**](README.it.md) | [🇷🇸<br>**Српски**](README.sr.md) |
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | [🇫🇷<br>**Français**](README.fr.md) | 🇪🇸<br>**Español** | [🇮🇹<br>**Italiano**](README.it.md) | [🇷🇸<br>**Српски**](README.sr.md) | [🇷🇴<br>**Română**](README.ro.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 
 ![Zigbee2MQTT Manager – banner](docs/images/zigbee2mqtt_manager.webp)
 
