@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 5c5ff8a2a46d2053ee33de37dabfab1fd4876293879ec999f3e0702f86f68387
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2d885c45cbc2d3839a02d23e667e8f653719a4c0a90f3d0c37bf7e09853a18ee
 """Netzwerkkarte: Antwort von Zigbee2MQTT ("networkmap", Typ "raw") auswerten.
 
 Reine Funktionen ohne Home-Assistant-Bezug. Z2M liefert Knoten und Verbindungen aus den
@@ -108,10 +108,14 @@ def build_topology(
 ) -> dict[str, Any]:
     """Aus Knoten und Verbindungen eine Baumansicht machen.
 
-    Jeder Router hängt an genau einem Elternknoten: dem Weg zum Koordinator mit den
-    geringsten Kosten (wenige Sprünge, gute Verbindung). Das ist eine Näherung der echten
-    Routen. Endgeräte hängen an dem Router, der sie als Kind führt (sonst an der besten
-    Verbindung); ohne bekannte Verbindung stehen sie unter "ohne Verbindung".
+    Jeder Router hängt an genau einem Elternknoten. Vorrang hat der **gemeldete** Elternknoten
+    (``relationship`` 0 = Elternknoten, 1 = Kind, wie in der Netzwerkkarte von Zigbee2MQTT).
+    Meldet ein Router keinen (oder würde der gemeldete einen Kreis bilden), gilt der Weg zum
+    Koordinator mit den geringsten Kosten (wenige Sprünge, gute Verbindung) als Näherung.
+    Beides steht im Ergebnis: ``parent`` (gezeichnet), ``parent_source`` ("reported" oder
+    "lqi") und ``path_parent`` (günstigster Weg). Endgeräte hängen an dem Router, der sie als
+    Kind führt (sonst an der besten Verbindung); ohne bekannte Verbindung stehen sie unter
+    "ohne Verbindung".
     """
     names = names or {}
     nodes = {n["ieee"]: n for n in raw.get("nodes", [])}
@@ -159,8 +163,70 @@ def build_topology(
                 hops[other] = hops[node] + 1
                 heapq.heappush(queue, (nd, other))
 
-    # Geräte ohne Weg zum Koordinator: unter den ersten Koordinator hängen, aber kennzeichnen
-    orphans = sorted(h for h in hubs if h not in dist and nodes[h]["type"] != "Coordinator")
+    # Gemeldeter Elternknoten (relationship) je Router; bei mehreren gewinnt die beste Verbindung
+    reported: dict[str, str] = {}
+    reported_lqi: dict[str, int] = {}
+    for link in links:
+        for hub, other in ((link["t"], link["s"]), (link["s"], link["t"])):
+            if hub not in hubs or other not in hubs or nodes[hub]["type"] == "Coordinator":
+                continue
+            if _view_of(link, hub) != REL_PARENT:
+                continue
+            lqi = link["lqi"] or 0
+            if hub not in reported or lqi > reported_lqi[hub]:
+                reported[hub] = other
+                reported_lqi[hub] = lqi
+
+    # Endgültiger Elternknoten: gemeldet, sonst günstigster Weg
+    final: dict[str, str | None] = {}
+    source: dict[str, str] = {}
+    for hub in hubs:
+        if nodes[hub]["type"] == "Coordinator":
+            final[hub], source[hub] = None, "root"
+        elif hub in reported:
+            final[hub], source[hub] = reported[hub], "reported"
+        else:
+            final[hub], source[hub] = parent.get(hub), "lqi"
+
+    def _cycle_members() -> set[str]:
+        """Router, deren Elternkette in einem Kreis endet (statt am Koordinator)."""
+        bad: set[str] = set()
+        for start in hubs:
+            seen: list[str] = []
+            node: str | None = start
+            while node is not None and node not in seen:
+                seen.append(node)
+                node = final.get(node)
+            if node is not None:
+                bad.update(seen[seen.index(node):])
+        return bad
+
+    # Kreise auflösen: betroffene gemeldete Eltern durch den günstigsten Weg ersetzen
+    while True:
+        bad = _cycle_members()
+        fixable = [h for h in bad if source.get(h) == "reported"]
+        if not fixable:
+            break
+        for hub in fixable:
+            final[hub], source[hub] = parent.get(hub), "lqi"
+
+    # Tiefe aus der endgültigen Elternkette; Router ohne Weg zum Koordinator sind verwaist
+    depth_of: dict[str, int] = {}
+    orphans_set: set[str] = set()
+    for hub in hubs:
+        steps, node = 0, hub
+        seen_nodes: set[str] = set()
+        while final.get(node) is not None and node not in seen_nodes:
+            seen_nodes.add(node)
+            node = final[node]  # type: ignore[assignment]
+            steps += 1
+        if nodes[node]["type"] == "Coordinator" and node not in seen_nodes or nodes[hub]["type"] == "Coordinator":
+            depth_of[hub] = steps
+        else:
+            depth_of[hub] = 0
+            if nodes[hub]["type"] != "Coordinator":
+                orphans_set.add(hub)
+    orphans = sorted(orphans_set)
 
     # Endgeräte einem Router zuordnen
     clients_of: dict[str, list[dict[str, Any]]] = {h: [] for h in hubs}
@@ -210,16 +276,18 @@ def build_topology(
             view = _view_of(link, hub)
             if view is not None and entry["rel"] is None:
                 entry["rel"] = {REL_PARENT: "parent", REL_CHILD: "child", REL_SIBLING: "sibling"}[view]
-        par = parent.get(hub)
-        orphan = hub in orphans
+        par = final.get(hub)
+        orphan = hub in orphans_set
         items[hub] = {
             "ieee": hub,
             "name": name_of(hub),
             "type": nodes[hub]["type"],
             "parent": par,
+            "parent_source": source.get(hub, "lqi"),
+            "path_parent": parent.get(hub),
             "orphan": orphan,
             "lqi": best.get(frozenset((hub, par))) if par else None,
-            "depth": hops.get(hub, 0),
+            "depth": depth_of.get(hub, 0),
             "clients": sorted(clients_of[hub], key=lambda c: c["name"].lower()),
             "neighbors": sorted(
                 neighbors.values(), key=lambda n: (-(n["lqi"] or 0), n["name"].lower())

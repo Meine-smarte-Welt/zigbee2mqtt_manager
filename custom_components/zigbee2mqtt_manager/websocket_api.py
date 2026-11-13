@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 77b268d6cfe685d90a015bcebfc184fd051e5f4967acc8fa2f18696d3640f56f
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): de3ce106328656df06dd32ad3411831dc2e5bacc9897382b2b93abf052fefc5c
 """WebSocket-API zwischen Lovelace-Karte und Integration."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 
-from .const import DOMAIN, EXPERIMENTAL_KEYS, WS_ACTION, WS_SUBSCRIBE
+from .const import DOMAIN, EXPERIMENTAL_KEYS, WS_ACTION, WS_IMAGES, WS_SUBSCRIBE
 from .manager import Z2MManager
 from .nc_catalog import NC_TYPE_IDS
 
@@ -24,6 +24,8 @@ ACTIONS = [
     "set_options",
     "set_comment",
     "set_expose",
+    "set_image",
+    "remove_image",
     "remove",
     "forget_missing",
     "forget_missing_all",
@@ -78,6 +80,7 @@ def _get_manager(
 @callback
 def async_register_websocket_api(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_images)
     websocket_api.async_register_command(hass, ws_action)
     websocket_api.async_register_command(hass, ws_details)
     websocket_api.async_register_command(hass, ws_instances)
@@ -155,6 +158,8 @@ async def ws_details(
         vol.Optional("enabled"): bool,
         vol.Optional("nc_type"): vol.In(NC_TYPE_IDS),
         vol.Optional("feature"): vol.In(EXPERIMENTAL_KEYS),
+        vol.Optional("image"): str,
+        vol.Optional("thumb"): str,
     }
 )
 @websocket_api.async_response
@@ -183,6 +188,10 @@ async def ws_action(
             await manager.async_set_options(ieee, value)
         elif action == "set_expose":
             await manager.async_set_expose(ieee, msg.get("key"), value)
+        elif action == "set_image":
+            await manager.async_set_device_image(ieee, msg.get("image"), msg.get("thumb"))
+        elif action == "remove_image":
+            await manager.async_remove_device_image(ieee)
         elif action == "remove":
             await manager.async_remove(ieee, bool(value))
         elif action == "forget_missing":
@@ -238,6 +247,27 @@ async def ws_action(
         return
 
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): WS_IMAGES,
+        vol.Optional("entry_id"): str,
+        vol.Optional("base_topic"): str,
+    }
+)
+@callback
+def ws_images(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Vorschaubilder der Geräte für die Liste (leer, solange die experimentelle Funktion aus ist)."""
+    manager = _get_manager(hass, msg.get("entry_id"), msg.get("base_topic"))
+    if manager is None:
+        connection.send_error(
+            msg["id"], "not_found", "Keine aktive Zigbee2MQTT-Manager-Instanz"
+        )
+        return
+    connection.send_result(msg["id"], manager.image_thumbs())
 
 
 @websocket_api.websocket_command({vol.Required("type"): WS_INSTANCES})

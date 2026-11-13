@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 47f2827ef69b86e5663afe239588d44a8444f95375718ddfcb461958a79fcea0
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): a8785cfd041e20f3f183c991efe1840add48f95ecb3c0674b38ef218b20fabc4
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -50,7 +50,86 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.4.0";
+const CARD_VERSION = "1.5.0";
+
+// Logo als Symbol "zmm:logo": eigener Symbolsatz für Home Assistant (nutzbar in jedem ha-icon,
+// Symbolauswahl, Dashboards, Skripten). Der Satz "mdi:" selbst ist fest in Home Assistant eingebaut
+// und lässt sich von Integrationen nicht erweitern.
+const ZMM_LOGO_PATH = "M10.85 23.95C4.27 23.28 -0.56 17.45 0.05 10.92C0.76 3.23 8.42 -1.8 15.75 0.61C21.56 2.52 24.96 8.44 23.74 14.48C22.82 18.97 19.17 22.69 14.69 23.69C13.54 23.95 11.92 24.06 10.85 23.95ZM13.69 23.18C18.32 22.47 22.02 19.09 23.08 14.6C23.51 12.75 23.47 10.73 22.94 8.93C21.7 4.65 18.12 1.55 13.64 0.86C12.89 0.74 11.2 0.74 10.45 0.86C6.32 1.49 2.97 4.14 1.45 7.97C0.93 9.29 0.73 10.39 0.73 12C0.73 13.33 0.77 13.73 1.05 14.84C2.21 19.36 6.15 22.74 10.88 23.25C11.45 23.31 13.1 23.27 13.69 23.18ZM10.73 22.54C8.49 22.27 6.26 21.18 4.61 19.55C2 16.99 0.91 13.29 1.69 9.66C1.99 8.29 3.01 6.13 3.49 5.85C3.72 5.72 5.41 5.51 7.83 5.31C8.97 5.22 15.16 5.16 15.25 5.24C15.28 5.28 15.21 5.38 15 5.61C14.74 5.88 11.16 9.62 6.84 14.11C4.76 16.27 4.73 16.31 4.77 16.61C4.9 17.76 5.65 18.6 6.92 19.04C7.65 19.28 8.51 19.38 10.83 19.46C13 19.53 14.68 19.46 17.74 19.17C20.13 18.95 19.99 18.96 19.93 19.06C19.85 19.21 18.93 20.08 18.48 20.43C17.15 21.45 15.61 22.14 13.9 22.46C13.31 22.57 11.38 22.62 10.73 22.54ZM8.86 18.36C8.86 18.27 9.13 17.98 13.24 13.73C17.87 8.95 17.76 9.06 18.35 8.44C19.52 7.2 19.5 7.23 19.29 6.57C19.02 5.76 18.58 5.26 17.84 4.9C16.66 4.33 15.6 4.2 11.98 4.2C9.44 4.2 8.3 4.25 6.07 4.46C5.25 4.53 4.56 4.59 4.53 4.59C4.44 4.59 5.13 3.93 5.58 3.59C7.47 2.16 9.4 1.48 11.74 1.42C14.72 1.35 17.29 2.34 19.39 4.37C21.92 6.82 23.05 10.18 22.52 13.71C22.3 15.2 21.26 17.66 20.8 17.81C20.46 17.91 18.47 18.14 16.12 18.33C15.02 18.42 8.86 18.45 8.86 18.36Z";
+try {
+  const zmmGetIcon = async (name) => ({ path: name === "logo" ? ZMM_LOGO_PATH : "", viewBox: "0 0 24 24" });
+  window.customIconsets = window.customIconsets || {};
+  if (!window.customIconsets.zmm) window.customIconsets.zmm = zmmGetIcon;
+  window.customIcons = window.customIcons || {};
+  if (!window.customIcons.zmm) window.customIcons.zmm = { getIcon: zmmGetIcon, getIconList: async () => [{ name: "logo" }] };
+} catch (_e) {
+  /* Symbole sind optional */
+}
+
+// Eigene Gerätebilder (experimentell): nur geprüfte data-Adressen werden angezeigt
+const SAFE_IMG_RE = /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
+const IMG_FULL_MAX = 640;
+const IMG_THUMB_MAX = 160;
+const IMG_FULL_BYTES = 280000;
+const IMG_THUMB_BYTES = 36000;
+const IMG_SOURCE_MAX = 30 * 1024 * 1024;
+
+async function loadImageSource(blob) {
+  if (window.createImageBitmap) {
+    try {
+      return await createImageBitmap(blob, { imageOrientation: "from-image" });
+    } catch (_e) {
+      /* Fallback über <img> */
+    }
+  }
+  return await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("image"));
+    };
+    img.src = url;
+  });
+}
+
+// Skaliert auf höchstens maxSide Pixel (ohne Vergrößern) und kodiert als JPEG auf weißem Grund.
+// Wird das Ergebnis zu groß, sinkt erst die Qualität, dann die Größe.
+function renderJpeg(src, sw, sh, maxSide, maxBytes) {
+  let scale = Math.min(1, maxSide / Math.max(sw, sh));
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    const w = Math.max(1, Math.round(sw * scale));
+    const h = Math.max(1, Math.round(sh * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(src, 0, 0, w, h);
+    for (const q of [0.85, 0.72, 0.6, 0.48]) {
+      const url = canvas.toDataURL("image/jpeg", q);
+      if (url.startsWith("data:image/jpeg;base64,") && (url.length - 23) * 0.75 <= maxBytes) return url;
+    }
+    scale *= 0.8;
+  }
+  throw new Error("too_large");
+}
+
+async function scaleImage(blob) {
+  const src = await loadImageSource(blob);
+  const sw = src.naturalWidth || src.width;
+  const sh = src.naturalHeight || src.height;
+  if (!sw || !sh) throw new Error("empty");
+  const full = renderJpeg(src, sw, sh, IMG_FULL_MAX, IMG_FULL_BYTES);
+  const thumb = renderJpeg(src, sw, sh, IMG_THUMB_MAX, IMG_THUMB_BYTES);
+  if (typeof src.close === "function") src.close();
+  return { full, thumb };
+}
 // Datengetriebenes Neuzeichnen höchstens alle 2 s (Bedienaktionen zeichnen sofort)
 const RENDER_MIN_MS = 2000;
 // Zoom der Netzwerkzeichnung (Faktor; 1 = Originalgröße)
@@ -67,6 +146,8 @@ const TAB_META = {
   bindings: { icon: "mdi:link-variant", label: "tab_bindings" },
   network: { icon: "mdi:graph-outline", label: "network" },
   bridge: { icon: "mdi:cog", label: "tab_bridge" },
+  // Experimentell (seit 1.5.0): nicht in TAB_ORDER, erscheint nur bei eingeschalteter Funktion "statistics_tab"
+  statistics: { icon: "mdi:chart-box-outline", label: "tab_statistics" },
 };
 
 const CATEGORY_ICON_COLOR_KEYS = Object.fromEntries(TAB_ORDER.map((k) => [k, `color_icon_${k}`]));
@@ -278,6 +359,8 @@ function withDefaults(config) {
 const EXPERIMENTAL = [
   { key: "expose_numeric_edit", since: "1.4.0", icon: "mdi:numeric" },
   { key: "list_columns", since: "1.4.0", icon: "mdi:view-column-outline" },
+  { key: "device_images", since: "1.5.0", icon: "mdi:image-plus-outline" },
+  { key: "statistics_tab", since: "1.5.0", icon: "mdi:chart-box-outline" },
 ];
 const LIST_COLUMNS_VALUES = ["auto", "1", "2", "3", "4"];
 
@@ -294,6 +377,50 @@ const esc = escapeHtml;
 
 const I18N = {
   de: {
+    st_mains: "Netzbetrieb",
+    st_battery_powered: "Batteriebetrieb",
+    tab_statistics: "Statistik",
+    st_hint: "Auswertung der aktuell bekannten Geräte und der zuletzt gelesenen Netzwerkkarte.",
+    st_overview: "Überblick",
+    st_kinds: "Gerätearten",
+    st_weakest: "Schwächstes Signal",
+    st_b_full: "Voll",
+    st_b_ok: "In Ordnung",
+    st_b_low: "Niedrig",
+    st_b_crit: "Kritisch",
+    st_lowest: "Niedrigste Batteriestände",
+    st_activity: "Aktivität",
+    st_seen_hour: "Letzte Stunde",
+    st_seen_day: "Letzte 24 Stunden",
+    st_seen_older: "Älter als 24 Stunden",
+    st_chatty: "Meiste Nachrichten (seit Start)",
+    st_chatty_none: "Noch keine Nachrichten gezählt. Die Zählung beginnt mit dem Einschalten der Funktion und startet bei jedem Neustart neu.",
+    st_models: "Häufigste Modelle",
+    st_links: "Verbindungen",
+    st_avg_link: "Ø Signal der Verbindungen",
+    st_depth: "Router nach Ebene",
+    st_depth_n: "Ebene {n}",
+    st_busiest: "Meiste Endgeräte je Router",
+    st_no_network: "Die Netzwerkkarte wurde noch nicht gelesen. Im Reiter „Netzwerk“ einlesen.",
+    st_fw_none: "Ohne OTA-Unterstützung",
+    st_vendors_n: "{n} Hersteller",
+    img_title: "Bild",
+    img_upload: "Hochladen",
+    img_camera: "Foto aufnehmen",
+    img_remove: "Bild entfernen",
+    img_hint: "Das Bild wird vor dem Speichern verkleinert (höchstens 640 Pixel) und ersetzt das Standardbild in Liste und Popup.",
+    img_saved: "Bild gespeichert",
+    img_removed: "Bild entfernt",
+    img_error: "Das Bild konnte nicht verarbeitet werden.",
+    img_camera_denied: "Kein Zugriff auf die Kamera. Erlaube sie im Browser oder wähle „Hochladen“.",
+    img_capture: "Aufnehmen",
+    exp_f_device_images: "Eigene Gerätebilder",
+    exp_f_device_images_desc: "Im Popup eines Geräts lässt sich unter „Bild“ ein eigenes Bild hochladen oder mit der Kamera aufnehmen. Es wird vor dem Hochladen verkleinert und ersetzt in der Karte das Standardbild.",
+    exp_f_statistics_tab: "Statistik-Reiter",
+    exp_f_statistics_tab_desc: "Zeigt den Reiter „Statistik“ mit Auswertungen zu Geräten, Signal, Batterien, Aktivität und Netzwerk.",
+    net_parent_reported: "Elternknoten (gemeldet): {name}",
+    net_parent_estimated: "Kein Elternknoten gemeldet, geschätzt über die beste Verbindung: {name}",
+    net_parent_path: "Günstigster Weg wäre über {name}",
     connecting: "Verbinde …",
     error_generic: "Aktion fehlgeschlagen.",
     tab_devices: "Geräte", tab_battery: "Batterie", tab_updates: "Updates",
@@ -367,7 +494,7 @@ const I18N = {
     f_available: "Erreichbar", f_last_seen: "Zuletzt gesehen",
     flt_missing: "Fehlt in Zigbee2MQTT", chip_missing: "Fehlt", status_missing: "Fehlt in Zigbee2MQTT (zuletzt bekanntes Gerät)", missing_badge: "fehlt", missing_hint: "Diese Geräte waren bekannt, fehlen aber aktuell in der Zigbee2MQTT-Geräteliste. Sie verschwinden von selbst, sobald sie zurückkehren.", missing_popup_hint: "Dieses Gerät steht nicht mehr in der Geräteliste von Zigbee2MQTT. Angezeigt werden die zuletzt bekannten Daten. Kommt es zurück, verschwindet die Markierung von selbst; mit „Vergessen“ entfernst du es aus dieser Liste.", forget: "Vergessen", forget_all: "Alle fehlenden vergessen", f_missing_since: "Fehlt seit", network: "Netzwerk", network_open: "Zigbee2MQTT-Netzwerkkarte öffnen", open_entity: "Entität in Home Assistant öffnen", open_device: "Gerät in Home Assistant öffnen", ev_device_missing: "Fehlt in Zigbee2MQTT", ev_device_back: "Wieder in der Geräteliste",
     network_tab_hint: "Öffnet die Zigbee2MQTT-Netzwerkkarte (Topologie) in Home Assistant bzw. in einem neuen Tab.", network_no_url: "Noch keine Adresse der Netzwerkkarte bekannt. Trage sie unter Einstellungen → Geräte & Dienste → Zigbee2MQTT Manager → Konfigurieren als „Adresse der Netzwerkkarte“ ein (z. B. http://192.168.1.10:8080/#/network oder /a0d7b954_zigbee2mqtt), oder setze in der Karte `network_url`.",
-    net_intro: "Aufbau des Zigbee-Netzes aus den Nachbartabellen der Router. Jeder Router hängt an seiner besten Verbindung zum Coordinator (stark, wenige Sprünge) – eine Näherung der echten Routen.", net_refresh: "Netz neu einlesen", net_refresh_hint: "Zigbee2MQTT fragt dafür jedes Gerät einzeln ab. Das dauert je nach Netz mehrere Minuten und belastet das Zigbee-Netz. Lies es nur ein, wenn du es brauchst.", net_loading: "Netz wird eingelesen (gestartet {t}) …",
+    net_intro: "Aufbau des Zigbee-Netzes aus den Nachbartabellen der Router. Jeder Router hängt an dem Elternknoten, den er selbst meldet. Meldet er keinen, gilt seine beste Verbindung zum Coordinator (stark, wenige Sprünge) als Näherung.", net_refresh: "Netz neu einlesen", net_refresh_hint: "Zigbee2MQTT fragt dafür jedes Gerät einzeln ab. Das dauert je nach Netz mehrere Minuten und belastet das Zigbee-Netz. Lies es nur ein, wenn du es brauchst.", net_loading: "Netz wird eingelesen (gestartet {t}) …",
     net_updated: "Stand: {t}", net_none: "Das Netz wurde noch nicht eingelesen. Starte die Abfrage mit „Netz neu einlesen“.", net_error_failed: "Zigbee2MQTT hat die Netzwerkkarte nicht geliefert.", net_error_timeout: "Zigbee2MQTT hat nicht rechtzeitig geantwortet (nach 10 Minuten abgebrochen).",
     net_summary: "{routers} Router · {clients} Endgeräte · {links} Verbindungen", net_coordinator: "Coordinator", net_router: "Router", net_cloud: "{n} Endgeräte",
     net_links_routers: "Verbindungen zu Routern", net_end_devices: "Endgeräte", net_rel_parent: "Elternknoten", net_rel_child: "Kind",
@@ -425,7 +552,7 @@ const I18N = {
     exp_badge: "Experimentell",
     exp_hint: "Diese Funktionen sind ungeprüft und standardmäßig aus. Schalte nur ein, was du testen willst; Rückmeldungen sind willkommen.",
     exp_f_expose_numeric_edit: "Zahlenwerte bearbeiten",
-    exp_f_expose_numeric_edit_desc: "Schreibbare Zahlenfunktionen (z. B. Helligkeit oder Offset) lassen sich im Popup unter „Funktionen“ ändern.",
+    exp_f_expose_numeric_edit_desc: "Schreibbare Zahlenfunktionen (z. B. Helligkeit oder Offset) lassen sich im Popup unter „Funktionen“ per Schieberegler oder durch direkte Eingabe ändern, auch negative Werte. Dasselbe gilt für Zahlen in den Geräteoptionen.",
     exp_f_list_columns: "Mehrspaltige Geräteliste",
     exp_f_list_columns_desc: "Zeigt die Geräteliste auf breiten Bildschirmen in mehreren Spalten. Die Anzahl stellst du im Karteneditor ein (Automatisch oder 1 bis 4); im Seitenleisten-Eintrag gilt Automatisch.",
     ex_num_set: "Setzen",
@@ -433,6 +560,50 @@ const I18N = {
     exposes_hint_numeric: "Zahlenwerte (experimentell) änderst du direkt: Wert eingeben, „Setzen“ drücken oder Enter. Der Wert wirkt sofort am Gerät.",
   },
   en: {
+    st_mains: "Mains powered",
+    st_battery_powered: "Battery powered",
+    tab_statistics: "Statistics",
+    st_hint: "Evaluation of the currently known devices and the most recently read network map.",
+    st_overview: "Overview",
+    st_kinds: "Device types",
+    st_weakest: "Weakest signal",
+    st_b_full: "Full",
+    st_b_ok: "OK",
+    st_b_low: "Low",
+    st_b_crit: "Critical",
+    st_lowest: "Lowest battery levels",
+    st_activity: "Activity",
+    st_seen_hour: "Last hour",
+    st_seen_day: "Last 24 hours",
+    st_seen_older: "Older than 24 hours",
+    st_chatty: "Most messages (since start)",
+    st_chatty_none: "No messages counted yet. Counting starts when the feature is switched on and restarts with every restart.",
+    st_models: "Most common models",
+    st_links: "Links",
+    st_avg_link: "Avg. link signal",
+    st_depth: "Routers by level",
+    st_depth_n: "Level {n}",
+    st_busiest: "Most end devices per router",
+    st_no_network: "The network map has not been read yet. Read it in the “Network” tab.",
+    st_fw_none: "No OTA support",
+    st_vendors_n: "{n} manufacturers",
+    img_title: "Picture",
+    img_upload: "Upload",
+    img_camera: "Take photo",
+    img_remove: "Remove picture",
+    img_hint: "The picture is scaled down before saving (at most 640 pixels) and replaces the default image in the list and popup.",
+    img_saved: "Picture saved",
+    img_removed: "Picture removed",
+    img_error: "The picture could not be processed.",
+    img_camera_denied: "No access to the camera. Allow it in the browser or choose “Upload”.",
+    img_capture: "Capture",
+    exp_f_device_images: "Custom device pictures",
+    exp_f_device_images_desc: "In a device's popup, under “Picture”, you can upload your own picture or take one with the camera. It is scaled down before upload and replaces the default image in the card.",
+    exp_f_statistics_tab: "Statistics tab",
+    exp_f_statistics_tab_desc: "Shows the “Statistics” tab with evaluations of devices, signal, batteries, activity and network.",
+    net_parent_reported: "Parent (reported): {name}",
+    net_parent_estimated: "No parent reported, estimated from the best link: {name}",
+    net_parent_path: "Cheapest path would be via {name}",
     connecting: "Connecting …",
     error_generic: "Action failed.",
     tab_devices: "Devices", tab_battery: "Battery", tab_updates: "Updates",
@@ -500,7 +671,7 @@ const I18N = {
     f_available: "Reachable", f_last_seen: "Last seen",
     flt_missing: "Missing in Zigbee2MQTT", chip_missing: "Missing", status_missing: "Missing in Zigbee2MQTT (last known device)", missing_badge: "missing", missing_hint: "These devices were known but are currently missing from the Zigbee2MQTT device list. They disappear from here by themselves once they return.", missing_popup_hint: "This device is no longer in the Zigbee2MQTT device list. The last known data is shown. If it comes back, the marker disappears by itself; use \"Forget\" to remove it from this list.", forget: "Forget", forget_all: "Forget all missing", f_missing_since: "Missing since", network: "Network", network_open: "Open the Zigbee2MQTT network map", open_entity: "Open entity in Home Assistant", open_device: "Open device in Home Assistant", ev_device_missing: "Missing in Zigbee2MQTT", ev_device_back: "Back in the device list",
     network_tab_hint: "Opens the Zigbee2MQTT network map (topology) in Home Assistant or in a new tab.", network_no_url: "No network map address known yet. Enter it under Settings → Devices & services → Zigbee2MQTT Manager → Configure as \"Network map address\" (e.g. http://192.168.1.10:8080/#/network or /a0d7b954_zigbee2mqtt), or set `network_url` in the card.",
-    net_intro: "Structure of the Zigbee network, read from the routers' neighbour tables. Each router hangs off its best path to the coordinator (strong link, few hops) – an approximation of the real routes.", net_refresh: "Re-read network", net_refresh_hint: "Zigbee2MQTT queries every device one by one for this. Depending on the network it takes several minutes and puts load on the Zigbee network. Only read it when you need it.", net_loading: "Reading the network (started {t}) …",
+    net_intro: "Structure of the Zigbee network, read from the routers' neighbour tables. Each router hangs off the parent it reports itself. If it reports none, its best link to the coordinator (strong, few hops) is used as an approximation.", net_refresh: "Re-read network", net_refresh_hint: "Zigbee2MQTT queries every device one by one for this. Depending on the network it takes several minutes and puts load on the Zigbee network. Only read it when you need it.", net_loading: "Reading the network (started {t}) …",
     net_updated: "As of {t}", net_none: "The network has not been read yet. Start the query with “Re-read network”.", net_error_failed: "Zigbee2MQTT did not deliver the network map.", net_error_timeout: "Zigbee2MQTT did not answer in time (aborted after 10 minutes).",
     net_summary: "{routers} routers · {clients} end devices · {links} links", net_coordinator: "Coordinator", net_router: "Router", net_cloud: "{n} end devices",
     net_links_routers: "Links to routers", net_end_devices: "End devices", net_rel_parent: "Parent", net_rel_child: "Child",
@@ -556,7 +727,7 @@ const I18N = {
     exp_badge: "Experimental",
     exp_hint: "These features are untested and off by default. Only switch on what you want to try; feedback is welcome.",
     exp_f_expose_numeric_edit: "Edit numeric values",
-    exp_f_expose_numeric_edit_desc: "Writable numeric features (e.g. brightness or offset) can be changed in the popup under “Features”.",
+    exp_f_expose_numeric_edit_desc: "Writable numeric features (e.g. brightness or offset) can be changed in the popup under “Features” with a slider or by typing a value, negative values included. The same applies to numbers in the device options.",
     exp_f_list_columns: "Multi-column device list",
     exp_f_list_columns_desc: "Shows the device list in several columns on wide screens. Set the number in the card editor (Automatic or 1 to 4); the sidebar entry uses Automatic.",
     ex_num_set: "Set",
@@ -564,6 +735,50 @@ const I18N = {
     exposes_hint_numeric: "Numeric values (experimental) can be changed directly: enter a value and press “Set” or Enter. The value takes effect on the device immediately.",
   },
   nl: {
+    st_mains: "Netvoeding",
+    st_battery_powered: "Batterijvoeding",
+    tab_statistics: "Statistieken",
+    st_hint: "Overzicht van de momenteel bekende apparaten en de laatst gelezen netwerkkaart.",
+    st_overview: "Overzicht",
+    st_kinds: "Apparaattypen",
+    st_weakest: "Zwakste signaal",
+    st_b_full: "Vol",
+    st_b_ok: "Goed",
+    st_b_low: "Laag",
+    st_b_crit: "Kritiek",
+    st_lowest: "Laagste batterijniveaus",
+    st_activity: "Activiteit",
+    st_seen_hour: "Laatste uur",
+    st_seen_day: "Laatste 24 uur",
+    st_seen_older: "Ouder dan 24 uur",
+    st_chatty: "Meeste berichten (sinds start)",
+    st_chatty_none: "Nog geen berichten geteld. Het tellen begint zodra de functie wordt ingeschakeld en begint na elke herstart opnieuw.",
+    st_models: "Meest voorkomende modellen",
+    st_links: "Verbindingen",
+    st_avg_link: "Gem. signaal van de verbindingen",
+    st_depth: "Routers per niveau",
+    st_depth_n: "Niveau {n}",
+    st_busiest: "Meeste eindapparaten per router",
+    st_no_network: "De netwerkkaart is nog niet gelezen. Lees hem in op het tabblad “Netwerk”.",
+    st_fw_none: "Zonder OTA-ondersteuning",
+    st_vendors_n: "{n} fabrikanten",
+    img_title: "Afbeelding",
+    img_upload: "Uploaden",
+    img_camera: "Foto maken",
+    img_remove: "Afbeelding verwijderen",
+    img_hint: "De afbeelding wordt vóór het opslaan verkleind (maximaal 640 pixels) en vervangt de standaardafbeelding in lijst en pop-up.",
+    img_saved: "Afbeelding opgeslagen",
+    img_removed: "Afbeelding verwijderd",
+    img_error: "De afbeelding kon niet worden verwerkt.",
+    img_camera_denied: "Geen toegang tot de camera. Sta dit toe in de browser of kies “Uploaden”.",
+    img_capture: "Opnemen",
+    exp_f_device_images: "Eigen apparaatafbeeldingen",
+    exp_f_device_images_desc: "In de pop-up van een apparaat kun je onder “Afbeelding” een eigen afbeelding uploaden of met de camera maken. Ze wordt vóór het uploaden verkleind en vervangt in de kaart de standaardafbeelding.",
+    exp_f_statistics_tab: "Tabblad Statistieken",
+    exp_f_statistics_tab_desc: "Toont het tabblad “Statistieken” met overzichten over apparaten, signaal, batterijen, activiteit en netwerk.",
+    net_parent_reported: "Bovenliggend knooppunt (gemeld): {name}",
+    net_parent_estimated: "Geen bovenliggend knooppunt gemeld, geschat via de beste verbinding: {name}",
+    net_parent_path: "Voordeligste route zou via {name} lopen",
     connecting: "Verbinden …",
     error_generic: "Actie mislukt.",
     tab_devices: "Apparaten", tab_battery: "Batterij", tab_updates: "Updates",
@@ -635,7 +850,7 @@ const I18N = {
     f_available: "Bereikbaar", f_last_seen: "Laatst gezien",
     flt_missing: "Ontbreekt in Zigbee2MQTT", chip_missing: "Ontbreekt", status_missing: "Ontbreekt in Zigbee2MQTT (laatst bekend apparaat)", missing_badge: "ontbreekt", missing_hint: "Deze apparaten waren bekend, maar ontbreken nu in de apparatenlijst van Zigbee2MQTT. Ze verdwijnen vanzelf zodra ze terugkomen.", missing_popup_hint: "Dit apparaat staat niet meer in de apparatenlijst van Zigbee2MQTT. De laatst bekende gegevens worden getoond. Komt het terug, dan verdwijnt de markering vanzelf; met „Vergeten” haal je het uit deze lijst.", forget: "Vergeten", forget_all: "Alle ontbrekende vergeten", f_missing_since: "Ontbreekt sinds", network: "Netwerk", network_open: "Zigbee2MQTT-netwerkkaart openen", open_entity: "Entiteit openen in Home Assistant", open_device: "Apparaat openen in Home Assistant", ev_device_missing: "Ontbreekt in Zigbee2MQTT", ev_device_back: "Weer in de apparatenlijst",
     network_tab_hint: "Opent de Zigbee2MQTT-netwerkkaart (topologie) in Home Assistant of in een nieuw tabblad.", network_no_url: "Nog geen adres van de netwerkkaart bekend. Vul het in onder Instellingen → Apparaten & services → Zigbee2MQTT Manager → Configureren als „Adres van de netwerkkaart” (bijv. http://192.168.1.10:8080/#/network of /a0d7b954_zigbee2mqtt), of stel `network_url` in de kaart in.",
-    net_intro: "Opbouw van het Zigbee-netwerk uit de buurtabellen van de routers. Elke router hangt aan zijn beste verbinding met de coordinator (sterk, weinig sprongen) – een benadering van de echte routes.", net_refresh: "Netwerk opnieuw inlezen", net_refresh_hint: "Zigbee2MQTT bevraagt hiervoor elk apparaat afzonderlijk. Dat duurt afhankelijk van het netwerk enkele minuten en belast het Zigbee-netwerk. Lees het alleen in als je het nodig hebt.", net_loading: "Netwerk wordt ingelezen (gestart {t}) …",
+    net_intro: "Opbouw van het Zigbee-netwerk uit de buurtabellen van de routers. Elke router hangt aan het bovenliggende knooppunt dat hij zelf meldt. Meldt hij er geen, dan geldt zijn beste verbinding met de coordinator (sterk, weinig sprongen) als benadering.", net_refresh: "Netwerk opnieuw inlezen", net_refresh_hint: "Zigbee2MQTT bevraagt hiervoor elk apparaat afzonderlijk. Dat duurt afhankelijk van het netwerk enkele minuten en belast het Zigbee-netwerk. Lees het alleen in als je het nodig hebt.", net_loading: "Netwerk wordt ingelezen (gestart {t}) …",
     net_updated: "Stand: {t}", net_none: "Het netwerk is nog niet ingelezen. Start de opdracht met „Netwerk opnieuw inlezen”.", net_error_failed: "Zigbee2MQTT heeft de netwerkkaart niet geleverd.", net_error_timeout: "Zigbee2MQTT antwoordde niet op tijd (afgebroken na 10 minuten).",
     net_summary: "{routers} routers · {clients} eindapparaten · {links} verbindingen", net_coordinator: "Coordinator", net_router: "Router", net_cloud: "{n} eindapparaten",
     net_links_routers: "Verbindingen met routers", net_end_devices: "Eindapparaten", net_rel_parent: "Ouder", net_rel_child: "Kind",
@@ -694,7 +909,7 @@ const I18N = {
     exp_badge: "Experimenteel",
     exp_hint: "Deze functies zijn niet getest en staan standaard uit. Zet alleen aan wat je wilt uitproberen; feedback is welkom.",
     exp_f_expose_numeric_edit: "Numerieke waarden bewerken",
-    exp_f_expose_numeric_edit_desc: "Beschrijfbare numerieke functies (bijv. helderheid of offset) kun je in de pop-up onder “Functies” wijzigen.",
+    exp_f_expose_numeric_edit_desc: "Beschrijfbare numerieke functies (bijv. helderheid of offset) kun je in de pop-up onder “Functies” wijzigen met een schuifregelaar of door een waarde in te typen, ook negatieve waarden. Hetzelfde geldt voor getallen in de apparaatopties.",
     exp_f_list_columns: "Apparatenlijst met meerdere kolommen",
     exp_f_list_columns_desc: "Toont de apparatenlijst op brede schermen in meerdere kolommen. Het aantal stel je in de kaarteditor in (Automatisch of 1 tot 4); de zijbalkpagina gebruikt Automatisch.",
     ex_num_set: "Instellen",
@@ -702,6 +917,50 @@ const I18N = {
     exposes_hint_numeric: "Numerieke waarden (experimenteel) wijzig je direct: voer een waarde in en druk op “Instellen” of Enter. De waarde werkt meteen op het apparaat.",
   },
   fr: {
+    st_mains: "Alimentation secteur",
+    st_battery_powered: "Sur batterie",
+    tab_statistics: "Statistiques",
+    st_hint: "Évaluation des appareils actuellement connus et de la dernière carte du réseau lue.",
+    st_overview: "Aperçu",
+    st_kinds: "Types d'appareils",
+    st_weakest: "Signal le plus faible",
+    st_b_full: "Pleine",
+    st_b_ok: "Correcte",
+    st_b_low: "Faible",
+    st_b_crit: "Critique",
+    st_lowest: "Niveaux de batterie les plus bas",
+    st_activity: "Activité",
+    st_seen_hour: "Dernière heure",
+    st_seen_day: "24 dernières heures",
+    st_seen_older: "Plus de 24 heures",
+    st_chatty: "Le plus de messages (depuis le démarrage)",
+    st_chatty_none: "Aucun message compté pour l'instant. Le comptage commence à l'activation de la fonction et repart de zéro à chaque redémarrage.",
+    st_models: "Modèles les plus fréquents",
+    st_links: "Liaisons",
+    st_avg_link: "Signal moyen des liaisons",
+    st_depth: "Routeurs par niveau",
+    st_depth_n: "Niveau {n}",
+    st_busiest: "Le plus de terminaux par routeur",
+    st_no_network: "La carte du réseau n'a pas encore été lue. Lis-la dans l'onglet « Réseau ».",
+    st_fw_none: "Sans prise en charge OTA",
+    st_vendors_n: "{n} fabricants",
+    img_title: "Image",
+    img_upload: "Téléverser",
+    img_camera: "Prendre une photo",
+    img_remove: "Supprimer l'image",
+    img_hint: "L'image est réduite avant l'enregistrement (640 pixels au maximum) et remplace l'image par défaut dans la liste et la fenêtre.",
+    img_saved: "Image enregistrée",
+    img_removed: "Image supprimée",
+    img_error: "L'image n'a pas pu être traitée.",
+    img_camera_denied: "Pas d'accès à la caméra. Autorise-le dans le navigateur ou choisis « Téléverser ».",
+    img_capture: "Capturer",
+    exp_f_device_images: "Images d'appareils personnalisées",
+    exp_f_device_images_desc: "Dans la fenêtre d'un appareil, sous « Image », tu peux téléverser ta propre image ou en prendre une avec la caméra. Elle est réduite avant le téléversement et remplace l'image par défaut dans la carte.",
+    exp_f_statistics_tab: "Onglet Statistiques",
+    exp_f_statistics_tab_desc: "Affiche l'onglet « Statistiques » avec des évaluations sur les appareils, le signal, les batteries, l'activité et le réseau.",
+    net_parent_reported: "Parent (signalé) : {name}",
+    net_parent_estimated: "Aucun parent signalé, estimé via la meilleure liaison : {name}",
+    net_parent_path: "Le chemin le plus favorable passerait par {name}",
     connecting: "Connexion …",
     error_generic: "L'action a échoué.",
     tab_devices: "Appareils", tab_battery: "Batterie", tab_updates: "Mises à jour",
@@ -773,7 +1032,7 @@ const I18N = {
     f_available: "Joignable", f_last_seen: "Dernière activité",
     flt_missing: "Absent de Zigbee2MQTT", chip_missing: "Absents", status_missing: "Absent de Zigbee2MQTT (dernier appareil connu)", missing_badge: "absent", missing_hint: "Ces appareils étaient connus mais manquent actuellement dans la liste d'appareils de Zigbee2MQTT. Ils disparaissent d'ici dès qu'ils reviennent.", missing_popup_hint: "Cet appareil ne figure plus dans la liste d'appareils de Zigbee2MQTT. Les dernières données connues sont affichées. S'il revient, le repère disparaît de lui-même ; avec « Oublier », tu le retires de cette liste.", forget: "Oublier", forget_all: "Oublier tous les absents", f_missing_since: "Absent depuis", network: "Réseau", network_open: "Ouvrir la carte du réseau Zigbee2MQTT", open_entity: "Ouvrir l'entité dans Home Assistant", open_device: "Ouvrir l'appareil dans Home Assistant", ev_device_missing: "Absent de Zigbee2MQTT", ev_device_back: "De retour dans la liste",
     network_tab_hint: "Ouvre la carte du réseau Zigbee2MQTT (topologie) dans Home Assistant ou dans un nouvel onglet.", network_no_url: "Aucune adresse de la carte du réseau connue. Saisis-la sous Paramètres → Appareils et services → Zigbee2MQTT Manager → Configurer comme « Adresse de la carte du réseau » (p. ex. http://192.168.1.10:8080/#/network ou /a0d7b954_zigbee2mqtt), ou définis `network_url` dans la carte.",
-    net_intro: "Structure du réseau Zigbee, lue dans les tables de voisinage des routeurs. Chaque routeur est rattaché à sa meilleure liaison vers le coordinateur (forte, peu de sauts) – une approximation des routes réelles.", net_refresh: "Relire le réseau", net_refresh_hint: "Zigbee2MQTT interroge chaque appareil un par un. Selon le réseau, cela prend plusieurs minutes et charge le réseau Zigbee. Ne le relis que si nécessaire.", net_loading: "Lecture du réseau (démarrée {t}) …",
+    net_intro: "Structure du réseau Zigbee, lue dans les tables de voisinage des routeurs. Chaque routeur est rattaché au parent qu'il signale lui-même. S'il n'en signale aucun, sa meilleure liaison vers le coordinateur (forte, peu de sauts) sert d'approximation.", net_refresh: "Relire le réseau", net_refresh_hint: "Zigbee2MQTT interroge chaque appareil un par un. Selon le réseau, cela prend plusieurs minutes et charge le réseau Zigbee. Ne le relis que si nécessaire.", net_loading: "Lecture du réseau (démarrée {t}) …",
     net_updated: "État : {t}", net_none: "Le réseau n'a pas encore été lu. Lance la requête avec « Relire le réseau ».", net_error_failed: "Zigbee2MQTT n'a pas fourni la carte du réseau.", net_error_timeout: "Zigbee2MQTT n'a pas répondu à temps (abandon après 10 minutes).",
     net_summary: "{routers} routeurs · {clients} terminaux · {links} liaisons", net_coordinator: "Coordinateur", net_router: "Routeur", net_cloud: "{n} terminaux",
     net_links_routers: "Liaisons avec les routeurs", net_end_devices: "Terminaux", net_rel_parent: "Parent", net_rel_child: "Enfant",
@@ -832,7 +1091,7 @@ const I18N = {
     exp_badge: "Expérimental",
     exp_hint: "Ces fonctions ne sont pas testées et désactivées par défaut. N'activer que ce qui doit être essayé ; les retours sont bienvenus.",
     exp_f_expose_numeric_edit: "Modifier les valeurs numériques",
-    exp_f_expose_numeric_edit_desc: "Les fonctions numériques modifiables (p. ex. luminosité ou décalage) se changent dans la fenêtre sous « Fonctions ».",
+    exp_f_expose_numeric_edit_desc: "Les fonctions numériques modifiables (p. ex. luminosité ou décalage) se changent dans la fenêtre sous « Fonctions » avec un curseur ou en saisissant une valeur, y compris négative. Idem pour les nombres des options de l'appareil.",
     exp_f_list_columns: "Liste d'appareils sur plusieurs colonnes",
     exp_f_list_columns_desc: "Affiche la liste d'appareils sur plusieurs colonnes sur les grands écrans. Le nombre se règle dans l'éditeur de la carte (Automatique ou 1 à 4) ; l'entrée de la barre latérale utilise Automatique.",
     ex_num_set: "Appliquer",
@@ -840,6 +1099,50 @@ const I18N = {
     exposes_hint_numeric: "Les valeurs numériques (expérimental) se modifient directement : saisir une valeur puis « Appliquer » ou Entrée. La valeur agit immédiatement sur l'appareil.",
   },
   es: {
+    st_mains: "Red eléctrica",
+    st_battery_powered: "Batería",
+    tab_statistics: "Estadísticas",
+    st_hint: "Evaluación de los dispositivos conocidos actualmente y del último mapa de red leído.",
+    st_overview: "Resumen",
+    st_kinds: "Tipos de dispositivo",
+    st_weakest: "Señal más débil",
+    st_b_full: "Llena",
+    st_b_ok: "Correcta",
+    st_b_low: "Baja",
+    st_b_crit: "Crítica",
+    st_lowest: "Niveles de batería más bajos",
+    st_activity: "Actividad",
+    st_seen_hour: "Última hora",
+    st_seen_day: "Últimas 24 horas",
+    st_seen_older: "Más de 24 horas",
+    st_chatty: "Más mensajes (desde el inicio)",
+    st_chatty_none: "Aún no se han contado mensajes. El recuento empieza al activar la función y se reinicia con cada reinicio.",
+    st_models: "Modelos más frecuentes",
+    st_links: "Enlaces",
+    st_avg_link: "Señal media de los enlaces",
+    st_depth: "Routers por nivel",
+    st_depth_n: "Nivel {n}",
+    st_busiest: "Más dispositivos finales por router",
+    st_no_network: "El mapa de red aún no se ha leído. Léelo en la pestaña «Red».",
+    st_fw_none: "Sin compatibilidad con OTA",
+    st_vendors_n: "{n} fabricantes",
+    img_title: "Imagen",
+    img_upload: "Subir",
+    img_camera: "Hacer foto",
+    img_remove: "Quitar imagen",
+    img_hint: "La imagen se reduce antes de guardarla (máximo 640 píxeles) y sustituye a la imagen predeterminada en la lista y la ventana.",
+    img_saved: "Imagen guardada",
+    img_removed: "Imagen quitada",
+    img_error: "No se pudo procesar la imagen.",
+    img_camera_denied: "Sin acceso a la cámara. Permítelo en el navegador o elige «Subir».",
+    img_capture: "Capturar",
+    exp_f_device_images: "Imágenes de dispositivo propias",
+    exp_f_device_images_desc: "En la ventana de un dispositivo, en «Imagen», puedes subir una imagen propia o hacerla con la cámara. Se reduce antes de subirla y sustituye a la imagen predeterminada en la tarjeta.",
+    exp_f_statistics_tab: "Pestaña Estadísticas",
+    exp_f_statistics_tab_desc: "Muestra la pestaña «Estadísticas» con evaluaciones de dispositivos, señal, baterías, actividad y red.",
+    net_parent_reported: "Padre (informado): {name}",
+    net_parent_estimated: "Sin padre informado, estimado por el mejor enlace: {name}",
+    net_parent_path: "El camino más favorable sería a través de {name}",
     connecting: "Conectando …",
     error_generic: "La acción ha fallado.",
     tab_devices: "Dispositivos", tab_battery: "Batería", tab_updates: "Actualizaciones",
@@ -911,7 +1214,7 @@ const I18N = {
     f_available: "Accesible", f_last_seen: "Última actividad",
     flt_missing: "Falta en Zigbee2MQTT", chip_missing: "Ausentes", status_missing: "Falta en Zigbee2MQTT (último dispositivo conocido)", missing_badge: "ausente", missing_hint: "Estos dispositivos eran conocidos, pero ahora faltan en la lista de dispositivos de Zigbee2MQTT. Desaparecen de aquí solos en cuanto vuelven.", missing_popup_hint: "Este dispositivo ya no está en la lista de dispositivos de Zigbee2MQTT. Se muestran los últimos datos conocidos. Si vuelve, la marca desaparece sola; con «Olvidar» lo quitas de esta lista.", forget: "Olvidar", forget_all: "Olvidar todos los ausentes", f_missing_since: "Ausente desde", network: "Red", network_open: "Abrir el mapa de red de Zigbee2MQTT", open_entity: "Abrir la entidad en Home Assistant", open_device: "Abrir el dispositivo en Home Assistant", ev_device_missing: "Falta en Zigbee2MQTT", ev_device_back: "De nuevo en la lista",
     network_tab_hint: "Abre el mapa de red de Zigbee2MQTT (topología) en Home Assistant o en una pestaña nueva.", network_no_url: "Aún no se conoce la dirección del mapa de red. Indícala en Ajustes → Dispositivos y servicios → Zigbee2MQTT Manager → Configurar como «Dirección del mapa de red» (p. ej. http://192.168.1.10:8080/#/network o /a0d7b954_zigbee2mqtt), o define `network_url` en la tarjeta.",
-    net_intro: "Estructura de la red Zigbee, leída de las tablas de vecinos de los routers. Cada router cuelga de su mejor enlace con el coordinador (fuerte, pocos saltos): una aproximación de las rutas reales.", net_refresh: "Releer la red", net_refresh_hint: "Zigbee2MQTT consulta cada dispositivo uno por uno. Según la red tarda varios minutos y carga la red Zigbee. Léela solo cuando la necesites.", net_loading: "Leyendo la red (iniciado {t}) …",
+    net_intro: "Estructura de la red Zigbee, leída de las tablas de vecinos de los routers. Cada router cuelga del padre que él mismo informa. Si no informa de ninguno, se usa como aproximación su mejor enlace con el coordinador (fuerte, pocos saltos).", net_refresh: "Releer la red", net_refresh_hint: "Zigbee2MQTT consulta cada dispositivo uno por uno. Según la red tarda varios minutos y carga la red Zigbee. Léela solo cuando la necesites.", net_loading: "Leyendo la red (iniciado {t}) …",
     net_updated: "Estado: {t}", net_none: "La red aún no se ha leído. Inicia la consulta con «Releer la red».", net_error_failed: "Zigbee2MQTT no entregó el mapa de red.", net_error_timeout: "Zigbee2MQTT no respondió a tiempo (cancelado tras 10 minutos).",
     net_summary: "{routers} routers · {clients} dispositivos finales · {links} enlaces", net_coordinator: "Coordinador", net_router: "Router", net_cloud: "{n} dispositivos finales",
     net_links_routers: "Enlaces con routers", net_end_devices: "Dispositivos finales", net_rel_parent: "Padre", net_rel_child: "Hijo",
@@ -970,7 +1273,7 @@ const I18N = {
     exp_badge: "Experimental",
     exp_hint: "Estas funciones no están probadas y están desactivadas por defecto. Activa solo lo que quieras probar; se agradecen los comentarios.",
     exp_f_expose_numeric_edit: "Editar valores numéricos",
-    exp_f_expose_numeric_edit_desc: "Las funciones numéricas con escritura (p. ej. brillo o desfase) se pueden cambiar en la ventana, en «Funciones».",
+    exp_f_expose_numeric_edit_desc: "Las funciones numéricas con escritura (p. ej. brillo o desfase) se pueden cambiar en la ventana, en «Funciones», con un deslizador o escribiendo un valor, también negativo. Lo mismo vale para los números de las opciones del dispositivo.",
     exp_f_list_columns: "Lista de dispositivos en varias columnas",
     exp_f_list_columns_desc: "Muestra la lista de dispositivos en varias columnas en pantallas anchas. El número se ajusta en el editor de la tarjeta (Automático o de 1 a 4); la entrada de la barra lateral usa Automático.",
     ex_num_set: "Aplicar",
@@ -979,6 +1282,50 @@ const I18N = {
   },
   // Română
   ro: {
+    st_mains: "Alimentare de la rețea",
+    st_battery_powered: "Pe baterie",
+    tab_statistics: "Statistici",
+    st_hint: "Evaluarea dispozitivelor cunoscute în prezent și a ultimei hărți de rețea citite.",
+    st_overview: "Prezentare generală",
+    st_kinds: "Tipuri de dispozitive",
+    st_weakest: "Cel mai slab semnal",
+    st_b_full: "Plină",
+    st_b_ok: "În regulă",
+    st_b_low: "Scăzută",
+    st_b_crit: "Critică",
+    st_lowest: "Cele mai scăzute niveluri ale bateriei",
+    st_activity: "Activitate",
+    st_seen_hour: "Ultima oră",
+    st_seen_day: "Ultimele 24 de ore",
+    st_seen_older: "Mai vechi de 24 de ore",
+    st_chatty: "Cele mai multe mesaje (de la pornire)",
+    st_chatty_none: "Încă nu s-au numărat mesaje. Numărarea începe când se activează funcția și pornește de la zero la fiecare repornire.",
+    st_models: "Cele mai frecvente modele",
+    st_links: "Legături",
+    st_avg_link: "Semnal mediu al legăturilor",
+    st_depth: "Routere pe nivel",
+    st_depth_n: "Nivel {n}",
+    st_busiest: "Cele mai multe dispozitive finale per router",
+    st_no_network: "Harta rețelei nu a fost citită încă. Citește-o în fila „Rețea”.",
+    st_fw_none: "Fără suport OTA",
+    st_vendors_n: "{n} producători",
+    img_title: "Imagine",
+    img_upload: "Încarcă",
+    img_camera: "Fă o fotografie",
+    img_remove: "Elimină imaginea",
+    img_hint: "Imaginea este micșorată înainte de salvare (cel mult 640 de pixeli) și înlocuiește imaginea implicită din listă și din fereastră.",
+    img_saved: "Imagine salvată",
+    img_removed: "Imagine eliminată",
+    img_error: "Imaginea nu a putut fi procesată.",
+    img_camera_denied: "Fără acces la cameră. Permite-l în browser sau alege „Încarcă”.",
+    img_capture: "Capturează",
+    exp_f_device_images: "Imagini proprii pentru dispozitive",
+    exp_f_device_images_desc: "În fereastra unui dispozitiv, la „Imagine”, poți încărca o imagine proprie sau o poți face cu camera. Este micșorată înainte de încărcare și înlocuiește imaginea implicită din card.",
+    exp_f_statistics_tab: "Fila Statistici",
+    exp_f_statistics_tab_desc: "Afișează fila „Statistici” cu evaluări despre dispozitive, semnal, baterii, activitate și rețea.",
+    net_parent_reported: "Părinte (raportat): {name}",
+    net_parent_estimated: "Niciun părinte raportat, estimat după cea mai bună legătură: {name}",
+    net_parent_path: "Calea cea mai avantajoasă ar trece prin {name}",
     net_zoom_label: "Zoomul hărții rețelei", net_zoom_out: "Micșorează", net_zoom_in: "Mărește", net_zoom_fit: "Potrivește", net_zoom_reset: "Resetează la 100 %", net_zoom_hint: "Zoom: cursor sau butoane; pe telefon ciupește cu două degete, pe desktop Ctrl + rotița mouse-ului. Ține apăsat butonul mouse-ului și trage pentru a muta harta în orice direcție.",
     status_lost: "Offline – ultimul mesaj {t} (limită: {d} zile), probabil nu mai este în rețea.", lost_badge: "pierdut", avail_silent: "nu (niciun mesaj de zile)", flt_lost: "Pierdut (mult timp fără mesaje)",
     connecting: "Conectare …",
@@ -1086,7 +1433,7 @@ const I18N = {
     z2m_update_available: "Actualizare disponibilă: {v}",
     z2m_update_hint: "Actualizează Zigbee2MQTT manual pe serverul său sau în containerul Docker, nu prin HACS.",
     z2m_check_now: "Verifică acum", z2m_check_failed: "Verificare imposibilă", z2m_release: "Vezi versiunea",
-    net_intro: "Structura rețelei Zigbee, citită din tabelele de vecini ale routerelor. Fiecare router este atașat la cea mai bună cale spre coordonator (legătură puternică, puține salturi) – o aproximare a rutelor reale.",
+    net_intro: "Structura rețelei Zigbee, citită din tabelele de vecini ale routerelor. Fiecare router este atașat părintelui pe care îl raportează chiar el. Dacă nu raportează niciunul, se folosește ca aproximare cea mai bună legătură a sa spre coordonator (puternică, puține salturi).",
     net_refresh: "Recitește rețeaua",
     net_refresh_hint: "Pentru asta, Zigbee2MQTT interoghează fiecare dispozitiv pe rând. În funcție de rețea durează câteva minute și încarcă rețeaua Zigbee. Citește-o doar când ai nevoie.",
     net_loading: "Se citește rețeaua (pornit la {t}) …", net_updated: "Stare la {t}",
@@ -1110,7 +1457,7 @@ const I18N = {
     exp_badge: "Experimental",
     exp_hint: "Aceste funcții nu sunt testate și sunt dezactivate implicit. Activează doar ce vrei să încerci; feedback-ul este binevenit.",
     exp_f_expose_numeric_edit: "Editare valori numerice",
-    exp_f_expose_numeric_edit_desc: "Funcțiile numerice cu drept de scriere (de ex. luminozitatea sau decalajul) pot fi modificate în fereastră, la „Funcții”.",
+    exp_f_expose_numeric_edit_desc: "Funcțiile numerice cu drept de scriere (de ex. luminozitatea sau decalajul) pot fi modificate în fereastră, la „Funcții”, cu un glisor sau tastând o valoare, inclusiv negativă. Același lucru se aplică numerelor din opțiunile dispozitivului.",
     exp_f_list_columns: "Listă de dispozitive pe mai multe coloane",
     exp_f_list_columns_desc: "Afișează lista de dispozitive pe mai multe coloane pe ecrane late. Numărul se setează în editorul cardului (Automat sau 1–4); intrarea din bara laterală folosește Automat.",
     ex_num_set: "Setează",
@@ -1118,6 +1465,50 @@ const I18N = {
     exposes_hint_numeric: "Valorile numerice (experimental) se modifică direct: introdu o valoare și apasă „Setează” sau Enter. Valoarea are efect imediat pe dispozitiv.",
   },
   it: {
+    st_mains: "Alimentazione di rete",
+    st_battery_powered: "A batteria",
+    tab_statistics: "Statistiche",
+    st_hint: "Valutazione dei dispositivi attualmente noti e dell'ultima mappa di rete letta.",
+    st_overview: "Panoramica",
+    st_kinds: "Tipi di dispositivo",
+    st_weakest: "Segnale più debole",
+    st_b_full: "Piena",
+    st_b_ok: "Buona",
+    st_b_low: "Bassa",
+    st_b_crit: "Critica",
+    st_lowest: "Livelli di batteria più bassi",
+    st_activity: "Attività",
+    st_seen_hour: "Ultima ora",
+    st_seen_day: "Ultime 24 ore",
+    st_seen_older: "Più di 24 ore fa",
+    st_chatty: "Più messaggi (dall'avvio)",
+    st_chatty_none: "Nessun messaggio ancora conteggiato. Il conteggio inizia all'attivazione della funzione e riparte a ogni riavvio.",
+    st_models: "Modelli più frequenti",
+    st_links: "Collegamenti",
+    st_avg_link: "Segnale medio dei collegamenti",
+    st_depth: "Router per livello",
+    st_depth_n: "Livello {n}",
+    st_busiest: "Più dispositivi finali per router",
+    st_no_network: "La mappa di rete non è ancora stata letta. Leggila nella scheda «Rete».",
+    st_fw_none: "Senza supporto OTA",
+    st_vendors_n: "{n} produttori",
+    img_title: "Immagine",
+    img_upload: "Carica",
+    img_camera: "Scatta una foto",
+    img_remove: "Rimuovi immagine",
+    img_hint: "L'immagine viene ridotta prima del salvataggio (al massimo 640 pixel) e sostituisce l'immagine predefinita nell'elenco e nella finestra.",
+    img_saved: "Immagine salvata",
+    img_removed: "Immagine rimossa",
+    img_error: "Impossibile elaborare l'immagine.",
+    img_camera_denied: "Nessun accesso alla fotocamera. Consentilo nel browser o scegli «Carica».",
+    img_capture: "Scatta",
+    exp_f_device_images: "Immagini dei dispositivi personalizzate",
+    exp_f_device_images_desc: "Nella finestra di un dispositivo, sotto «Immagine», puoi caricare un'immagine tua o scattarla con la fotocamera. Viene ridotta prima del caricamento e sostituisce l'immagine predefinita nella scheda.",
+    exp_f_statistics_tab: "Scheda Statistiche",
+    exp_f_statistics_tab_desc: "Mostra la scheda «Statistiche» con valutazioni su dispositivi, segnale, batterie, attività e rete.",
+    net_parent_reported: "Genitore (segnalato): {name}",
+    net_parent_estimated: "Nessun genitore segnalato, stimato dal collegamento migliore: {name}",
+    net_parent_path: "Il percorso più favorevole passerebbe da {name}",
     connecting: "Connessione …",
     error_generic: "Azione non riuscita.",
     tab_devices: "Dispositivi", tab_battery: "Batteria", tab_updates: "Aggiornamenti",
@@ -1185,7 +1576,7 @@ const I18N = {
     f_available: "Raggiungibile", f_last_seen: "Ultimo contatto",
     flt_missing: "Mancante in Zigbee2MQTT", chip_missing: "Mancanti", status_missing: "Mancante in Zigbee2MQTT (ultimo dispositivo noto)", missing_badge: "mancante", missing_hint: "Questi dispositivi erano noti ma ora mancano dall'elenco dei dispositivi di Zigbee2MQTT. Spariscono da qui da soli quando ritornano.", missing_popup_hint: "Questo dispositivo non è più nell'elenco dei dispositivi di Zigbee2MQTT. Sono mostrati gli ultimi dati noti. Se ritorna, il contrassegno sparisce da solo; con “Dimentica” lo togli da questo elenco.", forget: "Dimentica", forget_all: "Dimentica tutti i mancanti", f_missing_since: "Scomparso", network: "Rete", network_open: "Apri la mappa di rete di Zigbee2MQTT", open_entity: "Apri l'entità in Home Assistant", open_device: "Apri il dispositivo in Home Assistant", ev_device_missing: "Mancante in Zigbee2MQTT", ev_device_back: "Di nuovo nell'elenco dei dispositivi",
     network_tab_hint: "Apre la mappa di rete (topologia) di Zigbee2MQTT in Home Assistant o in una nuova scheda del browser.", network_no_url: "Nessun indirizzo noto per la mappa di rete. Inseriscilo in Impostazioni → Dispositivi e servizi → Zigbee2MQTT Manager → Configura come “Indirizzo della mappa di rete” (ad es. http://192.168.1.10:8080/#/network o /a0d7b954_zigbee2mqtt), oppure imposta `network_url` nella scheda.",
-    net_intro: "Struttura della rete Zigbee, ricavata dalle tabelle dei vicini dei router. Ogni router è agganciato al suo miglior percorso verso il coordinatore (collegamento forte, pochi salti) – un'approssimazione dei percorsi reali.", net_refresh: "Rileggi la rete", net_refresh_hint: "Per farlo Zigbee2MQTT interroga i dispositivi uno per uno. A seconda della rete richiede diversi minuti e carica la rete Zigbee. Rileggila solo quando serve.", net_loading: "Lettura della rete (avviata {t}) …",
+    net_intro: "Struttura della rete Zigbee, ricavata dalle tabelle dei vicini dei router. Ogni router è agganciato al genitore che segnala lui stesso. Se non ne segnala nessuno, come approssimazione vale il suo collegamento migliore verso il coordinatore (forte, pochi salti).", net_refresh: "Rileggi la rete", net_refresh_hint: "Per farlo Zigbee2MQTT interroga i dispositivi uno per uno. A seconda della rete richiede diversi minuti e carica la rete Zigbee. Rileggila solo quando serve.", net_loading: "Lettura della rete (avviata {t}) …",
     net_updated: "Aggiornata {t}", net_none: "La rete non è ancora stata letta. Avvia la lettura con “Rileggi la rete”.", net_error_failed: "Zigbee2MQTT non ha fornito la mappa di rete.", net_error_timeout: "Zigbee2MQTT non ha risposto in tempo (interrotto dopo 10 minuti).",
     net_summary: "{routers} router · {clients} dispositivi finali · {links} collegamenti", net_coordinator: "Coordinatore", net_router: "Router", net_cloud: "{n} dispositivi finali",
     net_links_routers: "Collegamenti ai router", net_end_devices: "Dispositivi finali", net_rel_parent: "Genitore", net_rel_child: "Figlio",
@@ -1241,122 +1632,380 @@ const I18N = {
     exp_badge: "Sperimentale",
     exp_hint: "Queste funzioni non sono verificate e sono disattivate per impostazione predefinita. Attiva solo ciò che vuoi provare; i feedback sono benvenuti.",
     exp_f_expose_numeric_edit: "Modifica valori numerici",
-    exp_f_expose_numeric_edit_desc: "Le funzioni numeriche scrivibili (ad es. luminosità o offset) si possono modificare nella finestra, sotto «Funzioni».",
+    exp_f_expose_numeric_edit_desc: "Le funzioni numeriche scrivibili (ad es. luminosità o offset) si possono modificare nella finestra, sotto «Funzioni», con un cursore o digitando un valore, anche negativo. Lo stesso vale per i numeri nelle opzioni del dispositivo.",
     exp_f_list_columns: "Elenco dispositivi su più colonne",
     exp_f_list_columns_desc: "Mostra l'elenco dei dispositivi su più colonne sugli schermi larghi. Il numero si imposta nell'editor della scheda (Automatico o da 1 a 4); la voce nella barra laterale usa Automatico.",
     ex_num_set: "Imposta",
     ex_num_invalid: "Valore non valido",
     exposes_hint_numeric: "I valori numerici (sperimentale) si modificano direttamente: inserisci un valore e premi «Imposta» o Invio. Il valore agisce subito sul dispositivo.",
   },
-  // Српски (ћирилица): Kernbegriffe übersetzt, übrige Texte fallen auf Englisch zurück (siehe _t)
+  // Српски (ћирилица)
   sr: {
+    st_mains: "Напајање из мреже",
+    st_battery_powered: "Напајање батеријом",
+    tab_statistics: "Статистика",
+    st_hint: "Анализа тренутно познатих уређаја и последње прочитане мреже.",
+    st_overview: "Преглед",
+    st_kinds: "Врсте уређаја",
+    st_weakest: "Најслабији сигнал",
+    st_b_full: "Пуна",
+    st_b_ok: "У реду",
+    st_b_low: "Ниска",
+    st_b_crit: "Критична",
+    st_lowest: "Најнижи нивои батерије",
+    st_activity: "Активност",
+    st_seen_hour: "Последњи сат",
+    st_seen_day: "Последња 24 сата",
+    st_seen_older: "Старије од 24 сата",
+    st_chatty: "Највише порука (од покретања)",
+    st_chatty_none: "Још нема пребројаних порука. Бројање почиње укључивањем функције и креће испочетка при сваком поновном покретању.",
+    st_models: "Најчешћи модели",
+    st_links: "Везе",
+    st_avg_link: "Просечан сигнал веза",
+    st_depth: "Рутери по нивоу",
+    st_depth_n: "Ниво {n}",
+    st_busiest: "Највише крајњих уређаја по рутеру",
+    st_no_network: "Мрежна мапа још није прочитана. Прочитај је у картици „Мрежа”.",
+    st_fw_none: "Без OTA подршке",
+    st_vendors_n: "{n} произвођача",
+    img_title: "Слика",
+    img_upload: "Отпреми",
+    img_camera: "Сликај",
+    img_remove: "Уклони слику",
+    img_hint: "Слика се пре чувања смањује (највише 640 пиксела) и замењује подразумевану слику у листи и прозору.",
+    img_saved: "Слика је сачувана",
+    img_removed: "Слика је уклоњена",
+    img_error: "Слика није могла да се обради.",
+    img_camera_denied: "Нема приступа камери. Дозволи је у прегледачу или изабери „Отпреми”.",
+    img_capture: "Сними",
+    exp_f_device_images: "Сопствене слике уређаја",
+    exp_f_device_images_desc: "У прозору уређаја, под „Слика”, можеш отпремити сопствену слику или је снимити камером. Смањује се пре отпремања и у картици замењује подразумевану слику.",
+    exp_f_statistics_tab: "Картица Статистика",
+    exp_f_statistics_tab_desc: "Приказује картицу „Статистика” са анализама уређаја, сигнала, батерија, активности и мреже.",
+    net_parent_reported: "Родитељ (пријављен): {name}",
+    net_parent_estimated: "Родитељ није пријављен, процена према најбољој вези: {name}",
+    net_parent_path: "Најповољнија путања би ишла преко {name}",
     connecting: "Повезивање …",
-    error_generic: "Радња није успела.",
+    error_generic: "Акција није успела.",
     tab_devices: "Уређаји", tab_battery: "Батерија", tab_updates: "Ажурирања",
     tab_groups: "Групе", tab_bindings: "Повезивања", tab_bridge: "Мост",
     chip_devices: "Уређаји", chip_offline: "Ван мреже", chip_low_battery: "Слаба батерија", chip_updates: "Ажурирања",
-    search: "Претражи по имену, моделу или IEEE", sort: "Сортирање",
-    sort_name_asc: "Име А–Ш", sort_name_desc: "Име Ш–А",
-    no_data: "Још нема података из Zigbee2MQTT. Да ли мост ради?", no_results: "Нема резултата.",
+    search: "Претражи по називу, моделу или IEEE адреси", sort: "Сортирање",
+    sort_name_asc: "Назив А–Ш", sort_name_desc: "Назив Ш–А", sort_battery_asc: "Батерија (прво најнижа)",
+    sort_lqi_asc: "Сигнал (прво најслабији)", sort_last_seen_desc: "Последњи пут виђен (прво најновије)",
+    sort_last_seen_asc: "Последњи пут виђен (прво најстарије)", sort_ota: "Статус ажурирања",
+    no_data: "Још увек нема података са „Zigbee2MQTT”. Да ли мост ради?", no_results: "Нема резултата.",
     show_more: "Прикажи још {n}",
-    offline: "ван мреже", online: "на мрежи", unknown: "непознато", inactive: "неактивно", disabled: "искључен",
-    never: "никад", yes: "да", no: "не", close: "Затвори", save: "Сачувај", add: "Додај", cancel: "Откажи",
-    confirm: "Сигурно?", loading: "Учитавање …", details: "Детаљи", remove: "Уклони уређај", rename: "Преименуј",
+    status_online: "На мрежи (према „Zigbee2MQTT”)", status_offline: "Ван мреже (према „Zigbee2MQTT”)", status_seen: "Вероватно на мрежи – последњи пут виђен {t}. Z2M доступност није активна.", status_stale: "Дуго без сигнала – последњи пут виђен {t}. Z2M доступност није активна.", status_unknown: "Статус непознат – још увек нема примљених порука.",
+    offline: "ван мреже", online: "на мрежи", unknown: "непознато", inactive: "неактивно", interviewing: "Интервју", disabled: "онемогућено",
+    never: "никада", yes: "да", no: "не", close: "Затвори", save: "Сачувај", add: "Додај", cancel: "Откажи",
+    confirm: "Да ли сте сигурни?", loading: "Учитавање …", details: "Детаљи", remove: "Уклони уређај", rename: "Преименуј",
     group: "Група",
-    pairing_active: "Упаривање активно", pairing_start: "Покрени упаривање", pairing_stop: "Заврши упаривање",
-    check_all: "Провери сва ажурирања", install: "Инсталирај",
-    ota_available: "Ажурирање доступно", ota_idle: "Ажурно",
-    sec_info: "Инфо", sec_status: "Стање", sec_entities: "Ентитети (за аутоматизације)",
-    f_vendor: "Произвођач", f_model: "Модел", f_area: "Просторија", f_ieee: "IEEE", f_lqi: "Квалитет сигнала",
-    f_battery: "Батерија", f_last_seen: "Последњи пут виђен", f_version: "Верзија", f_base_topic: "Основна тема (base topic)",
-    copy: "Копирај у привремену меморију", copy_all: "Копирај све",
-    flt_missing: "Недостаје у Zigbee2MQTT", chip_missing: "Недостаје", status_missing: "Недостаје у Zigbee2MQTT (последњи познати уређај)",
-    missing_badge: "недостаје",
-    missing_hint: "Ови уређаји су били познати, али тренутно недостају на листи уређаја Zigbee2MQTT. Нестају одавде сами чим се врате.",
-    missing_popup_hint: "Овог уређаја више нема на листи уређаја Zigbee2MQTT. Приказани су последњи познати подаци. Ако се врати, ознака нестаје сама; помоћу „Заборави“ га уклањаш са ове листе.",
-    forget: "Заборави", forget_all: "Заборави све који недостају", f_missing_since: "Недостаје од",
-    network: "Мрежа", network_open: "Отвори мрежну мапу Zigbee2MQTT",
-    open_entity: "Отвори ентитет у Home Assistant-у", open_device: "Отвори уређај у Home Assistant-у",
-    ev_device_missing: "Недостаје у Zigbee2MQTT", ev_device_back: "Поново на листи уређаја",
-    network_tab_hint: "Отвара мрежну мапу Zigbee2MQTT (топологију) у Home Assistant-у или у новој картици.", network_no_url: "Адреса мапе мреже још није позната. Унеси је у Подешавања → Уређаји и услуге → Zigbee2MQTT Manager → Конфигуриши као „Адреса мапе мреже“ (нпр. http://192.168.1.10:8080/#/network) или постави `network_url` у картици.",
-    net_intro: "Структура Zigbee мреже, прочитана из табела суседа рутера. Сваки рутер је везан за своју најбољу везу ка координатору (јака, мало скокова) – апроксимација стварних рута.", net_refresh: "Поново учитај мрежу", net_refresh_hint: "Zigbee2MQTT за ово пита сваки уређај појединачно. Зависно од мреже траје неколико минута и оптерећује Zigbee мрежу. Учитај је само када је треба.", net_loading: "Мрежа се учитава (почело {t}) …",
-    net_updated: "Стање: {t}", net_none: "Мрежа још није учитана. Покрени упит са „Поново учитај мрежу“.", net_error_failed: "Zigbee2MQTT није испоручио мапу мреже.", net_error_timeout: "Zigbee2MQTT није одговорио на време (прекинуто након 10 минута).",
+
+    bridge_error: "Нема везе са интеграцијом", bridge_offline: "„Zigbee2MQTT” мост је ван мреже",
+    bridge_offline_hint: "Мост не одговара. Приказане вредности су из кеш меморије.",
+    bridge_incompatible: "Верзија „Zigbee2MQTT” није подржана",
+    bridge_incompatible_hint: "Детектована верзија {v} – потребна је „Zigbee2MQTT” 2.x.",
+    pairing_active: "Упаривање је активно", pairing_start: "Покрени упаривање", pairing_stop: "Заустави упаривање", until: "до {time}",
+    restart_required: "Потребно је поновно покретање", restart_required_hint: "„Zigbee2MQTT” јавља да постоје измењене опције које захтевају поновно покретање.",
+    job_check: "Провера фирмвера је у току", job_update: "Инсталација ажурирања фирмвера је у току",
+
+    check_all: "Провери ажурирања за све", checking: "Провера је покренута …", update_all: "Инсталирај {n} ажурирања узастопно",
+    update_all_hint: "Ажурирања се инсталирају једно за другим, никада паралелно. Уређаји би требало да имају напајање и да остану у домету.",
+    install: "Инсталирај", check: "Провери има ли ажурирања", update_now: "Инсталирај ажурирање",
+    ota_available: "Ажурирање је доступно", ota_updating: "Ажурирање је у току", ota_scheduled: "Заказано", ota_idle: "Ажурно",
+    ota_unknown: "Није проверено", ota_unsupported: "Овај уређај не подржава OTA ажурирања.",
+    update_confirm: "Током ажурирања уређај мора имати напајање и остати у домету.",
+    update_found: "Ажурирање је доступно", no_update: "Нема доступних ажурирања", done_update: "Ажурирање је завршено",
+
+    group_name: "Назив нове групе", group_create: "Креирај групу", group_delete: "Обриши групу", group_empty: "Ова група још увек нема чланова.",
+    group_add_member: "Додај уређај", remove_member: "Уклони из групе", no_groups: "Нема креираних група.",
+    group_broadcast_hint: "Групе шаљу команде као „broadcast” свим члановима истовремено.", done_group: "Група је ажурирана",
+    no_groups_device: "Није члан ниједне групе.",
+    //
+    no_bindings: "Нема активних повезивања.", no_bindings_device: "Нема подешених повезивања.",
+    bindings_hint: "Повезивања директно повезују уређаје (нпр. прекидач → лампа) и функционишу чак и без „Home Assistant”-а.",
+    bind: "Повежи", unbind: "Раскини везу", bind_target: "Циљ (уређај или група)", pick_target: "Изаберите циљ.",
+    bind_hint: "Ако ништа није изабрано, сви одговарајући кластери ће бити повезани. Претходно пробудите уређаје на батерије притиском на дугме.",
+    done_bound: "Повезано", done_unbound: "Веза је раскинута",
+
+    sec_app: "Верзија апликације", f_integration_version: "Интеграција", f_card_version: "Картица", f_latest_version: "Најновија верзија",
+    app_up_to_date: "Ажурно", app_update_available: "Доступно ажурирање: {v}", app_check_failed: "Провера није могућа („GitHub” је недоступан)", app_not_checked: "још није проверено",
+    f_checked: "Последњи пут проверено", app_check_now: "Провери сада", app_checking: "Проверавам да ли има нове верзије …", app_release: "Погледај издање",
+    app_update_hint: "Ажурирајте преко HACS-а (интеграција) и поново покрените „Home Assistant”. Након тога освежите прегледач (Ctrl+F5).",
+    z2m_update_available: "Доступно ажурирање: {v}", z2m_update_hint: "Ажурирање се врши ручно на „Zigbee2MQTT” серверу, односно у Докер контејнеру, а не преко HACS-а.",
+    z2m_check_now: "Провери сада", z2m_check_failed: "Провера није могућа", z2m_release: "Погледај издање",
+    app_mismatch: "Картица ({card}) и интеграција ({integration}) имају различите верзије. Испразните кеш прегледача (Ctrl+F5) или поново учитајте апликацију.",
+    sec_status: "Статус", sec_pairing: "Упаривање", sec_options: "Опције моста", sec_maintenance: "Одржавање", sec_events: "Догађаји",
+    f_status: "Статус", f_version: "Верзија „Zigbee2MQTT”", f_coordinator: "Координатор", f_base_topic: "Base-Topic", f_pairing: "Упаривање",
+    pairing_hint: "Режим упаривања остаје активан највише 254 секунде.",
+    opt_log_level: "Ниво логовање (Log-Level)", opt_last_seen: "Формат за „Последњи пут виђен”",
+    options_hint: "Измене се одмах шаљу у „Zigbee2MQTT”. Неке опције захтевају поновно покретање.",
+    done_bridge_option: "Опција је сачувана", restart: "Поново покрени мост",
+    restart_hint: "Поново покреће само „Zigbee2MQTT”. За то време „Zigbee” мрежа ће кратко бити недоступна.", done_restart: "Затражено поновно покретање",
+    read_only_hint: "Картица је заштићена од уписа (само за читање).", no_events: "Нема догађаја од покретања.",
+    ev_device_joined: "Придружен", ev_device_leave: "Напустио мрежу", ev_device_interview: "Интервју", ev_device_announce: "Најављује се",
+    ev_offline: "Ван мреже", ev_online: "Поново на мрежи", ev_battery_low: "Слаба батерија", ev_update_available: "Ажурирање је доступно",
+    //
+    sec_info: "Информације", sec_device_options: "Опције уређаја", sec_firmware: "Фирмвер", sec_remove: "Уклони уређај",
+    new_name: "Нови назив", rename_entities_hint: "Приликом преименовања биће прилагођено и {n} ентитета у „Home Assistant”-у:",
+    done_renamed: "Преименовано", done_options: "Опције су сачуване", no_options: "Овај уређај нема опција које се могу подесити.",
+    options_device_hint: "„Zigbee2MQTT” чува опције у својој конфигурацији.", no_changes: "Нема измена.",
+    remove_hint: "Уклања уређај из Жигби мреже. Након тога се мора поново упарити.",
+    force_remove: "Присилно уклони (чак и ако уређај не одговара)", done_removed: "Уређај је уклоњен",
+    f_vendor: "Произвођач", f_model: "Модел", f_description: "Опис производа", f_type: "Тип", f_ieee: "IEEE адреса", f_nwk: "Мрежна адреса",
+    f_power: "Напајање", f_firmware: "Верзија фирмвера", f_lqi: "Квалитет сигнала", f_battery: "Батерија", f_voltage: "Напон",
+    f_available: "Доступан", f_last_seen: "Последњи пут виђен",
+    flt_missing: "Недостаје у „Zigbee2MQTT”-у", chip_missing: "Недостаје", status_missing: "Недостаје у „Zigbee2MQTT”-у (последњи познати уређај)", missing_badge: "недостаје", missing_hint: "Ови уређаји су били познати, али тренутно недостају на листи уређаја у „Zigbee2MQTT”-у. Нестаће сами чим се врате.", missing_popup_hint: "Овај уређај се више не налази на листи уређаја у „Zigbee2MQTT”-у. Приказани су последњи познати подаци. Ако се врати, ознака ће сама нестати; опцијом „Заборави” уклањате га са ове листе.", forget: "Заборави", forget_all: "Заборави све који недостају", f_missing_since: "Недостаје од", network: "Мрежа", network_open: "Отвори „Zigbee2MQTT” мрежну мапу", open_entity: "Отвори ентитет у „Home Assistant”-у", open_device: "Отвори уређај у „Home Assistant”-у", ev_device_missing: "Недостаје у „Zigbee2MQTT”-у", ev_device_back: "Поново на листи уређаја",
+    network_tab_hint: "Отвара „Zigbee2MQTT” мрежну мапу (топологију) у „Home Assistant”-у или у новој картици.", network_no_url: "Адреса мрежне мапе још увек није позната. Унесите је под Подешавања → Уређаји и услуге → Zigbee2MQTT Manager → Конфигуриши као „Адреса мрежне мапе” (нпр. http://192.168.1.10:8080/#/network или /a0d7b954_zigbee2mqtt), или је поставите у картици као `network_url`.",
+    net_intro: "Приказ структуре Жигби мреже на основу табела суседства рутера. Сваки рутер је повезан са родитељем који сам пријављује. Ако не пријављује ниједног, као апроксимација служи његова најбоља веза са координатором (јак сигнал, мало скокова).", net_refresh: "Поново учитај мрежу", net_refresh_hint: "„Zigbee2MQTT” због овога шаље упит сваком уређају појединачно. То може потрајати неколико минута у зависности од величине мреже и оптерећује Жигби мрежу. Освежавајте је само када вам је заиста потребно.", net_loading: "Мрежа се учитава (покренуто у {t}) …",
+    net_updated: "Стање: {t}", net_none: "Мрежа још увек није учитана. Покрените упит кликом на „Поново учитај мрежу”.", net_error_failed: "„Zigbee2MQTT” није доставио податке за мрежну мапу.", net_error_timeout: "„Zigbee2MQTT” није одговорио на време (прекинуто након 10 минута).",
     net_summary: "{routers} рутера · {clients} крајњих уређаја · {links} веза", net_coordinator: "Координатор", net_router: "Рутер", net_cloud: "{n} крајњих уређаја",
-    net_links_routers: "Везе ка рутерима", net_end_devices: "Крајњи уређаји", net_rel_parent: "Родитељ", net_rel_child: "Дете",
-    net_rel_sibling: "Сусед", net_orphan: "Веза са координатором није позната", net_unassigned: "Без познате везе", net_unassigned_hint: "Ови крајњи уређаји нису ни у једној табели суседа (нпр. ван домета, нови или кратко активни).",
-    net_open_tip: "Отвори {name}", net_show_tip: "Прикажи крајње уређаје од {name}", net_no_links: "Нема познатих веза", net_refresh_done: "Мапа мреже ажурирана",
-    net_lqi: "Сигнал", ev_network_map: "Мапа мреже учитана", sec_monitor: "Надзор", ignore_offline: "Игнориши статус ван мреже",
-    ignore_offline_hint: "Уређај се не рачуна као ван мреже: без сметње, без догађаја, без поруке за Notification Center. Корисно нпр. за лампе иза зидног прекидача.", ignored_badge: "Ван мреже игнорисано", status_ignored: "Ван мреже, игнорише се", flt_ignored: "Ван мреже игнорисано",
-    net_map_label: "Zigbee мапа мреже", net_native: "Отвори Zigbee2MQTT интерфејс",
-    net_zoom_label: "Зум мрежне мапе", net_zoom_out: "Умањи", net_zoom_in: "Увећај", net_zoom_fit: "Прилагоди", net_zoom_reset: "Врати на 100 %", net_zoom_hint: "Зум: клизач или дугмад; на телефону са два прста, на рачунару Ctrl + точкић миша. Држи притиснуто дугме миша и превлачи да помераш мапу у свим смеровима.",
-    status_lost: "Офлајн – последња порука {t} (граница: {d} дана), вероватно више није у мрежи.", lost_badge: "изгубљен", avail_silent: "не (дани без поруке)", flt_lost: "Изгубљен (дуго без поруке)",
-    z2m_update_available: "Ажурирање доступно: {v}", z2m_update_hint: "Ажурирај Zigbee2MQTT ручно на његовом серверу или у Docker контејнеру, не преко HACS-а.", z2m_check_now: "Провери сада", z2m_check_failed: "Провера није могућа", z2m_release: "Погледај издање",
-    // Experimentell (seit 1.4.0)
+    net_links_routers: "Везе са рутерима", net_end_devices: "Крајњи уређаји", net_rel_parent: "Надређени чвор (Parent)", net_rel_child: "Подређени чвор (Child)",
+    net_rel_sibling: "Сусед", net_orphan: "Нема познате везе са координатором", net_unassigned: "Без познате везе", net_unassigned_hint: "Ови крајњи уређаји се не налазе ни у једној табели суседства (нпр. тренутно су ван домета, нови су или су били активни само накратко).",
+    net_open_tip: "Отвори {name}", net_show_tip: "Прикажи крајње уређаје за {name}", net_no_links: "Нема познатих веза", net_refresh_done: "Мрежна мапа је ажурирана",
+    net_lqi: "Сигнал", ev_network_map: "Мрежна мапа је учитана", sec_monitor: "Надзор", ignore_offline: "Игнориши офлајн статус",
+    ignore_offline_hint: "Уређај се неће сматрати офлајн: нема приказа сметњи, нема догађаја и нема слања обавештења у центар за обавештења. Корисно нпр. за сијалице иза зидног прекидача.", ignored_badge: "Офлајн игнорисан", status_ignored: "Ван мреже, игнорише се", flt_ignored: "Офлајн игнорисан",
+    net_map_label: "Жигби мрежна мапа", net_native: "Отвори „Zigbee2MQTT” интерфејс",
+    net_zoom_label: "Зум мрежне мапе", net_zoom_out: "Умањи", net_zoom_in: "Увећај", net_zoom_fit: "Прилагоди величини", net_zoom_reset: "Врати на 100 %", net_zoom_hint: "Зум: користите клизач или дугмад; на паметном телефону раширите/спојите са два прста, а на рачунару Ctrl + точкић миша. Држите леви клик миша да бисте померали мапу у свим правцима.",
+    status_lost: "Ван мреже – последња порука примљена {t} (граница: {d} дана), вероватно више није у мрежи.", lost_badge: "изгубљен", avail_silent: "не (данима нема порука)", flt_lost: "Изгубљен (дуго нема порука)",
+    avail_activity: "да (недавно је примљена порука, упркос офлајн статусу)",
+    type_Router: "Рутер", type_EndDevice: "Крајњи уређај",
+    //
+    sec_exposes: "Функције (Expose)", no_exposes: "Овај уређај не пријављује никакве функције.",
+    exposes_hint: "Све функције које „Zigbee2MQTT” обезбеђује за овај уређај, са последњом познатом вредношћу. Само за приказ.",
+    exposes_filter: "Филтрирај функције …", exposes_none_match: "Нема резултата.",
+    ex_no_value: "још нема вредности", ex_read: "Читање", ex_write: "Писање", ex_get: "Упит",
+    ex_config: "Конфигурација", ex_diagnostic: "Дијагностика", ex_on: "укључено", ex_off: "искључено",
+    ex_range: "Опсег", ex_values: "Вредности", ex_endpoint: "Крајња тачка (Endpoint)",
+    ex_g_light: "Светло", ex_g_switch: "Прекидач", ex_g_fan: "Вентилатор", ex_g_cover: "Ролетна", ex_g_lock: "Брава", ex_g_climate: "Клима",
+    //
+    instance: "Инстанца (Стик)",
+    //
+    group_by: "Груписање", group_none: "Без груписања", group_vendor: "Произвођач", group_class: "Класа уређаја", group_unknown: "Непознато",
+    chip_disabled: "Онемогућено", sec_comment: "Опис", comment_ph: "Опис уређаја (нпр. локација, датум замене батерије)", comment_hint: "„Zigbee2MQTT” чува овај текст у пољу „Опис” (подешавање уређаја „description”, највише 500 знакова). Оставите празно да бисте га уклонили.", done_comment: "Опис је сачуван",
+    flt_disabled: "Онемогућено", flt_stale: "Дуго без сигнала", chip_stale: "Дуго неактиван", stale_badge: "дуго неактиван", status_disabled: "Онемогућено у „Zigbee2MQTT”-у", group_area: "Просторија", group_no_area: "Без просторије", f_area: "Просторија", f_ha_device: "HA уређај", f_comment: "Опис", status_silent: "На мрежи према „Zigbee2MQTT”-у, али дуго нема сигнала – последњи пут виђен {t}.",
+    expand_all: "Расклопи све", collapse_all: "Склопи све",
+    filters: "Филтери", filter_active: "{n} активан", filter_reset: "Ресетуј све филтере", filter_remove: "Уклони филтер",
+    flt_all: "Сви", flt_status: "Статус", flt_online: "На мрежи", flt_offline: "Ван мреже",
+    flt_power: "Напајање", flt_battery_only: "Само уређаји на батерије", flt_mains_only: "Само уређаји на мрежном напајању", flt_battery_low: "Слаба батерија",
+    flt_signal: "Сигнал", flt_sig_good: "Добар (од 100)", flt_sig_mid: "Средњи (50–99)", flt_sig_weak: "Слаб (испод 50)",
+    flt_role: "Улога у мрежи", flt_firmware: "Фирмвер", flt_fw_available: "Ажурирање је доступно",
+    flt_seen: "Последњи пут виђен", flt_seen_24h: "Пре више од 24 сата", flt_seen_7d: "Пре више од 7 дана",
+    flt_membership: "Жигби групе", flt_no_group: "Ни у једној групи", flt_vendor: "Произвођач", flt_class: "Класа уређаја",
+    flt_hint: "Више филтера се примењује истовремено (И). Ако „Z2M” доступност није активна, статус „На мрежи/Ван мреже” се изводи из времена „последњи пут виђен”, баш као и код статусне тачке. Филтери се примењују на уређаје, батерије и ажурирања.",
+    cls_light: "Светиљке", cls_switch: "Утичнице и прекидачи", cls_climate: "Грејање и клима", cls_cover: "Ролетне и жалузине", cls_lock: "Браве",
+    cls_fan: "Вентилатори", cls_remote: "Тастери и даљински управљачи", cls_sensor: "Сензори", cls_other: "Остало",
+
+    ex_set_on: "Укључи", ex_set_off: "Искључи",
+    exposes_hint_switch: "Све функције које „Zigbee2MQTT” обезбеђује за овај уређај, са последњом познатом вредношћу. Прекидачи се могу директно пребацивати и одмах делују на уређају.",
+    sec_entities: "Ентитети (за аутоматизације)", entities_hint: "Називи ентитета из „Home Assistant”-а. Кликните на симбол да бисте копирали назив у привремену меморију, на пример за аутоматизације или скрипте.",
+    no_entities: "Нису пронађени ентитети из „Home Assistant”-а (да ли је „MQTT” детекција активна?).",
+    copy: "Копирај у привремену меморију", copy_all: "Копирај све", copy_entities: "Копирај називе ентитета",
+    copied: "Копирано: {v}", copied_n: "Копирано ентитета: {n}",
+    copy_failed: "Копирање није могуће. Прегледач дозвољава приступ привременој меморији само преко HTTPS протокола.", copy_manual: "Означите за копирање (Ctrl+C):",
+    //
+    nc_title: "Центар за обавештења (Notification Center)", nc_detected: "детектовано", nc_not_installed: "није инсталирано",
+    nc_master: "Шаљи обавештења", nc_types: "Врсте обавештења",
+    nc_hint: "Центар за обавештења сакупља поруке и прослеђује их даље. Овде одређујете шта ће овај менаџер пријављивати. Листа је сортирана према хитности, при чему су критичне ставке на врху.",
+    nc_missing_hint: "Центар за обавештења није инсталиран. Прекидачи ће имати ефекта чим се инсталира; без њега се ништа не дешава.",
+    nc_saved: "Сачувано",
+    nc_sev_critical: "Критично", nc_sev_warning: "Упозорење", nc_sev_info: "Инфо", nc_sev_ok: "У реду",
+
     exp_title: "Експериментално",
     exp_badge: "Експериментално",
-    exp_hint: "Ове функције нису проверене и подразумевано су искључене. Укључите само оно што желите да испробате; повратне информације су добродошле.",
-    exp_f_expose_numeric_edit: "Уређивање нумеричких вредности",
-    exp_f_expose_numeric_edit_desc: "Нумеричке функције са правом писања (нпр. осветљеност или помак) могу се мењати у прозору под „Функције“.",
+    exp_hint: "Ове функције нису тестиране и подразумевано су искључене. Укључите само оно што желите да тестирате; повратне информације су добродошле.",
+    exp_f_expose_numeric_edit: "Измена нумеричких вредности",
+    exp_f_expose_numeric_edit_desc: "Нумеричке функције са правом писања (нпр. осветљеност или помак) могу се мењати у прозору под „Функције” клизачем или уписом вредности, укључујући негативне. Исто важи за бројеве у опцијама уређаја.",
     exp_f_list_columns: "Листа уређаја у више колона",
-    exp_f_list_columns_desc: "Приказује листу уређаја у више колона на широким екранима. Број се подешава у уређивачу картице (Аутоматски или 1 до 4); ставка у бочној траци користи Аутоматски.",
+    exp_f_list_columns_desc: "Приказује листу уређаја у више колона на широким екранима. Број колона можете подесити у едитору картице (Аутоматски или од 1 до 4); у бочној траци се примењује опција Аутоматски.",
     ex_num_set: "Постави",
-    ex_num_invalid: "Неисправна вредност",
-    exposes_hint_numeric: "Нумеричке вредности (експериментално) мењају се директно: унесите вредност и притисните „Постави“ или Enter. Вредност одмах делује на уређај.",
+    ex_num_invalid: "Неважећа вредност",
+    exposes_hint_numeric: "Нумеричке вредности (експериментално) можете мењати директно: унесите вредност, притисните „Постави” или Enter. Вредност одмах делује на уређају.",
   },
-  // Srpski (latinica): automatski iz ćiriličnog bloka prevedena slova, isti ključevi
+  // Srpski (latinica)
   "sr-Latn": {
+    st_mains: "Napajanje iz mreže",
+    st_battery_powered: "Napajanje baterijom",
+    tab_statistics: "Statistika",
+    st_hint: "Analiza trenutno poznatih uređaja i poslednje pročitane mreže.",
+    st_overview: "Pregled",
+    st_kinds: "Vrste uređaja",
+    st_weakest: "Najslabiji signal",
+    st_b_full: "Puna",
+    st_b_ok: "U redu",
+    st_b_low: "Niska",
+    st_b_crit: "Kritična",
+    st_lowest: "Najniži nivoi baterije",
+    st_activity: "Aktivnost",
+    st_seen_hour: "Poslednji sat",
+    st_seen_day: "Poslednja 24 sata",
+    st_seen_older: "Starije od 24 sata",
+    st_chatty: "Najviše poruka (od pokretanja)",
+    st_chatty_none: "Još nema prebrojanih poruka. Brojanje počinje uključivanjem funkcije i kreće ispočetka pri svakom ponovnom pokretanju.",
+    st_models: "Najčešći modeli",
+    st_links: "Veze",
+    st_avg_link: "Prosečan signal veza",
+    st_depth: "Ruteri po nivou",
+    st_depth_n: "Nivo {n}",
+    st_busiest: "Najviše krajnjih uređaja po ruteru",
+    st_no_network: "Mrežna mapa još nije pročitana. Pročitaj je u kartici „Mreža”.",
+    st_fw_none: "Bez OTA podrške",
+    st_vendors_n: "{n} proizvođača",
+    img_title: "Slika",
+    img_upload: "Otpremi",
+    img_camera: "Slikaj",
+    img_remove: "Ukloni sliku",
+    img_hint: "Slika se pre čuvanja smanjuje (najviše 640 piksela) i zamenjuje podrazumevanu sliku u listi i prozoru.",
+    img_saved: "Slika je sačuvana",
+    img_removed: "Slika je uklonjena",
+    img_error: "Slika nije mogla da se obradi.",
+    img_camera_denied: "Nema pristupa kameri. Dozvoli je u pregledaču ili izaberi „Otpremi”.",
+    img_capture: "Snimi",
+    exp_f_device_images: "Sopstvene slike uređaja",
+    exp_f_device_images_desc: "U prozoru uređaja, pod „Slika”, možeš otpremiti sopstvenu sliku ili je snimiti kamerom. Smanjuje se pre otpremanja i u kartici zamenjuje podrazumevanu sliku.",
+    exp_f_statistics_tab: "Kartica Statistika",
+    exp_f_statistics_tab_desc: "Prikazuje karticu „Statistika” sa analizama uređaja, signala, baterija, aktivnosti i mreže.",
+    net_parent_reported: "Roditelj (prijavljen): {name}",
+    net_parent_estimated: "Roditelj nije prijavljen, procena prema najboljoj vezi: {name}",
+    net_parent_path: "Najpovoljnija putanja bi išla preko {name}",
     connecting: "Povezivanje …",
-    error_generic: "Radnja nije uspela.",
+    error_generic: "Akcija nije uspela.",
     tab_devices: "Uređaji", tab_battery: "Baterija", tab_updates: "Ažuriranja",
     tab_groups: "Grupe", tab_bindings: "Povezivanja", tab_bridge: "Most",
     chip_devices: "Uređaji", chip_offline: "Van mreže", chip_low_battery: "Slaba baterija", chip_updates: "Ažuriranja",
-    search: "Pretraži po imenu, modelu ili IEEE", sort: "Sortiranje",
-    sort_name_asc: "Ime A–Š", sort_name_desc: "Ime Š–A",
-    no_data: "Još nema podataka iz Zigbee2MQTT. Da li most radi?", no_results: "Nema rezultata.",
+    search: "Pretraži po nazivu, modelu ili IEEE adresi", sort: "Sortiranje",
+    sort_name_asc: "Naziv A–Ž", sort_name_desc: "Naziv Ž–A", sort_battery_asc: "Baterija (prvo najniža)",
+    sort_lqi_asc: "Signal (prvo najslabiji)", sort_last_seen_desc: "Poslednji put viđen (prvo najnovije)",
+    sort_last_seen_asc: "Poslednji put viđen (prvo najstarije)", sort_ota: "Status ažuriranja",
+    no_data: "Još uvek nema podataka sa „Zigbee2MQTT”. Da li most radi?", no_results: "Nema rezultata.",
     show_more: "Prikaži još {n}",
-    offline: "van mreže", online: "na mreži", unknown: "nepoznato", inactive: "neaktivno", disabled: "isključen",
-    never: "nikad", yes: "da", no: "ne", close: "Zatvori", save: "Sačuvaj", add: "Dodaj", cancel: "Otkaži",
-    confirm: "Sigurno?", loading: "Učitavanje …", details: "Detalji", remove: "Ukloni uređaj", rename: "Preimenuj",
+    status_online: "Na mreži (prema „Zigbee2MQTT”)", status_offline: "Van mreže (prema „Zigbee2MQTT”)", status_seen: "Verovatno na mreži – poslednji put viđen {t}. Z2M dostupnost nije aktivna.", status_stale: "Dugo bez signala – poslednji put viđen {t}. Z2M dostupnost nije aktivna.", status_unknown: "Status nepoznat – još uvek nema primljenih poruka.",
+    offline: "van mreže", online: "na mreži", unknown: "nepoznato", inactive: "neaktivno", interviewing: "Intervju", disabled: "onemogućeno",
+    never: "nikada", yes: "da", no: "ne", close: "Zatvori", save: "Sačuvaj", add: "Dodaj", cancel: "Otkaži",
+    confirm: "Da li ste sigurni?", loading: "Učitavanje …", details: "Detalji", remove: "Ukloni uređaj", rename: "Preimenuj",
     group: "Grupa",
-    pairing_active: "Uparivanje aktivno", pairing_start: "Pokreni uparivanje", pairing_stop: "Završi uparivanje",
-    check_all: "Proveri sva ažuriranja", install: "Instaliraj",
-    ota_available: "Ažuriranje dostupno", ota_idle: "Ažurno",
-    sec_info: "Info", sec_status: "Stanje", sec_entities: "Entiteti (za automatizacije)",
-    f_vendor: "Proizvođač", f_model: "Model", f_area: "Prostorija", f_ieee: "IEEE", f_lqi: "Kvalitet signala",
-    f_battery: "Baterija", f_last_seen: "Poslednji put viđen", f_version: "Verzija", f_base_topic: "Osnovna tema (base topic)",
-    copy: "Kopiraj u privremenu memoriju", copy_all: "Kopiraj sve",
-    flt_missing: "Nedostaje u Zigbee2MQTT", chip_missing: "Nedostaje", status_missing: "Nedostaje u Zigbee2MQTT (poslednji poznati uređaj)",
-    missing_badge: "nedostaje",
-    missing_hint: "Ovi uređaji su bili poznati, ali trenutno nedostaju na listi uređaja Zigbee2MQTT. Nestaju odavde sami čim se vrate.",
-    missing_popup_hint: "Ovog uređaja više nema na listi uređaja Zigbee2MQTT. Prikazani su poslednji poznati podaci. Ako se vrati, oznaka nestaje sama; pomoću „Zaboravi“ ga uklanjaš sa ove liste.",
-    forget: "Zaboravi", forget_all: "Zaboravi sve koji nedostaju", f_missing_since: "Nedostaje od",
-    network: "Mreža", network_open: "Otvori mrežnu mapu Zigbee2MQTT",
-    open_entity: "Otvori entitet u Home Assistant-u", open_device: "Otvori uređaj u Home Assistant-u",
-    ev_device_missing: "Nedostaje u Zigbee2MQTT", ev_device_back: "Ponovo na listi uređaja",
-    network_tab_hint: "Otvara mrežnu mapu Zigbee2MQTT (topologiju) u Home Assistant-u ili u novoj kartici.", network_no_url: "Adresa mape mreže još nije poznata. Unesi je u Podešavanja → Uređaji i usluge → Zigbee2MQTT Manager → Konfiguriši kao „Adresa mape mreže“ (npr. http://192.168.1.10:8080/#/network) ili postavi `network_url` u kartici.",
-    net_intro: "Struktura Zigbee mreže, pročitana iz tabela suseda rutera. Svaki ruter je vezan za svoju najbolju vezu ka koordinatoru (jaka, malo skokova) – aproksimacija stvarnih ruta.", net_refresh: "Ponovo učitaj mrežu", net_refresh_hint: "Zigbee2MQTT za ovo pita svaki uređaj pojedinačno. Zavisno od mreže traje nekoliko minuta i opterećuje Zigbee mrežu. Učitaj je samo kada je treba.", net_loading: "Mreža se učitava (počelo {t}) …",
-    net_updated: "Stanje: {t}", net_none: "Mreža još nije učitana. Pokreni upit sa „Ponovo učitaj mrežu“.", net_error_failed: "Zigbee2MQTT nije isporučio mapu mreže.", net_error_timeout: "Zigbee2MQTT nije odgovorio na vreme (prekinuto nakon 10 minuta).",
+
+    bridge_error: "Nema veze sa integracijom", bridge_offline: "„Zigbee2MQTT” most je van mreže",
+    bridge_offline_hint: "Most ne odgovara. Prikazane vrednosti su iz keš memorije.",
+    bridge_incompatible: "Verzija „Zigbee2MQTT” nije podržana",
+    bridge_incompatible_hint: "Detektovana verzija {v} – potrebna je „Zigbee2MQTT” 2.x.",
+    pairing_active: "Uparivanje je aktivno", pairing_start: "Pokreni uparivanje", pairing_stop: "Zaustavi uparivanje", until: "do {time}",
+    restart_required: "Potrebno je ponovno pokretanje", restart_required_hint: "„Zigbee2MQTT” javlja da postoje izmenjene opcije koje zahtevaju ponovno pokretanje.",
+    job_check: "Provera firmvera je u toku", job_update: "Instalacija ažuriranja firmvera je u toku",
+    // Updates
+    check_all: "Proveri ažuriranja za sve", checking: "Provera je pokrenuta …", update_all: "Instaliraj {n} ažuriranja uzastopno",
+    update_all_hint: "Ažuriranja se instaliraju jedno za drugim, nikada paralelno. Uređaji bi trebalo da imaju napajanje i da ostanu u dometu.",
+    install: "Instaliraj", check: "Proveri ima li ažuriranja", update_now: "Instaliraj ažuriranje",
+    ota_available: "Ažuriranje je dostupno", ota_updating: "Ažuriranje je u toku", ota_scheduled: "Zakazano", ota_idle: "Ažurno",
+    ota_unknown: "Nije provereno", ota_unsupported: "Ovaj uređaj ne podržava OTA ažuriranja.",
+    update_confirm: "Tokom ažuriranja uređaj mora imati napajanje i ostati u dometu.",
+    update_found: "Ažuriranje je dostupno", no_update: "Nema dostupnih ažuriranja", done_update: "Ažuriranje je završeno",
+
+    group_name: "Naziv nove grupe", group_create: "Kreiraj grupu", group_delete: "Obriši grupu", group_empty: "Ova grupa još uvek nema članova.",
+    group_add_member: "Dodaj uređaj", remove_member: "Ukloni iz grupe", no_groups: "Nema kreiranih grupa.",
+    group_broadcast_hint: "Grupe šalju komande kao „broadcast” svim članovima istovremeno.", done_group: "Grupa je ažurirana",
+    no_groups_device: "Nije član nijedne grupe.",
+
+    no_bindings: "Nema aktivnih povezivanja.", no_bindings_device: "Nema podešenih povezivanja.",
+    bindings_hint: "Povezivanja direktno povezuju uređaje (npr. prekidač → lampa) i funkcionišu čak i bez „Home Assistant”-a.",
+    bind: "Poveži", unbind: "Raskini vezu", bind_target: "Cilj (uređaj ili grupa)", pick_target: "Izaberite cilj.",
+    bind_hint: "Ako ništa nije izabrano, svi odgovarajući klasteri će biti povezani. Prethodno probudite uređaje na baterije pritiskom na dugme.",
+    done_bound: "Povezano", done_unbound: "Veza je rasknuta",
+    //
+    sec_app: "Verzija aplikacije", f_integration_version: "Integracija", f_card_version: "Kartica", f_latest_version: "Najnovija verzija",
+    app_up_to_date: "Ažurno", app_update_available: "Dostupno ažuriranje: {v}", app_check_failed: "Provera nije moguća („GitHub” je nedostupan)", app_not_checked: "još nije provereno",
+    f_checked: "Poslednji put provereno", app_check_now: "Proveri sada", app_checking: "Proveravam da li ima nove verzije …", app_release: "Pogledaj izdanje",
+    app_update_hint: "Ažurirajte preko HACS-a (integracija) i ponovo pokrenite „Home Assistant”. Nakon toga osvežite pregledač (Ctrl+F5).",
+    z2m_update_available: "Dostupno ažuriranje: {v}", z2m_update_hint: "Ažuriranje se vrši ručno na „Zigbee2MQTT” serveru, odnosno u Docker kontejneru, a ne preko HACS-a.",
+    z2m_check_now: "Proveri sada", z2m_check_failed: "Provera nije moguća", z2m_release: "Pogledaj izdanje",
+    app_mismatch: "Kartica ({card}) i integracija ({integration}) imaju različite verzije. Ispraznite keš pregledača (Ctrl+F5) ili ponovo učitajte aplikaciju.",
+    sec_status: "Status", sec_pairing: "Uparivanje", sec_options: "Opcije mosta", sec_maintenance: "Održavanje", sec_events: "Događaji",
+    f_status: "Status", f_version: "Verzija „Zigbee2MQTT”", f_coordinator: "Koordinator", f_base_topic: "Base-Topic", f_pairing: "Uparivanje",
+    pairing_hint: "Režim uparivanja ostaje aktivan najviše 254 sekunde.",
+    opt_log_level: "Nivo logovanje (Log-Level)", opt_last_seen: "Format za „Poslednji put viđen”",
+    options_hint: "Izmene se odmah šalju u „Zigbee2MQTT”. Neke opcije zahtevaju ponovno pokretanje.",
+    done_bridge_option: "Opcija je sačuvana", restart: "Ponovo pokreni most",
+    restart_hint: "Ponovo pokreće samo „Zigbee2MQTT”. Za to vreme „Zigbee” mreža će kratko biti nedostupna.", done_restart: "Zatraženo ponovno pokretanje",
+    read_only_hint: "Kartica je zaštićena od upisa (samo za čitanje).", no_events: "Nema događaja od pokretanja.",
+    ev_device_joined: "Pridružen", ev_device_leave: "Napustio mrežu", ev_device_interview: "Intervju", ev_device_announce: "Najavljuje se",
+    ev_offline: "Van mreže", ev_online: "Ponovo na mreži", ev_battery_low: "Slaba baterija", ev_update_available: "Ažuriranje je dostupno",
+    //
+    sec_info: "Informacije", sec_device_options: "Opcije uređaja", sec_firmware: "Firmver", sec_remove: "Ukloni uređaj",
+    new_name: "Novi naziv", rename_entities_hint: "Prilikom preimenovanja biće prilagođeno i {n} entiteta u „Home Assistant”-u:",
+    done_renamed: "Preimenovano", done_options: "Opcije su sačuvane", no_options: "Ovaj uređaj nema opcija koje se mogu podesiti.",
+    options_device_hint: "„Zigbee2MQTT” čuva opcije u svojoj konfiguraciji.", no_changes: "Nema izmena.",
+    remove_hint: "Uklanja uređaj iz Žigbi mreže. Nakon toga se mora ponovo upariti.",
+    force_remove: "Prisilno ukloni (čak i ako uređaj ne odgovara)", done_removed: "Uređaj je uklonjen",
+    f_vendor: "Proizvođač", f_model: "Model", f_description: "Opis proizvoda", f_type: "Tip", f_ieee: "IEEE adresa", f_nwk: "Mrežna adresa",
+    f_power: "Napajanje", f_firmware: "Verzija firmvera", f_lqi: "Kvalitet signala", f_battery: "Baterija", f_voltage: "Napon",
+    f_available: "Dostupan", f_last_seen: "Poslednji put viđen",
+    flt_missing: "Nedostaje u „Zigbee2MQTT”-u", chip_missing: "Nedostaje", status_missing: "Nedostaje u „Zigbee2MQTT”-u (poslednji poznati uređaj)", missing_badge: "nedostaje", missing_hint: "Ovi uređaji su bili poznati, ali trenutno nedostaju na listi uređaja u „Zigbee2MQTT”-u. Nestaće sami čim se vrate.", missing_popup_hint: "Ovaj uređaj se više ne nalazi na listi uređaja u „Zigbee2MQTT”-u. Prikazani su poslednji poznati podaci. Ako se vrati, oznaka će sama nestati; opcijom „Zaboravi” uklanjate ga sa ove liste.", forget: "Zaboravi", forget_all: "Zaboravi sve koji nedostaju", f_missing_since: "Nedostaje od", network: "Mreža", network_open: "Otvori „Zigbee2MQTT” mrežnu mapu", open_entity: "Otvori entitet u „Home Assistant”-u", open_device: "Otvori uređaj u „Home Assistant”-u", ev_device_missing: "Nedostaje u „Zigbee2MQTT”-u", ev_device_back: "Ponovo na listi uređaja",
+    network_tab_hint: "Otvara „Zigbee2MQTT” mrežnu mapu (topologiju) u „Home Assistant”-u ili u novoj kartici.", network_no_url: "Adresa mrežne mape još uvek nije poznata. Unesite je pod Podešavanja → Uređaji i usluge → Zigbee2MQTT Manager → Konfiguriši kao „Adresa mrežne mape” (npr. http://192.168.1.10:8080/#/network ili /a0d7b954_zigbee2mqtt), ili je postavite u kartici kao `network_url`.",
+    net_intro: "Prikaz strukture Žigbi mreže na osnovu tabela susedstva rutera. Svaki ruter je povezan sa roditeljem koji sam prijavljuje. Ako ne prijavljuje nijednog, kao aproksimacija služi njegova najbolja veza sa koordinatorom (jak signal, malo skokova).", net_refresh: "Ponovo učitaj mrežu", net_refresh_hint: "„Zigbee2MQTT” zbog ovoga šalje upit svakom uređaju pojedinačno. To može potrajati nekoliko minuta u zavisnosti od veličine mreže i opterećuje Žigbi mrežu. Osvežavajte je samo kada vam je zaista potrebno.", net_loading: "Mreža se učitava (pokrenuto u {t}) …",
+    net_updated: "Stanje: {t}", net_none: "Mreža još uvek nije učitana. Pokrenite upit klikom na „Ponovo učitaj mrežu”.", net_error_failed: "„Zigbee2MQTT” nije dostavio podatke za mrežnu mapu.", net_error_timeout: "„Zigbee2MQTT” nije odgovorio na vreme (prekinuto nakon 10 minuta).",
     net_summary: "{routers} rutera · {clients} krajnjih uređaja · {links} veza", net_coordinator: "Koordinator", net_router: "Ruter", net_cloud: "{n} krajnjih uređaja",
-    net_links_routers: "Veze ka ruterima", net_end_devices: "Krajnji uređaji", net_rel_parent: "Roditelj", net_rel_child: "Dete",
-    net_rel_sibling: "Sused", net_orphan: "Veza sa koordinatorom nije poznata", net_unassigned: "Bez poznate veze", net_unassigned_hint: "Ovi krajnji uređaji nisu ni u jednoj tabeli suseda (npr. van dometa, novi ili kratko aktivni).",
-    net_open_tip: "Otvori {name}", net_show_tip: "Prikaži krajnje uređaje od {name}", net_no_links: "Nema poznatih veza", net_refresh_done: "Mapa mreže ažurirana",
-    net_lqi: "Signal", ev_network_map: "Mapa mreže učitana", sec_monitor: "Nadzor", ignore_offline: "Ignoriši status van mreže",
-    ignore_offline_hint: "Uređaj se ne računa kao van mreže: bez smetnje, bez događaja, bez poruke za Notification Center. Korisno npr. za lampe iza zidnog prekidača.", ignored_badge: "Van mreže ignorisano", status_ignored: "Van mreže, ignoriše se", flt_ignored: "Van mreže ignorisano",
-    net_map_label: "Zigbee mapa mreže", net_native: "Otvori Zigbee2MQTT interfejs",
-    net_zoom_label: "Zum mrežne mape", net_zoom_out: "Umanji", net_zoom_in: "Uvećaj", net_zoom_fit: "Prilagodi", net_zoom_reset: "Vrati na 100 %", net_zoom_hint: "Zum: klizač ili dugmad; na telefonu sa dva prsta, na računaru Ctrl + točkić miša. Drži pritisnuto dugme miša i prevlači da pomeraš mapu u svim smerovima.",
-    status_lost: "Oflajn – poslednja poruka {t} (granica: {d} dana), verovatno više nije u mreži.", lost_badge: "izgubljen", avail_silent: "ne (dani bez poruke)", flt_lost: "Izgubljen (dugo bez poruke)",
-    z2m_update_available: "Ažuriranje dostupno: {v}", z2m_update_hint: "Ažuriraj Zigbee2MQTT ručno na njegovom serveru ili u Docker kontejneru, ne preko HACS-a.", z2m_check_now: "Proveri sada", z2m_check_failed: "Provera nije moguća", z2m_release: "Pogledaj izdanje",
-    // Experimentell (seit 1.4.0)
+    net_links_routers: "Veze sa ruterima", net_end_devices: "Krajnji uređaji", net_rel_parent: "Nadređeni čvor (Parent)", net_rel_child: "Podređeni čvor (Child)",
+    net_rel_sibling: "Sused", net_orphan: "Nema poznate veze sa koordinatorom", net_unassigned: "Bez poznate veze", net_unassigned_hint: "Ovi krajnji uređaji se ne nalaze ni u jednoj tabeli susedstva (npr. trenutno su van dometa, novi su ili su bili aktivni samo nakratko).",
+    net_open_tip: "Otvori {name}", net_show_tip: "Prikaži krajnje uređaje za {name}", net_no_links: "Nema poznatih veza", net_refresh_done: "Mrežna mapa je ažurirana",
+    net_lqi: "Signal", ev_network_map: "Mrežna mapa je učitana", sec_monitor: "Nadzor", ignore_offline: "Ignoriši oflajn status",
+    ignore_offline_hint: "Uređaj se neće smatrati oflajn: nema prikaza smetnji, nema događaja i nema slanja obaveštenja u centar za obaveštenja. Korisno npr. za sijalice iza zidnog prekidača.", ignored_badge: "Oflajn ignorisan", status_ignored: "Van mreže, ignoriše se", flt_ignored: "Oflajn ignorisan",
+    net_map_label: "Žigbi mrežna mapa", net_native: "Otvori „Zigbee2MQTT” interfejs",
+    net_zoom_label: "Zum mrežne mape", net_zoom_out: "Umanji", net_zoom_in: "Uvećaj", net_zoom_fit: "Prilagodi veličini", net_zoom_reset: "Vrati na 100 %", net_zoom_hint: "Zum: koristite klizač ili dugmad; na pametnom telefonu raširite/spojite sa dva prsta, a na računaru Ctrl + točkić miša. Držite levi klik miša da biste pomerali mapu u svim pravcima.",
+    status_lost: "Van mreže – poslednja poruka primljena {t} (granica: {d} dana), verovatno više nije u mreži.", lost_badge: "izgubljen", avail_silent: "ne (danima nema poruka)", flt_lost: "Izgubljen (dugo nema poruka)",
+    avail_activity: "da (nedavno je primljena poruka, uprkos oflajn statusu)",
+    type_Router: "Ruter", type_EndDevice: "Krajnji uređaj",
+    //
+    sec_exposes: "Funkcije (Expose)", no_exposes: "Ovaj uređaj ne prijavljuje nikakve funkcije.",
+    exposes_hint: "Sve funkcije koje „Zigbee2MQTT” obezbeđuje za ovaj uređaj, sa poslednjom poznatom vrednošću. Samo za prikaz.",
+    exposes_filter: "Filtriraj funkcije …", exposes_none_match: "Nema rezultata.",
+    ex_no_value: "još nema vrednosti", ex_read: "Čitanje", ex_write: "Pisanje", ex_get: "Upit",
+    ex_config: "Konfiguracija", ex_diagnostic: "Dijagnostika", ex_on: "uključeno", ex_off: "isključeno",
+    ex_range: "Opseg", ex_values: "Vrednosti", ex_endpoint: "Krajnja tačka (Endpoint)",
+    ex_g_light: "Svetlo", ex_g_switch: "Prekidač", ex_g_fan: "Ventilator", ex_g_cover: "Roletna", ex_g_lock: "Brava", ex_g_climate: "Klima",
+
+    instance: "Instanca (Stik)",
+    //
+    group_by: "Grupisnje", group_none: "Bez grupisanja", group_vendor: "Proizvođač", group_class: "Klasa uređaja", group_unknown: "Nepoznato",
+    chip_disabled: "Onemogućeno", sec_comment: "Opis", comment_ph: "Opis uređaja (npr. lokacija, datum zamene baterije)", comment_hint: "„Zigbee2MQTT” čuva ovaj tekst u polju „Opis” (podešavanje uređaja „description”, najviše 500 znakova). Ostavite prazno da biste ga uklonili.", done_comment: "Opis je sačuvan",
+    flt_disabled: "Onemogućeno", flt_stale: "Dugo bez signala", chip_stale: "Dugo neaktivan", stale_badge: "dugo neaktivan", status_disabled: "Onemogućeno u „Zigbee2MQTT”-u", group_area: "Prostorija", group_no_area: "Bez prostorije", f_area: "Prostorija", f_ha_device: "HA uređaj", f_comment: "Opis", status_silent: "Na mreži prema „Zigbee2MQTT”-u, ali dugo nema signala – poslednji put viđen {t}.",
+    expand_all: "Rasklopi sve", collapse_all: "Sklopi sve",
+    filters: "Filteri", filter_active: "{n} aktivan", filter_reset: "Resetuj sve filtere", filter_remove: "Ukloni filter",
+    flt_all: "Svi", flt_status: "Status", flt_online: "Na mreži", flt_offline: "Van mreže",
+    flt_power: "Napajanje", flt_battery_only: "Samo uređaji na baterije", flt_mains_only: "Samo uređaji na mrežnom napajanju", flt_battery_low: "Slaba baterija",
+    flt_signal: "Signal", flt_sig_good: "Dobar (od 100)", flt_sig_mid: "Srednji (50–99)", flt_sig_weak: "Slab (ispod 50)",
+    flt_role: "Uloga u mreži", flt_firmware: "Firmver", flt_fw_available: "Ažuriranje je dostupno",
+    flt_seen: "Poslednji put viđen", flt_seen_24h: "Pre više od 24 sata", flt_seen_7d: "Pre više od 7 dana",
+    flt_membership: "Zigbee grupe", flt_no_group: "Ni u jednoj grupi", flt_vendor: "Proizvođač", flt_class: "Klasa uređaja",
+    flt_hint: "Više filtera se primenjuje istovremeno (I). Ako „Z2M” dostupnost nije aktivna, status „Na mreži/Van mreže” se izvodi iz vremena „poslednji put viđen”, baš kao i kod statusne tačke. Filteri se primenjuju na uređaje, baterije i ažuriranja.",
+    cls_light: "Svetiljke", cls_switch: "Utičnice i prekidači", cls_climate: "Grejanje i klima", cls_cover: "Roletne i žaluzine", cls_lock: "Brave",
+    cls_fan: "Ventilatori", cls_remote: "Tasteri i daljinski upravljači", cls_sensor: "Senzori", cls_other: "Ostalo",
+    //
+    ex_set_on: "Uključi", ex_set_off: "Isključi",
+    exposes_hint_switch: "Sve funkcije koje „Zigbee2MQTT” obezbeđuje za ovaj uređaj, sa poslednjom poznatom vrednošću. Prekidači se mogu direktno prebacivati i odmah deluju na uređaju.",
+    sec_entities: "Entiteti (za automatizacije)", entities_hint: "Nazivi entiteta iz „Home Assistant”-a. Kliknite na simbol da biste kopirali naziv u privremenu memoriju, na primer za automatizacije ili skripte.",
+    no_entities: "Nisu pronađeni entiteti iz „Home Assistant”-a (da li je „MQTT” detekcija aktivna?).",
+    copy: "Kopiraj u privremenu memoriju", copy_all: "Kopiraj sve", copy_entities: "Kopiraj nazive entiteta",
+    copied: "Kopirano: {v}", copied_n: "Kopirano entiteta: {n}",
+    copy_failed: "Kopiranje nije moguće. Pregledač dozvoljava pristup privremenoj memoriji samo preko HTTPS protokola.", copy_manual: "Označite za kopiranje (Ctrl+C):",
+    //
+    nc_title: "Centar za obaveštenja (Notification Center)", nc_detected: "detektovano", nc_not_installed: "nije instalirano",
+    nc_master: "Šalji obaveštenja", nc_types: "Vrste obaveštenja",
+    nc_hint: "Centar za obaveštenja sakuplja poruke i prosleđuje ih dalje. Ovde određujete šta će ovaj menadžer prijavljivati. Lista je sortirana prema hitnosti, pri čemu su kritične stavke na vrhu.",
+    nc_missing_hint: "Centar za obaveštenja nije instaliran. Prekidači će imati efekta čim se instalira; bez njega se ništa ne dešava.",
+    nc_saved: "Sačuvano",
+    nc_sev_critical: "Kritično", nc_sev_warning: "Upozorenje", nc_sev_info: "Info", nc_sev_ok: "U redu",
+    //
     exp_title: "Eksperimentalno",
     exp_badge: "Eksperimentalno",
-    exp_hint: "Ove funkcije nisu proverene i podrazumevano su isključene. Uključite samo ono što želite da isprobate; povratne informacije su dobrodošle.",
-    exp_f_expose_numeric_edit: "Uređivanje numeričkih vrednosti",
-    exp_f_expose_numeric_edit_desc: "Numeričke funkcije sa pravom pisanja (npr. osvetljenost ili pomak) mogu se menjati u prozoru pod „Funkcije“.",
+    exp_hint: "Ove funkcije nisu testirane i podrazumevano su isključene. Uključite samo ono što želite da testirate; povratne informacije su dobrodošle.",
+    exp_f_expose_numeric_edit: "Izmena numeričkih vrednosti",
+    exp_f_expose_numeric_edit_desc: "Numeričke funkcije sa pravom pisanja (npr. osvetljenost ili pomak) mogu se menjati u prozoru pod „Funkcije” klizačem ili upisom vrednosti, uključujući negativne. Isto važi za brojeve u opcijama uređaja.",
     exp_f_list_columns: "Lista uređaja u više kolona",
-    exp_f_list_columns_desc: "Prikazuje listu uređaja u više kolona na širokim ekranima. Broj se podešava u uređivaču kartice (Automatski ili 1 do 4); stavka u bočnoj traci koristi Automatski.",
+    exp_f_list_columns_desc: "Prikazuje listu uređaja u više kolona na širokim ekranima. Broj kolona možete podesiti u editoru kartice (Automatski ili od 1 do 4); u bočnoj traci se primenjuje opcija Automatski.",
     ex_num_set: "Postavi",
-    ex_num_invalid: "Neispravna vrednost",
-    exposes_hint_numeric: "Numeričke vrednosti (eksperimentalno) menjaju se direktno: unesite vrednost i pritisnite „Postavi“ ili Enter. Vrednost odmah deluje na uređaj.",
+    ex_num_invalid: "Nevažeća vrednost",
+    exposes_hint_numeric: "Numeričke vrednosti (eksperimentalno) možete menjati direktno: unesite vrednost, pritisnite „Postavi” ili Enter. Vrednost odmah deluje na uređaju.",
   },
 };
 
@@ -1484,6 +2133,34 @@ const BASE_CARD_STYLES = `
   }
   .ex-num input:invalid { border-color: var(--zmm-color-error); }
   .ex-num .ex-unit { color: var(--secondary-text-color, #727272); font-size: 0.85em; }
+  /* Zahlenfeld mit Regler (seit 1.5.0): der Regler steht in einer eigenen Zeile über Feld, Einheit und "Setzen" */
+  .num-ctl { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; min-width: 0; }
+  .num-ctl input[type=range], .field .num-ctl input[type=range] {
+    flex: 1 1 100%; width: 100%; min-width: 120px; padding: 0; border: 0; background: none; margin: 0;
+    accent-color: var(--zmm-color-tab-active);
+  }
+  .field .num-ctl input[type=number] { flex: 0 0 auto; width: 7em; text-align: right; }
+  .ex-num { max-width: 100%; }
+  .ex-num .num-ctl { width: 100%; }
+  /* Eigenes Gerätebild (seit 1.5.0) */
+  .img-edit { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .img-preview { width: 72px; height: 72px; object-fit: contain; border-radius: 8px; border: 1px solid var(--divider-color, #e0e0e0); flex-shrink: 0; box-sizing: border-box; }
+  .img-preview.ph { display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color, #727272); }
+  .img-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .img-actions .btn ha-icon { --mdc-icon-size: 16px; margin-right: 4px; }
+  .cam-overlay { position: fixed; inset: 0; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(0, 0, 0, 0.88); padding: 12px; box-sizing: border-box; }
+  .cam-video { max-width: 100%; max-height: 75vh; border-radius: 8px; background: #000; }
+  .cam-bar { display: flex; gap: 10px; }
+  /* Statistik (seit 1.5.0) */
+  .st-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .st-tile { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--divider-color, #e0e0e0); border-radius: 8px; min-width: 0; }
+  .st-tile b { font-size: 1.35em; font-weight: 600; }
+  .st-tile span { font-size: 0.78em; color: var(--secondary-text-color, #727272); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-row { display: grid; grid-template-columns: minmax(70px, 40%) 1fr 3em; align-items: center; gap: 8px; padding: 3px 0; font-size: 0.9em; }
+  .st-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-bar { height: 8px; border-radius: 4px; background: var(--secondary-background-color, rgba(0, 0, 0, 0.08)); overflow: hidden; }
+  .st-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--c, var(--zmm-color-tab-active)); }
+  .st-n { text-align: right; font-weight: 500; }
   .row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
   .row:last-child { border-bottom: none; }
   .row.clickable { cursor: pointer; }
@@ -1888,6 +2565,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    if (this._camClose) this._camClose();
     if (this._unsub) {
       this._unsub();
       this._unsub = null;
@@ -1965,6 +2643,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   _resubscribe() {
     this._gen = (this._gen || 0) + 1;
+    this._thumbs = {};
+    this._thumbRev = undefined;
     if (this._unsub) {
       this._unsub();
       this._unsub = null;
@@ -2031,11 +2711,43 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   _onEvent(ev) {
     if (ev.kind === "update") {
       this._data = ev.data;
+      this._syncThumbs();
       this._renderIfChanged();
       this._maybeRefreshExposes();
     } else if (ev.kind === "response") {
       this._onResponse(ev.data);
     }
+  }
+
+  // Vorschaubilder eigener Gerätebilder (experimentell) laden, sobald sich ihr Stand ändert
+  _syncThumbs() {
+    const rev = this._data?.images?.rev;
+    if (rev === undefined || rev === null) {
+      if (this._thumbs && Object.keys(this._thumbs).length) {
+        this._thumbs = {};
+        this._lastSig = null;
+      }
+      this._thumbRev = undefined;
+      return;
+    }
+    if (rev === this._thumbRev || this._thumbBusy || !this._hass) return;
+    this._thumbBusy = true;
+    this._hass
+      .callWS({ type: "zigbee2mqtt_manager/images", ...this._targetParams() })
+      .then((r) => {
+        const thumbs = {};
+        for (const [ieee, url] of Object.entries(r?.thumbs || {})) if (SAFE_IMG_RE.test(String(url))) thumbs[ieee] = url;
+        this._thumbs = thumbs;
+        this._thumbRev = r?.rev ?? rev;
+        this._lastSig = null;
+        this._render();
+        this._renderPopup(true);
+      })
+      .catch(() => {})
+      .finally(() => {
+        this._thumbBusy = false;
+        if (this._data?.images && this._data.images.rev !== this._thumbRev && this._thumbRev !== undefined) this._syncThumbs();
+      });
   }
 
   _onResponse(r) {
@@ -2131,6 +2843,10 @@ class Zigbee2MqttManagerCard extends HTMLElement {
   _visibleTabs() {
     const cfg = this._config || CONFIG_DEFAULTS;
     const tabs = TAB_ORDER.filter((tab) => cfg[`show_${tab}`] !== false);
+    if (this._expActive("statistics_tab")) {
+      const at = tabs.indexOf("bridge");
+      tabs.splice(at >= 0 ? at : tabs.length, 0, "statistics");
+    }
     return tabs.length ? tabs : ["devices"];
   }
 
@@ -2213,6 +2929,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     root.addEventListener("input", (e) => this._onInput(e));
     root.addEventListener("change", (e) => this._onChange(e));
     root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && this._camClose) return void this._camClose();
       if (e.key === "Escape" && this._selected) this._closePopup();
       if (e.key === "Enter" && e.target.matches?.("input[data-exnum]")) {
         e.preventDefault();
@@ -2495,6 +3212,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         return this._renderNetworkTab();
       case "bridge":
         return this._renderBridge();
+      case "statistics":
+        return this._renderStatistics();
       default:
         return this._renderDeviceTab(this._tab);
     }
@@ -2808,6 +3527,8 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   _deviceImage(d, cls = "dev-img") {
     if (this._config.show_images === false) return "";
+    const own = d.custom_image ? this._thumbs?.[d.ieee] : "";
+    if (own && SAFE_IMG_RE.test(own)) return `<img class="${cls}" src="${own}" alt="" decoding="async" />`;
     const url = deviceImageUrl(d);
     if (!url || this._imgFailed?.has(url)) return "";
     return `<img class="${cls}" src="${esc(url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />`;
@@ -3323,6 +4044,15 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       const isCoord = h.type === "Coordinator";
       let body = "";
       if (h.orphan) body += `<div class="hint warn">${esc(t("net_orphan"))}</div>`;
+      if (!isCoord && h.parent && !h.orphan) {
+        const pname = (id) => topo.hubs.find((x) => x.ieee === id)?.name || id;
+        if (h.parent_source === "reported") {
+          body += `<div class="hint">${esc(t("net_parent_reported", { name: pname(h.parent) }))}</div>`;
+          if (h.path_parent && h.path_parent !== h.parent) body += `<div class="hint">${esc(t("net_parent_path", { name: pname(h.path_parent) }))}</div>`;
+        } else {
+          body += `<div class="hint">${esc(t("net_parent_estimated", { name: pname(h.parent) }))}</div>`;
+        }
+      }
       if (h.neighbors.length) {
         body += `<div class="nm-sub">${esc(t("net_links_routers"))}</div>${h.neighbors
           .map((n) => row(n.ieee, n.name, `${n.rel ? `<span class="hint nm-rel">${esc(relLabel(n.rel))}</span>` : ""}${lqi(n.lqi)}`))
@@ -3410,6 +4140,115 @@ class Zigbee2MqttManagerCard extends HTMLElement {
 
   _draft(key, dflt = "") {
     return key in this._drafts ? this._drafts[key] : dflt;
+  }
+
+  // ----------------------------------------------------------------- Statistik (experimentell, seit 1.5.0)
+  _renderStatistics() {
+    const s = this._data?.statistics;
+    const t = (k, v) => this._t(k, v);
+    if (!s) return `<div class="empty">${esc(t("loading"))}</div>`;
+    const C = { ok: "var(--zmm-color-success)", warn: "var(--zmm-color-warning)", bad: "var(--zmm-color-error)", info: "var(--zmm-color-info)", none: "var(--disabled-text-color, #9e9e9e)" };
+    const word = (prefix, key) => {
+      const v = I18N[this._lang]?.[`${prefix}${key}`] ?? I18N.en[`${prefix}${key}`];
+      return key === "unknown" ? t("unknown") : (v ?? key);
+    };
+    const bars = (items, total) => {
+      const shown = items.filter((i) => i.n > 0);
+      if (!shown.length) return `<div class="hint">–</div>`;
+      const sum = total || shown.reduce((a, i) => a + i.n, 0) || 1;
+      return shown
+        .map((i) => {
+          const pct = Math.max(2, Math.round((i.n / sum) * 100));
+          return `<div class="st-row"><span class="st-label" title="${esc(i.label)}">${esc(i.label)}</span><span class="st-bar"><span style="width:${pct}%;--c:${i.color || "var(--zmm-color-tab-active)"}"></span></span><span class="st-n">${esc(i.n)}</span></div>`;
+        })
+        .join("");
+    };
+    const tile = (value, label) => `<div class="st-tile"><b>${esc(value)}</b><span title="${esc(label)}">${esc(label)}</span></div>`;
+    const sub = (text) => `<div class="nm-sub">${esc(text)}</div>`;
+    const list = (items, suffix = "") => items.map((i) => this._line(i.key, esc(`${i.count}${suffix}`))).join("");
+    const sec = (key, icon, title, body, o = {}) => this._accordion(`st:${key}`, icon, title, body, o);
+    const kindCount = (k) => (s.kinds.find((x) => x.key === k) || {}).count || 0;
+
+    const overview = `<div class="st-tiles">${[
+      tile(s.total, t("chip_devices")),
+      tile(s.state.online, t("flt_online")),
+      tile(s.state.offline, t("flt_offline")),
+      tile(kindCount("Router"), t("type_Router")),
+      tile(kindCount("EndDevice"), t("type_EndDevice")),
+      tile(s.vendor_count, t("flt_vendor")),
+      tile(s.lqi_avg ?? "–", `Ø ${t("f_lqi")}`),
+      tile(s.battery_avg === null || s.battery_avg === undefined ? "–" : `${s.battery_avg} %`, `Ø ${t("f_battery")}`),
+    ].join("")}</div>
+      ${sub(t("st_kinds"))}${bars(s.kinds.map((k) => ({ label: word("type_", k.key), n: k.count })), s.total)}
+      ${sub(t("f_power"))}${bars([
+        { label: t("st_mains"), n: s.power.mains, color: C.ok },
+        { label: t("st_battery_powered"), n: s.power.battery, color: C.warn },
+        { label: t("unknown"), n: s.power.unknown, color: C.none },
+      ], s.total)}
+      ${sub(t("sec_status"))}${bars([
+        { label: t("flt_online"), n: s.state.online, color: C.ok },
+        { label: t("flt_offline"), n: s.state.offline, color: C.bad },
+        { label: t("unknown"), n: s.state.unknown, color: C.none },
+        { label: t("chip_disabled"), n: s.state.disabled, color: C.none },
+        { label: t("interviewing"), n: s.state.interviewing, color: C.warn },
+      ], s.total)}`;
+
+    const signal = `${bars([
+      { label: t("flt_sig_good"), n: s.lqi.good, color: C.ok },
+      { label: t("flt_sig_mid"), n: s.lqi.medium, color: C.warn },
+      { label: t("flt_sig_weak"), n: s.lqi.weak, color: C.bad },
+      { label: t("unknown"), n: s.lqi.unknown, color: C.none },
+    ], s.total)}${s.lqi_weakest.length ? sub(t("st_weakest")) + list(s.lqi_weakest) : ""}`;
+
+    const battTotal = Object.values(s.battery).reduce((a, n) => a + n, 0);
+    const battery = `${bars([
+      { label: t("st_b_full"), n: s.battery.full, color: C.ok },
+      { label: t("st_b_ok"), n: s.battery.ok, color: C.info },
+      { label: t("st_b_low"), n: s.battery.low, color: C.warn },
+      { label: t("st_b_crit"), n: s.battery.critical, color: C.bad },
+    ], battTotal)}${s.battery_lowest.length ? sub(t("st_lowest")) + list(s.battery_lowest, " %") : ""}`;
+
+    const since = s.messages?.since ? this._relTime(s.messages.since) : "";
+    const activity = `${bars([
+      { label: t("st_seen_hour"), n: s.seen.hour, color: C.ok },
+      { label: t("st_seen_day"), n: s.seen.day, color: C.info },
+      { label: t("st_seen_older"), n: s.seen.older, color: C.warn },
+      { label: t("never"), n: s.seen.never, color: C.none },
+    ], s.total)}${sub(`${t("st_chatty")}${since ? ` · ${since}` : ""}`)}${s.messages?.top?.length ? list(s.messages.top) : `<div class="hint">${esc(t("st_chatty_none"))}</div>`}`;
+
+    const vendors = `${list(s.vendors.map((v) => ({ key: v.key === "unknown" ? t("unknown") : v.key, count: v.count })))}
+      ${s.models.length ? sub(t("st_models")) + list(s.models) : ""}
+      ${sub(t("flt_class"))}${bars(s.classes.map((c) => ({ label: word("cls_", c.key), n: c.count })), s.total)}`;
+
+    let network;
+    const n = s.network;
+    if (!n) network = `<div class="hint">${esc(t("st_no_network"))}</div>`;
+    else {
+      network = `${this._line(t("type_Router"), esc(n.routers))}${this._line(t("type_EndDevice"), esc(n.end_devices_assigned))}${this._line(t("st_links"), esc(n.links))}${
+        n.avg_link_lqi !== null && n.avg_link_lqi !== undefined ? this._line(t("st_avg_link"), esc(n.avg_link_lqi)) : ""
+      }${n.unassigned ? this._line(t("net_unassigned"), esc(n.unassigned)) : ""}
+        ${n.depth.length ? sub(t("st_depth")) + bars(n.depth.map((x) => ({ label: t("st_depth_n", { n: x.key }), n: x.count })), n.routers) : ""}
+        ${n.busiest.length ? sub(t("st_busiest")) + list(n.busiest) : ""}`;
+    }
+
+    const fwTotal = Object.values(s.ota).reduce((a, x) => a + x, 0);
+    const firmware = bars([
+      { label: t("ota_available"), n: s.ota.available || 0, color: C.info },
+      { label: t("ota_updating"), n: s.ota.updating || 0, color: C.warn },
+      { label: t("ota_scheduled"), n: s.ota.scheduled || 0, color: C.warn },
+      { label: t("ota_idle"), n: s.ota.idle || 0, color: C.ok },
+      { label: t("st_fw_none"), n: s.ota.none || 0, color: C.none },
+    ], fwTotal);
+
+    return `<div class="hint">${esc(t("st_hint"))}</div><div class="settings-view">
+      ${sec("overview", "mdi:view-dashboard-outline", t("st_overview"), overview, { open: true, meta: String(s.total) })}
+      ${sec("signal", "mdi:signal", t("f_lqi"), signal)}
+      ${sec("battery", "mdi:battery-70", t("f_battery"), battery, { meta: String(battTotal) })}
+      ${sec("activity", "mdi:pulse", t("st_activity"), activity)}
+      ${sec("vendors", "mdi:factory", t("flt_vendor"), vendors, { meta: t("st_vendors_n", { n: s.vendor_count }) })}
+      ${sec("network", "mdi:graph-outline", t("network"), network, { meta: n ? String(n.routers) : "–" })}
+      ${sec("firmware", "mdi:update", t("sec_firmware"), firmware)}
+    </div>`;
   }
 
   _renderGroups() {
@@ -3520,18 +4359,119 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     });
   }
 
-  // Eingabefeld für eine schreibbare Zahlenfunktion (experimentell). Der getippte Wert bleibt als Entwurf erhalten.
+  // Zahlenfeld mit Schieberegler und Direkteingabe (seit 1.5.0). Beide teilen sich einen Entwurf; negative
+  // Werte sind möglich. Kennt Zigbee2MQTT keine Grenzen, deckt der Regler einen weichen Bereich um den
+  // aktuellen Wert ab (das Feld nimmt trotzdem jeden Wert an; geprüft wird nur gegen bekannte Grenzen).
+  _numControl(dk, p, extra = "") {
+    const fin = (v) => typeof v === "number" && Number.isFinite(v);
+    const r6 = (x) => String(Math.round(x * 1e6) / 1e6);
+    const val = this._draft(dk, p.value ?? "");
+    const cur = String(val).trim() === "" ? NaN : Number(val);
+    let lo = fin(p.min) ? p.min : null;
+    let hi = fin(p.max) ? p.max : null;
+    if (lo === null || hi === null) {
+      const base = Number.isFinite(cur) ? Math.abs(cur) : 0;
+      const span = Math.max(10, 10 ** Math.ceil(Math.log10(base * 2 + 1)));
+      const lo0 = lo;
+      const hi0 = hi;
+      if (lo === null) lo = hi0 !== null ? hi0 - 2 * span : -span;
+      if (hi === null) hi = lo0 !== null ? lo0 + 2 * span : span;
+    }
+    const range = hi - lo;
+    const step = fin(p.step) && p.step > 0 ? p.step : null;
+    const sstep = step || (range <= 2 ? 0.01 : range <= 20 ? 0.1 : 1);
+    const sval = Math.min(hi, Math.max(lo, Number.isFinite(cur) ? cur : 0));
+    const bounds = `${fin(p.min) ? ` min="${r6(p.min)}"` : ""}${fin(p.max) ? ` max="${r6(p.max)}"` : ""} step="${step ? r6(step) : "any"}"`;
+    const dis = p.disabled ? " disabled" : "";
+    const label = esc(p.label || "");
+    return `<span class="num-ctl"><input type="range" class="num-slider" data-draft="${esc(dk)}" data-fk="${esc(dk)}~s" data-numpair="1" min="${r6(lo)}" max="${r6(hi)}" step="${r6(sstep)}" value="${r6(sval)}" aria-label="${label}"${dis} /><input type="number" data-draft="${esc(dk)}" data-fk="${esc(dk)}" data-numpair="1"${p.enter ? ' data-exnum="1"' : ""} aria-label="${label}"${bounds} value="${esc(val)}"${dis} />${
+      p.unit ? `<span class="ex-unit">${esc(p.unit)}</span>` : ""
+    }${extra}</span>`;
+  }
+
+  // Eingabe für eine schreibbare Zahlenfunktion (experimentell): Regler, Feld und "Setzen". Der Wert bleibt als Entwurf erhalten.
   _exposeNumber(ieee, r) {
     const t = (k) => this._t(k);
     const dk = `exn:${ieee}:${r.property}`;
     const live = typeof r.value === "number" && Number.isFinite(r.value) ? String(r.value) : "";
     const busy = this._pending.has(`${ieee}:${r.property}`);
-    const attr = (name, v) => (typeof v === "number" && Number.isFinite(v) ? ` ${name}="${v}"` : "");
-    // Ohne Schrittweite "any", sonst würde der Browser Kommazahlen als ungültig markieren
-    const lim = `${attr("min", r.min)}${attr("max", r.max)}${attr("step", r.step) || ' step="any"'}`;
-    return `<span class="ex-num"><input type="number" inputmode="decimal" data-draft="${esc(dk)}" data-fk="${esc(dk)}" data-exnum="1" aria-label="${esc(r.label)}"${lim} value="${esc(this._draft(dk, live))}"${busy ? " disabled" : ""} />${
-      r.unit ? `<span class="ex-unit">${esc(r.unit)}</span>` : ""
-    }<button class="btn small primary" data-act="ex_num_set" data-ieee="${esc(ieee)}" data-prop="${esc(r.property)}"${busy ? " disabled" : ""}>${esc(t("ex_num_set"))}</button></span>`;
+    const set = `<button class="btn small primary" data-act="ex_num_set" data-ieee="${esc(ieee)}" data-prop="${esc(r.property)}"${busy ? " disabled" : ""}>${esc(t("ex_num_set"))}</button>`;
+    return `<span class="ex-num">${this._numControl(dk, { min: r.min, max: r.max, step: r.step, value: live, unit: r.unit, label: r.label, disabled: busy, enter: true }, set)}</span>`;
+  }
+
+  // Eigene Gerätebilder (experimentell, seit 1.5.0): Datei wählen oder Foto aufnehmen, im Browser verkleinern, senden
+  _pickImage(ieee, capture) {
+    if (!ieee) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    if (capture) input.setAttribute("capture", "environment");
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (file) this._uploadImage(ieee, file);
+    });
+    input.click();
+  }
+
+  async _takePhoto(ieee) {
+    if (!ieee) return;
+    const coarse = window.matchMedia?.("(pointer: coarse)")?.matches;
+    // Smartphone/Tablet oder ohne sichere Verbindung: die Kamera-App des Geräts über das Dateifeld nutzen
+    if (coarse || !navigator.mediaDevices?.getUserMedia || !window.isSecureContext) return this._pickImage(ieee, true);
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+    } catch (_e) {
+      return void this._toast(this._t("img_camera_denied"), true);
+    }
+    if (this._camClose) this._camClose();
+    const overlay = document.createElement("div");
+    overlay.className = "cam-overlay";
+    overlay.innerHTML = `<video class="cam-video" autoplay playsinline muted></video><div class="cam-bar"><button class="btn primary" data-cam="shot">${esc(this._t("img_capture"))}</button><button class="btn" data-cam="cancel">${esc(this._t("cancel"))}</button></div>`;
+    const video = overlay.querySelector("video");
+    video.srcObject = stream;
+    const close = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      overlay.remove();
+      if (this._camClose === close) this._camClose = null;
+    };
+    this._camClose = close;
+    overlay.addEventListener("click", (e) => {
+      const button = e.target.closest?.("[data-cam]");
+      if (!button) return;
+      e.stopPropagation();
+      if (button.dataset.cam === "cancel") return close();
+      if (!video.videoWidth) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      close();
+      canvas.toBlob((blob) => (blob ? this._uploadImage(ieee, blob) : this._toast(this._t("img_error"), true)), "image/jpeg", 0.92);
+    });
+    this.shadowRoot.appendChild(overlay);
+    video.play?.().catch(() => {});
+  }
+
+  async _uploadImage(ieee, blob) {
+    if (this._imgBusy) return;
+    if (!blob || blob.size > IMG_SOURCE_MAX) return void this._toast(this._t("img_error"), true);
+    this._imgBusy = ieee;
+    this._popupSig = null;
+    this._renderPopup(true);
+    try {
+      const { full, thumb } = await scaleImage(blob);
+      if (await this._call("set_image", { ieee, image: full, thumb })) {
+        if (this._details[ieee]) this._details[ieee] = { ...this._details[ieee], image: full };
+        this._toast(this._t("img_saved"));
+      }
+    } catch (_e) {
+      this._toast(this._t("img_error"), true);
+    } finally {
+      this._imgBusy = null;
+      this._popupSig = null;
+      this._renderPopup(true);
+    }
   }
 
   // Zahlenwert setzen (wie _toggleExpose): Wert sofort anzeigen, nach kurzer Zeit den echten Wert vom Gerät nachholen
@@ -3742,6 +4682,12 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const key = t?.dataset?.draft;
     if (!key) return;
     this._drafts[key] = t.type === "checkbox" ? t.checked : t.value;
+    // Regler und Zahlenfeld einer Zahlenfunktion gleichhalten (ohne Neuzeichnen)
+    if (t.dataset.numpair !== undefined && !(t.type === "number" && t.value === "")) {
+      t.closest(".num-ctl")?.querySelectorAll("input[data-numpair]").forEach((o) => {
+        if (o !== t) o.value = t.value;
+      });
+    }
     if (t.dataset.exfilter !== undefined) this._applyExposeFilter();
     if (t.dataset.rerender) this._refresh();
   }
@@ -3911,6 +4857,19 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         if (ok) this._details = {};
         return;
       }
+      case "img_upload":
+        return void this._pickImage(d.ieee || this._selected, false);
+      case "img_camera":
+        return void this._takePhoto(d.ieee || this._selected);
+      case "img_remove": {
+        const ieee = d.ieee || this._selected;
+        if (await this._call("remove_image", { ieee })) {
+          if (this._details[ieee]) this._details[ieee] = { ...this._details[ieee], image: null };
+          this._toast(this._t("img_removed"));
+        }
+        this._popupSig = null;
+        return void this._renderPopup(true);
+      }
       case "ex_num_set": {
         const ieee = d.ieee || this._selected;
         const prop = d.prop;
@@ -4073,6 +5032,9 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       if (opt.type === "numeric") {
         if (raw === "" || Number.isNaN(Number(raw))) continue;
         value = Number(raw);
+        if ((typeof opt.min === "number" && value < opt.min) || (typeof opt.max === "number" && value > opt.max)) {
+          return void this._toast(this._t("ex_num_invalid"), true);
+        }
       } else if (opt.type === "binary") {
         value = raw ? opt.value_on : opt.value_off;
       } else {
@@ -4275,6 +5237,10 @@ class Zigbee2MqttManagerCard extends HTMLElement {
         val === undefined || val === null || val === "" ? '<option value="" selected>–</option>' : ""
       }${opt.values.map((v) => `<option value="${esc(v)}" ${String(v) === String(val) ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>${help}</div>`;
     }
+    if (opt.type === "numeric" && this._expActive("expose_numeric_edit")) {
+      const ctl = this._numControl(key, { min: opt.min, max: opt.max, step: opt.step, value: val ?? "", label: opt.label });
+      return `<div class="field"><label>${esc(label)}</label>${ctl}${help}</div>`;
+    }
     if (opt.type === "numeric") {
       const bounds = `${opt.min !== null && opt.min !== undefined ? ` min="${esc(opt.min)}"` : ""}${opt.max !== null && opt.max !== undefined ? ` max="${esc(opt.max)}"` : ""}${opt.step ? ` step="${esc(opt.step)}"` : ' step="any"'}`;
       return `<div class="field"><label>${esc(label)}</label><input type="number" ${attrs}${bounds} value="${esc(val ?? "")}" />${help}</div>`;
@@ -4297,7 +5263,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     }
     this._haDeviceId = d.ha_device_id || "";
     const det = d.missing ? undefined : this._details[d.ieee];
-    const sig = JSON.stringify([d, det, this._confirming, this._readOnly, this._data.groups, [...this._pending], this._manualCopy, this._expActive("expose_numeric_edit")]);
+    const sig = JSON.stringify([d, det, this._confirming, this._readOnly, this._data.groups, [...this._pending], this._manualCopy, this._expActive("expose_numeric_edit"), this._expActive("device_images"), this._imgBusy, this._thumbRev]);
     if (!force && sig === this._popupSig && !backdrop.hidden) return;
     this._popupSig = sig;
 
@@ -4309,6 +5275,28 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const sections = [];
 
     sections.push(this._accordion("p:info", "mdi:information-outline", t("sec_info"), this._infoLines(d), { open: true }));
+
+    // Eigenes Bild (experimentell, seit 1.5.0): ein einziger eingeklappter Abschnitt
+    if (!d.missing && !ro && this._expActive("device_images")) {
+      const custom = d.custom_image === true;
+      const full = custom && typeof det?.image === "string" && SAFE_IMG_RE.test(det.image) ? det.image : "";
+      const preview = full
+        ? `<img class="img-preview" src="${full}" alt="" />`
+        : this._deviceImage(d, "img-preview") || `<span class="img-preview ph"><ha-icon icon="mdi:image-outline"></ha-icon></span>`;
+      const busy = this._imgBusy === d.ieee;
+      const btn = (act, icon, label) =>
+        `<button class="btn small" data-act="${act}" data-ieee="${esc(d.ieee)}"${busy ? " disabled" : ""}><ha-icon icon="${icon}"></ha-icon>${esc(label)}</button>`;
+      const remove = custom ? this._confirmButton(`img_remove:${d.ieee}`, "img_remove", `data-ieee="${esc(d.ieee)}"`, t("img_remove"), "btn danger small") : "";
+      sections.push(
+        this._accordion(
+          "p:image",
+          "mdi:image-outline",
+          t("img_title"),
+          `<div class="img-edit">${preview}<div class="img-actions">${btn("img_upload", "mdi:upload", t("img_upload"))}${btn("img_camera", "mdi:camera", t("img_camera"))}${remove}</div></div><div class="hint">${esc(t("img_hint"))}</div>`,
+          { meta: custom ? "✓" : "" }
+        )
+      );
+    }
 
     if (d.missing) {
       const forget = ro
@@ -4796,6 +5784,88 @@ const EDITOR_I18N = {
     h_list_columns: "Automatico adatta le colonne alla larghezza; sulle schede strette resta una sola colonna.",
     cols_auto: "Automatico",
   },
+  sr: {
+    title: "Наслов", entry_id: "Инстанца (Стик)", show_title: "Прикажи наслов (Title)",
+    show_title_icon: "Прикажи икону интеграције поред наслова",
+    show_devices: "Прикажи категорију „Уређаји”", show_battery: "Прикажи категорију „Батерија”", show_updates: "Прикажи категорију „Ажурирања”",
+    show_groups: "Прикажи категорију „Групе”", show_bindings: "Прикажи категорију „Повезивања”", show_bridge: "Прикажи категорију „Мост”",
+    show_network: "Прикажи категорију „Мрежа”", default_tab: "Прикажи при отварању",
+    max_rows: "Макс. редова по листи (0 = све)", zoom: "Фактор зумирања картице (нпр. за зидне таблете)",
+    show_stats: "Прикажи чипове са статистиком (Уређаји/Ван мреже/Батерија/Ажурирања)", show_images: "Прикажи слике уређаја са zigbee2mqtt.io",
+    show_search: "Прикажи поље за претрагу", show_filter_bar: "Прикажи опције сортирања на картици", default_sort: "Подразумевано сортирање листе уређаја",
+    show_group_by: "Прикажи избор за „Груписање” (Произвођач / Класа уређаја)", default_group_by: "Подразумевано груписање листа",
+    show_filters: "Прикажи одељак са филтерима (Статус, Батерија, Сигнал, …)", show_model: "Прикажи модел", show_vendor: "Прикажи произвођача",
+    show_ieee: "Прикажи IEEE адресу", show_lqi: "Прикажи квалитет сигнала", show_area: "Прикажи просторију (из „Home Assistant”-а)",
+    show_description: "Прикажи опис из „Zigbee2MQTT”-а у листи", show_battery_value: "Прикажи ниво батерије", show_last_seen: "Прикажи „Последњи пут виђен”",
+    read_only: "Само за читање (сакриј све елементе управљања за измене)", show_pairing: "Прикажи дугме за упаривање у листи уређаја",
+    show_network_link: "Прикажи дугме „Мрежа” (Жигби мрежна мапа)", network_url: "Адреса мрежне мапе (опционо)",
+    h_entry_id: "Коју „Zigbee2MQTT” инстанцу ова картица приказује. „Аутоматски”: Ако постоји више инстанци, на врху картице се појављује прекидач. Да бисте имали једну картицу по стику, овде ручно изаберите инстанцу.",
+    h_title: "Оставите празно ако не желите приказ наслова.",
+    h_show_title_icon: "Приказује икону интеграције лево од наслова. Делује само ако је наслов приказан.",
+    h_show_images: "Слике се учитавају директно у прегледач са веб-сајта www.zigbee2mqtt.io. Искључите ово ако не желите спољне мрежне упите – у том случају ће се приказивати иконице.",
+    h_max_rows: "Ако је вредност постављена, испод листе се појављује дугме „Прикажи још”. Ово ограничење не важи када је груписање активно.",
+    h_default_group_by: "Важи за уређаје, батерије и ажурирања. Унутар саме картице груписање се може променити у било ком тренутку.",
+    h_network_url: "Празно = адреса из опција интеграције, односно „Zigbee2MQTT” апликација из бочне траке. Дозвољени су формати попут https://… или локална путања у „Home Assistant”-у као што је /a0d7b954_zigbee2mqtt.",
+    h_read_only: "Сакрива опције за преименовање, подешавање уређаја, инсталацију фирмвера, измене група/повезивања, упаривање и поновно покретање. Поред тога, ове акције су свакако дозвољене само администраторима.",
+    sec_categories: "Категорије", sec_appearance: "Изглед", sec_columns: "Колоне листе уређаја", sec_edit: "Уређивање", sec_network: "Мрежа", sec_colors: "Боје",
+    colors_reset: "Ресетуј све боје", auto_instance: "Аутоматски (прекидач на картици)", not_loaded: "није учитано",
+    card: "Картица", integration: "Интеграција", new_version: "Доступна је нова верзија: {v} – ажурирајте преко HACS-а",
+    version_mismatch: "Верзије картице и интеграције се разликују – освежите прегледач (Ctrl+F5)", current: "Ажурно",
+    color_in_use: "Тренутно се користи: {c}", color_in_use_default: "Тренутно се користи (подразумевано): {c}", swatch_aria: "{l} (графички избор боје)",
+    c_color_tab_active: "Активан језичак / Примарне акције", c_color_success: "Добро (на мрежи, добар сигнал, пуна батерија, ажурно)",
+    c_color_warning: "Упозорење (слаба батерија, средњи сигнал, ажурирање у току)", c_color_error: "Грешка (ван мреже, критична батерија, слаб сигнал)",
+    c_color_info: "Доступно ажурирање (фирмвер, верзија апликације)", c_color_row_icon: "Иконице у свим листама (преписује боје иконица категорија)",
+    c_color_live_banner: "Позадина банера уживо (упаривање, задатак фирмвера)", cat_icon: "Иконица категорије „{t}”",
+    cat_note: "Подразумевано: прати боју језичка (активан/неактиван) – овде се може трајно поставити независно од статуса језичка. Такође боји и иконице редова те категорије.",
+    // Experimentell (seit 1.4.0)
+    sec_experimental: "Експериментално",
+    show_experimental: "Прикажи експерименталне функције",
+    h_show_experimental: "Непроверене функције (доступно их је: {n}). Има ефекта само ако је главни прекидач у опцијама интеграције укључен и ако је функција активирана на самој картици (Зупчаник → Експериментално).",
+    list_columns: "Колоне листе уређаја (експериментално)",
+    h_list_columns: "Опција „Аутоматски” прилагођава број колона ширини екрана; на уским картицама приказ остаје у једној колони.",
+    cols_auto: "Аутоматски",
+  },
+  "sr-Latn": {
+    title: "Naslov", entry_id: "Instanca (Stik)", show_title: "Prikaži naslov (Title)",
+    show_title_icon: "Prikaži ikonu integracije pored naslova",
+    show_devices: "Prikaži kategoriju „Uređaji”", show_battery: "Prikaži kategoriju „Baterija”", show_updates: "Prikaži kategoriju „Ažuriranja”",
+    show_groups: "Prikaži kategoriju „Grupe”", show_bindings: "Prikaži kategoriju „Povezivanja”", show_bridge: "Prikaži kategoriju „Most”",
+    show_network: "Prikaži kategoriju „Mreža”", default_tab: "Prikaži pri otvaranju",
+    max_rows: "Maks. redova po listi (0 = sve)", zoom: "Faktor zumiranja kartice (npr. za zidne tablete)",
+    show_stats: "Prikaži čipove sa statistikom (Uređaji/van mreže/Baterija/Ažuriranja)", show_images: "Prikaži slike uređaja sa zigbee2mqtt.io",
+    show_search: "Prikaži polje za pretragu", show_filter_bar: "Prikaži opcije sortiranja na kartici", default_sort: "Podrazumevano sortiranje liste uređaja",
+    show_group_by: "Prikaži izbor za „Grupisnje” (Proizvođač / Klasa uređaja)", default_group_by: "Podrazumevano grupisanje lista",
+    show_filters: "Prikaži odeljak sa filterima (Status, Baterija, Signal, …)", show_model: "Prikaži model", show_vendor: "Prikaži proizvođača",
+    show_ieee: "Prikaži IEEE adresu", show_lqi: "Prikaži kvalitet signala", show_area: "Prikaži prostoriju (iz „Home Assistant”-a)",
+    show_description: "Prikaži opis iz „Zigbee2MQTT”-a u listi", show_battery_value: "Prikaži nivo baterije", show_last_seen: "Prikaži „Poslednji put viđen”",
+    read_only: "Samo za čitanje (sakrij sve elemente upravljanja za izmene)", show_pairing: "Prikaži dugme za uparivanje u listi uređaja",
+    show_network_link: "Prikaži dugme „Mreža” (Žigbi mrežna mapa)", network_url: "Adresa mrežne mape (opciono)",
+    h_entry_id: "Koju „Zigbee2MQTT” instancu ova kartica prikazuje. „Automatski”: Ako postoji više instanci, na vrhu kartice se pojavljuje prekidač. Da biste imali jednu karticu po stiku, ovde ručno izaberite instancu.",
+    h_title: "Ostavite prazno ako ne želite prikaz naslova.",
+    h_show_title_icon: "Prikazuje ikonu integracije levo od naslova. Deluje samo ako je naslov prikazan.",
+    h_show_images: "Slike se učitavaju direktno u pregledač sa veb-sajta www.zigbee2mqtt.io. Isključite ovo ako ne želite spoljne mrežne upite – u tom slučaju će se prikazivati ikonice.",
+    h_max_rows: "Ako je vrednost postavljena, ispod liste se pojavljuje dugme „Prikaži još”. Ovo ograničenje ne važi kada je grupisanje aktivno.",
+    h_default_group_by: "Važi za uređaje, baterije i ažuriranja. Unutar same kartice grupisanje se može promeniti u bilo kom trenutku.",
+    h_network_url: "Prasno = adresa iz opcija integracije, odnosno „Zigbee2MQTT” aplikacija iz bočne trake. Dozvoljeni su formati poput https://… ili lokalna putanja u „Home Assistant”-u kao što je /a0d7b954_zigbee2mqtt.",
+    h_read_only: "Sakriva opcije za preimenovanje, podešavanje uređaja, instalaciju firmvera, izmene grupa/povezivanja, uparivanje i ponovno pokretanje. Pored toga, ove akcije su svakako dozvoljene samo administratorima.",
+    sec_categories: "Kategorije", sec_appearance: "Izgled", sec_columns: "Kolone liste uređaja", sec_edit: "Uređivanje", sec_network: "Mreža", sec_colors: "Boje",
+    colors_reset: "Resetuj sve boje", auto_instance: "Automatski (prekidač na kartici)", not_loaded: "nije učitano",
+    card: "Kartica", integration: "Integracija", new_version: "Dostupna je nova verzija: {v} – ažurirajte preko HACS-a",
+    version_mismatch: "Verzije kartice i integracije se razlikuju – osvežite pregledač (Ctrl+F5)", current: "Ažurno",
+    color_in_use: "Trenutno se koristi: {c}", color_in_use_default: "Trenutno se koristi (podrazumevano): {c}", swatch_aria: "{l} (grafički izbor boje)",
+    c_color_tab_active: "Aktivan jezičak / Primarne akcije", c_color_success: "Dobro (na mreži, dobar signal, puna baterija, ažurno)",
+    c_color_warning: "Upozorenje (slaba baterija, srednji signal, ažuriranje u toku)", c_color_error: "Greška (van mreže, kritična baterija, slab signal)",
+    c_color_info: "Dostupno ažuriranje (firmver, verzija aplikacije)", c_color_row_icon: "Ikonice u svim listama (prepisuje boje ikonica kategorija)",
+    c_color_live_banner: "Pozadina banera uživo (uparivanje, zadatak firmvera)", cat_icon: "Ikonica kategorije „{t}”",
+    cat_note: "Podrazumevano: prati boju jezička (aktivan/neaktivan) – ovde se može trajno postaviti nezavisno od statusa jezička. Takođe boji i ikonice redova te kategorije.",
+    // Experimentell (seit 1.4.0)
+    sec_experimental: "Eksperimentalno",
+    show_experimental: "Prikaži eksperimentalne funkcije",
+    h_show_experimental: "Neproverene funkcije (dostupno ih je: {n}). Ima efekta samo ako je glavni prekidač u opcijama integracije uključen i ako je funkcija aktivirana na samoj kartici (Zupčanik → Eksperimentalno).",
+    list_columns: "Kolone liste uređaja (eksperimentalno)",
+    h_list_columns: "Opcija „Automatski” prilagođava broj kolona širini ekrana; na uskim karticama prikaz ostaje u jednoj koloni.",
+    cols_auto: "Automatski",
+  },  
 };
 
 // Sprache des Editors wie in der Karte (hass.language), sonst Englisch

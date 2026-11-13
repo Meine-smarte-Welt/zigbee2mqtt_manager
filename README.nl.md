@@ -1,5 +1,5 @@
-| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | 🇳🇱<br>**Nederlands** | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | [🇮🇹<br>**Italiano**](README.it.md) | [🇷🇸<br>**Српски**](README.sr.md) |
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | 🇳🇱<br>**Nederlands** | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | [🇮🇹<br>**Italiano**](README.it.md) | [🇷🇸<br>**Српски**](README.sr.md) | [🇷🇴<br>**Română**](README.ro.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 
 ![Zigbee2MQTT Manager – banner](docs/images/zigbee2mqtt_manager.webp)
 
@@ -12,6 +12,7 @@ Beheer Zigbee2MQTT zonder Home Assistant te verlaten: apparaten, batterijen, fir
 ## Inhoud
 
 - [Functies](#functies)
+- [Nieuw in 1.5.0](#nieuw-in-150)
 - [Nieuw in 1.4.0](#nieuw-in-140)
 - [Nieuw in 1.3.0](#nieuw-in-130)
 - [Nieuw in 1.2.1](#nieuw-in-121)
@@ -70,6 +71,18 @@ Verdere punten:
 - **Zoom:** `zoom` schaalt de hele kaart.
 - **Talen:** Duits, Engels, Nederlands, Frans en Spaans (volgens de taal van Home Assistant).
 - **Diagnose-download** met geanonimiseerde namen en IEEE-adressen.
+
+## Nieuw in 1.5.0
+
+> **Teststatus:** Backend (netwerkopbouw, statistiek, afbeeldingscontrole) met testprogramma's; kaart in Chrome (headless) met gesimuleerde gegevens: alle tabs, schuifregelaar en directe invoer (ook negatieve waarden), statistiek, afbeelding uploaden (grote JPEG en PNG, geschaald tot maximaal 640 pixels), foto met een gesimuleerde camera, afbeelding verwijderen, alle negen taalvarianten, zonder JavaScript-fouten. **Niet** op echte hardware, niet in een draaiende Home Assistant-installatie, niet met een echte camera en niet in de companion-app.
+
+- **Netwerkkaart volgt de gemelde ouderknooppunten (issue #31):** De routerboom wordt nu opgebouwd uit het veld `relationship` van de buurtabellen (0 = ouder); de LQI-benadering is alleen nog een terugvaloptie voor routers zonder gemelde ouder. Cycli worden opgelost. Het routeruitklapmenu onder de kaart toont waar de ouder vandaan komt (gemeld of geschat) en, indien afwijkend, de goedkoopste route. **Dit vervangt het eerdere gedrag zonder schakelaar.**
+- **Getallen met schuifregelaar en directe invoer, ook negatief (issue #26, nog steeds experimenteel `expose_numeric_edit`):** Schrijfbare getallen hebben een schuifregelaar en een invoerveld die elkaar volgen. Negatieve waarden werken (bijvoorbeeld offset of kalibratie), ook in de apparaatopties. Zonder grenzen van Zigbee2MQTT blijft het veld vrij en gebruikt de regelaar een zacht bereik.
+- **Statistiek (nieuw, experimenteel `statistics_tab`):** Een eigen tab met tegels en balken: apparaattypen, voeding, fabrikanten en modellen, signaalkwaliteit (goed/gemiddeld/zwak), batterij, laatst gezien, firmwarestatus en netwerkgegevens. De berekening gebeurt in de backend.
+- **Eigen apparaatafbeeldingen (nieuw, experimenteel `device_images`):** In de pop-up onder **Afbeelding** een afbeelding **uploaden** of met de **camera** een foto maken. Ze wordt vóór het uploaden in de browser verkleind (maximaal 640 pixels, miniatuur 160 pixels); de backend controleert formaat en grootte opnieuw. De eigen afbeelding vervangt in lijst en pop-up de standaardafbeelding. Op een telefoon opent de camera-app, op een desktop een cameraweergave (alleen met HTTPS).
+- **Logo als pictogram:** Het logo is in Home Assistant beschikbaar als pictogram `zmm:logo` (bijvoorbeeld in tegels en knoppen). Een integratie kan het voorvoegsel `mdi:` niet uitbreiden, vandaar een eigen pictogramset.
+- **Servisch in de kaart (dank aan Brano, PR #29)** en **Roemeense README (dank aan de auteur van PR #30)** overgenomen.
+- **1.4.0 → 1.5.0 is volledig achterwaarts compatibel:** er is niets verwijderd of hernoemd; nieuw zijn de acties `set_image` en `remove_image`, het WebSocket-commando `zigbee2mqtt_manager/images`, de experimentele functies `device_images` en `statistics_tab` en het pictogram `zmm:logo`.
 
 ## Nieuw in 1.4.0
 
@@ -318,6 +331,7 @@ Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware,
 - **Nieuw in 1.2.1, teststatus:** netwerkknop, entiteits- en apparaatlinks, grijze ontbrekende apparaten en het naamdialoogvenster zijn getest met gesimuleerde gegevens, **niet op echte hardware of een echte Home Assistant-installatie**. De Servische kaart is maar gedeeltelijk vertaald.
 - **Teststand 1.3.0:** Getest zijn de verwerking van de netwerkkaart (knopen en verbindingen inlezen, boom opbouwen, defecte antwoorden) met een testprogramma en de kaart in een headless browser (Chromium) met gesimuleerde gegevens (10 routers, 40 eindapparaten, een router zonder verbinding): alle tabbladen, het apparaat-popup met de schakelaar, accordeons, bevestiging met twee klikken, laadtoestand en alleen-lezen-modus in alle zeven talen. **Niet getest:** op echte hardware en met het echte antwoord van Zigbee2MQTT (formaat, duur, belasting van het netwerk), met zeer grote netwerken, in de iOS-/Android-companion-app. Het Python-deel (opvragen van de netwerkkaart, opslag, offline negeren, installatie, **externe broker**, **Z2M-updatecontrole**) is alleen met `py_compile` en `pyflakes` op syntaxisfouten en onbekende namen gecontroleerd en **niet in Home Assistant uitgevoerd**; hetzelfde geldt voor het Notification-Center-deel van de schakelaar. De netwerktekening is een benadering van de echte routes. De Servische kaart is maar gedeeltelijk vertaald. Ook getest: het titelpictogram (aan/uit, kapot beeldbestand, lege of verborgen titel, titel met speciale tekens) en de kaarteditor in alle talen zijn in een headless browser getest; de editor in een echte Home Assistant-installatie (echt `ha-form`) is **niet** getest. Ook getest in een headless browser met gesimuleerde gegevens: het slepen van de netwerkkaart met de muis (horizontaal en verticaal, klik na het slepen onderdrukt, een gewone klik opent de popup), de beschrijving in lijst en popup (ook met een oude `show_comment: false` in de configuratie), de kaarteditor en alle tabbladen in alle acht taalvarianten. **Niet getest:** het optiesvenster met schuifregelaar en invoerveld in Home Assistant, slepen op echte apparaten en met touch, en het lezen van de beschrijving uit `bridge/devices` bij een echte Zigbee2MQTT.
 - **Teststand 1.3.1:** Het springen van de lijst kon in Chromium alleen worden nagebootst door `focus()` te laten scrollen zoals in Firefox/Safari (1.3.0 sprong, 1.3.1 niet). In Firefox, Safari, de companion-app en op een echte Home Assistant-installatie met 97 apparaten is het **niet getest**. Feedback is uitdrukkelijk welkom (vermeld de browser of app).
+- **Teststatus 1.5.0:** zie hierboven onder „Nieuw in 1.5.0”. **Niet getest:** echte hardware, de echte camera (rechten, staand/liggend), Firefox, Safari, companion-app, de netwerkkaart met de echte gegevens uit issue #31. **Servisch in de kaart** en de **Roemeense README** zijn niet door moedertaalsprekers gecontroleerd; `sr-Latn` ontstaat automatisch uit `sr`.
 - **Teststatus 1.4.0:** Backend met 50 testgevallen in een echte Home Assistant-testomgeving; kaart in Chrome (headless): alle zeven tabbladen, pop-up, alle negen taalvarianten, kolomaantal bij zeven breedtes, getalveld, editor, zonder JavaScript-fouten. **Niet gecontroleerd:** echte hardware, een draaiende Home Assistant-installatie, Firefox, Safari, companion-app. **Italiaans en Servisch** zijn **niet door moedertaalsprekers gecontroleerd**.
 
 ## Probleemoplossing
@@ -340,6 +354,7 @@ Alle schrijfacties (hernoemen, opties, functies omzetten, verwijderen, firmware,
 
 | Versie | Wijzigingen |
 |---|---|
+| **1.5.0** | Opgelost: **netwerkkaart** volgt de gemelde ouders (issue #31). Getallen met **schuifregelaar en directe invoer**, ook negatief (issue #26). Nieuw (experimenteel): tab **Statistiek**, **eigen apparaatafbeeldingen** (upload of camera). Nieuw: pictogram **`zmm:logo`**. Overgenomen: Servisch in de kaart (PR #29), Roemeense README (PR #30). |
 | **1.4.0** | Nieuw (experimenteel, standaard uit): **getalwaarden** van schrijfbare functies instellen in de pop-up (issue #26) en **apparatenlijst in meerdere kolommen** (issue #24); hoofdschakelaar, kaartsleutel `show_experimental` en schakelaar per functie (zie `EXPERIMENTELL.md`). Nieuw: taal **Italiaans** (PR #25, Salvatore Scalzi), **Servisch** in het Notification Center (PR #28, Brano). |
 | **1.3.1** | Opgelost: de **apparatenlijst sprong tijdens het scrollen steeds terug naar boven** (met 97 apparaten nauwelijks bruikbaar). Vermoedelijke oorzaak: bij elke hertekening gaf de kaart het laatst gebruikte veld (zoeken, sortering, groeperen, filter) met `focus()` weer de focus; Firefox, Safari en de companion-app scrollen dat veld dan in beeld, dus naar boven. Een veld dat nog focus heeft blijft nu ongemoeid, een vervangen veld krijgt de focus terug zonder te scrollen, en de kaart herstelt na elke hertekening de scrollpositie. |
 | **1.3.0** | Nieuw: **netwerkkaart** in de categorie Netwerk (coördinator, routers en eindapparaat-wolken als tekening, daaronder per router een accordeon met de verbindingen; inlezen met „Netwerk opnieuw inlezen”), met **zoom** (zoombalk, twee-vingergebaar, Ctrl + muiswiel) en **slepen met ingedrukte muisknop** in alle richtingen. Nieuw: de **beschrijving** uit Zigbee2MQTT in de apparatenlijst en bovenaan de apparaat-popup (issue #16; kaartoptie nu `show_description`, de fabrikanttekst heet nu **Productbeschrijving**). Nieuw: **getalvelden in het optiesvenster met invoerveld naast de schuifregelaar** (issue #17); `max_rows` en `zoom` zijn invoervelden in de kaarteditor. Nieuw: **verloren apparaten** (al dagen geen bericht) gelden als offline, instelling „Verloren” na (dagen). Nieuw: **offline-status negeren** per apparaat (issue #15). Nieuw: optionele **externe MQTT-broker** (issue #14, experimenteel). Nieuw: **Zigbee2MQTT-updatecontrole met melding en notificatie** (PR #18, @seebaer1976). Nieuw: **pictogram van de integratie naast de kaarttitel** (`show_title_icon`). Nieuw: **kaarteditor in meerdere talen** (issue #22). Nieuw: taal **Roemeens** (PR #21, dank aan @robex2005). De issues #12 en #13 waren al met 1.2.2 opgelost. |
@@ -357,7 +372,7 @@ Elk `.py`-, `.js`- en `.yaml`-bestand heeft op de eerste regel een SHA-256-hash 
 
 | Bestand | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `fdddc3a81a622d97b76ea750053325adfce990efefe2bef3a65c6dcfc3f745d7` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `56acb946481c97e174c517c1878503fbb71f2a0ec99a4fb0981e0f58197fff1f` |
 | `custom_components/zigbee2mqtt_manager/strings.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
 | `custom_components/zigbee2mqtt_manager/translations/de.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |

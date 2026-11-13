@@ -1,4 +1,4 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 8f1c806b9fa4dce3e87d0915ac1b63586f9c5269daff81d682c14789f4cabd2c
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 09e196481a4b05d8b477888ef917ac614caaf7ee213bcdd822dae62741dde7a6
 """Hält den Zustand der Zigbee2MQTT-Bridge und sendet Befehle per MQTT."""
 
 from __future__ import annotations
@@ -57,7 +57,9 @@ from .const import (
     EXPECTED_GONE_SECONDS,
     EXPERIMENTAL_FEATURES,
     EXPERIMENTAL_KEYS,
+    FEATURE_DEVICE_IMAGES,
     FEATURE_NUMERIC_EDIT,
+    FEATURE_STATISTICS,
     FLUSH_DELAY,
     GITHUB_RELEASES_URL,
     Z2M_GITHUB_RELEASES_URL,
@@ -85,7 +87,16 @@ from .notification_bridge import (
     OPT_TYPES as NC_OPT_TYPES,
     NotificationBridge,
 )
+from .device_images import (
+    MAX_IMAGE_BYTES,
+    MAX_IMAGES,
+    MAX_THUMB_BYTES,
+    MAX_TOTAL_BYTES,
+    check_image,
+    total_bytes,
+)
 from .network_map import build_topology, parse_networkmap
+from .stats import compute_statistics
 from .update_check import async_fetch_latest, async_fetch_latest_z2m, is_newer
 
 _LOGGER = logging.getLogger(__name__)
@@ -178,7 +189,7 @@ def _state_value(state: dict[str, Any], path: tuple[str, ...]) -> tuple[bool, An
     return True, node
 
 
-def _checked_number(row: dict[str, Any], value: Any) -> int | float:
+def _checked_number(row: dict[str, Any], value: Any, check_step: bool = True) -> int | float:
     """Zahlenwert einer Funktion prüfen (experimentell): Typ, Bereich, Schrittweite."""
     prop = row.get("property")
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -194,7 +205,7 @@ def _checked_number(row: dict[str, Any], value: Any) -> int | float:
         raise ValueError(f"Wert für '{prop}' unter dem Minimum ({low})")
     if high is not None and number > high:
         raise ValueError(f"Wert für '{prop}' über dem Maximum ({high})")
-    if step:
+    if step and check_step:
         base = low if low is not None else 0
         n = (number - base) / step
         if abs(n - round(n)) > 1e-6:
@@ -371,6 +382,15 @@ class Z2MManager:
             hass, STORAGE_VERSION, f"{DOMAIN}_{entry.entry_id}"
         )
         self._cache: dict[str, dict[str, Any]] = {}
+        # Eigene Gerätebilder (experimentell, seit 1.5.0): ieee -> {"img", "thumb", "ts"}, eigener Speicher
+        self._images_store: Store[dict[str, Any]] = Store(
+            hass, STORAGE_VERSION, f"{DOMAIN}_{entry.entry_id}_images"
+        )
+        self._images: dict[str, dict[str, Any]] = {}
+        self._images_rev = 0
+        # Nachrichten je Gerät seit dem Start (Statistik, experimentell); Neustart setzt zurück
+        self._msg_count: dict[str, int] = {}
+        self._msg_since = dt_util.utcnow().isoformat(timespec="seconds")
         # Zuletzt bekannte Geräte (nach IEEE) und Geräte, die aus der Z2M-Liste verschwunden sind
         self._known: dict[str, dict[str, Any]] = {}
         self._missing: dict[str, dict[str, Any]] = {}
@@ -468,6 +488,15 @@ class Z2MManager:
 
     async def async_start(self) -> None:
         await self._transport.async_wait_ready()
+
+        images = await self._images_store.async_load()
+        if isinstance(images, dict) and isinstance(images.get("images"), dict):
+            self._images = {
+                str(k).lower(): v
+                for k, v in images["images"].items()
+                if isinstance(v, dict) and isinstance(v.get("img"), str) and isinstance(v.get("thumb"), str)
+            }
+            self._images_rev = int(images.get("rev") or 0)
 
         stored = await self._store.async_load()
         if isinstance(stored, dict):
@@ -871,9 +900,12 @@ class Z2MManager:
     async def async_forget_missing(self, ieee: str | None = None) -> None:
         """Ein fehlendes Gerät (oder alle) aus der Merkliste entfernen."""
         if ieee is None:
+            for gone in list(self._missing):
+                self._drop_image(gone)
             self._missing.clear()
         elif ieee in self._missing:
             del self._missing[ieee]
+            self._drop_image(ieee)
         else:
             raise ValueError(f"Kein fehlendes Gerät: {ieee}")
         self._schedule_update()
@@ -909,6 +941,8 @@ class Z2MManager:
             self._last_msg[name] = dt_util.utcnow().isoformat(timespec="seconds")
         if not retained:
             self._live_msg[name] = dt_util.utcnow()
+            if self.experimental_active(FEATURE_STATISTICS):
+                self._msg_count[name] = self._msg_count.get(name, 0) + 1
         self._schedule_update()
 
     # ------------------------------------------------------------------
@@ -1067,6 +1101,8 @@ class Z2MManager:
             "icon": icon,
             "icon_url": _definition_icon(definition),
             "missing": False,
+            "custom_image": self.experimental_active(FEATURE_DEVICE_IMAGES)
+            and str(meta.get("ieee_address") or "").lower() in self._images,
             "description": definition.get("description"),
             "power_source": meta.get("power_source"),
             "network_address": meta.get("network_address"),
@@ -1295,6 +1331,8 @@ class Z2MManager:
             "z2m": dict(self.z2m),
             "nc": self.nc.snapshot(),
             "experimental": self._experimental_snapshot(),
+            "statistics": self._statistics(devices),
+            "images": {"rev": self._images_rev} if self.experimental_active(FEATURE_DEVICE_IMAGES) else None,
             "events": list(self._events),
             "groups": groups,
             "devices": devices,
@@ -1647,16 +1685,97 @@ class Z2MManager:
             numeric_edit=self.experimental_active(FEATURE_NUMERIC_EDIT),
         )
 
+    def _statistics(self, devices: list[dict[str, Any]]) -> dict[str, Any] | None:
+        """Statistik für den gleichnamigen Reiter; ohne eingeschaltete experimentelle Funktion nichts."""
+        if not self.experimental_active(FEATURE_STATISTICS):
+            return None
+        topology = None
+        if self._network:
+            names = {
+                str(ieee).lower(): meta.get("friendly_name")
+                for ieee, meta in self._meta.items()
+                if meta.get("friendly_name")
+            }
+            topology = build_topology(self._network, names)
+        return compute_statistics(
+            [d for d in devices if not d.get("disabled")],
+            topology,
+            self._msg_count,
+            self._msg_since,
+            low_threshold=self.low_battery_threshold,
+            critical_threshold=self.critical_battery_threshold,
+        )
+
+    # --- Eigene Gerätebilder (experimentell, seit 1.5.0) -----------------
+    def _require_images(self) -> None:
+        if not self.experimental_active(FEATURE_DEVICE_IMAGES):
+            raise ValueError("Experimentelle Funktion nicht aktiviert: Gerätebilder")
+
+    def _known_ieee(self, ieee: Any) -> str:
+        key = str(ieee or "").lower()
+        if key not in {str(i).lower() for i in self._meta} and key not in {str(i).lower() for i in self._missing}:
+            raise ValueError(f"Unbekanntes Gerät: {ieee}")
+        return key
+
+    def _save_images(self) -> None:
+        self._images_rev += 1
+        self._images_store.async_delay_save(
+            lambda: {"rev": self._images_rev, "images": self._images}, 1
+        )
+        self._schedule_update()
+
+    async def async_set_device_image(self, ieee: Any, image: Any, thumb: Any) -> None:
+        """Bild und Vorschaubild eines Geräts speichern (vom Browser skaliert, hier geprüft)."""
+        self._require_images()
+        key = self._known_ieee(ieee)
+        full = check_image(image, MAX_IMAGE_BYTES)
+        small = check_image(thumb, MAX_THUMB_BYTES)
+        updated = {k: v for k, v in self._images.items() if k != key}
+        if len(updated) >= MAX_IMAGES:
+            raise ValueError(f"Es sind höchstens {MAX_IMAGES} Gerätebilder möglich")
+        updated[key] = {"img": full, "thumb": small, "ts": dt_util.utcnow().isoformat(timespec="seconds")}
+        if total_bytes(updated) > MAX_TOTAL_BYTES:
+            raise ValueError("Der Speicher für Gerätebilder ist voll")
+        self._images = updated
+        self._save_images()
+
+    async def async_remove_device_image(self, ieee: Any) -> None:
+        self._require_images()
+        key = self._known_ieee(ieee)
+        if key not in self._images:
+            raise ValueError("Für dieses Gerät gibt es kein eigenes Bild")
+        del self._images[key]
+        self._save_images()
+
+    def _drop_image(self, ieee: Any) -> None:
+        """Bild eines entfernten oder vergessenen Geräts löschen (auch ohne eingeschaltete Funktion)."""
+        if str(ieee or "").lower() in self._images:
+            del self._images[str(ieee).lower()]
+            self._save_images()
+
+    def image_thumbs(self) -> dict[str, Any]:
+        """Vorschaubilder aller Geräte für die Liste (leer, solange die Funktion aus ist)."""
+        if not self.experimental_active(FEATURE_DEVICE_IMAGES):
+            return {"rev": 0, "thumbs": {}}
+        return {
+            "rev": self._images_rev,
+            "thumbs": {k: v["thumb"] for k, v in self._images.items()},
+        }
+
     def device_details(self, ieee: str | None) -> dict[str, Any]:
         """Optionen-Schema + Expose-Funktionen + aktuelle Werte + HA-Entitäten."""
         schema, values = self._options_schema(ieee)
-        return {
+        details = {
             "ieee": ieee,
             "options_schema": schema,
             "options": values,
             "exposes": self._exposes_of(ieee),
             "entities": self._entities_of(ieee),
         }
+        if self.experimental_active(FEATURE_DEVICE_IMAGES):
+            entry = self._images.get(str(ieee or "").lower())
+            details["image"] = entry["img"] if entry else None
+        return details
 
     @callback
     def _ha_registry_changed(self, _event: Any) -> None:
@@ -1809,6 +1928,15 @@ class Z2MManager:
         unknown = set(options) - allowed
         if unknown:
             raise ValueError(f"Unbekannte Optionen: {', '.join(sorted(unknown))}")
+        # Zahlen-Optionen: endliche Zahl (auch negativ) innerhalb der von Zigbee2MQTT gemeldeten Grenzen
+        by_prop = {s["property"]: s for s in schema}
+        checked = dict(options)
+        for prop, value in options.items():
+            spec = by_prop[prop]
+            if spec["type"] == "numeric" and value is not None:
+                row = {"property": prop, "min": spec.get("min"), "max": spec.get("max"), "step": None}
+                checked[prop] = _checked_number(row, value, check_step=False)
+        options = checked
         await self._request(
             "device/options", {"id": self._name_of(ieee), "options": options}
         )
@@ -1852,6 +1980,7 @@ class Z2MManager:
             self._expected_gone[ieee] = dt_util.utcnow()
             self._known.pop(ieee, None)
             self._missing.pop(ieee, None)
+            self._drop_image(ieee)
         await self._request(
             "device/remove", {"id": name, "force": bool(force)}
         )

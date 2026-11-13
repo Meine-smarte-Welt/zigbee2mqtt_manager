@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): cb09daa3a7979c0007424f811f5a3a8d5e81a659e85ef404521c8abcad635a51
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): c28e40e49054735abb88302c9d7ff50f99a41cb0ef576d3a12cdd10877c02b64
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"
@@ -84,6 +84,7 @@ MIN_Z2M_MAJOR = 2
 
 WS_SUBSCRIBE = f"{DOMAIN}/subscribe"
 WS_ACTION = f"{DOMAIN}/action"
+WS_IMAGES = f"{DOMAIN}/images"
 
 # Eigene Home-Assistant-Events (siehe README)
 EVENT_DEVICE_OFFLINE = f"{DOMAIN}_device_offline"
@@ -130,8 +131,12 @@ def clean_title(value: object, default: str, limit: int) -> str:
 # (Standard aus). Die Registry steht schlüsselgleich in der Karte (EXPERIMENTAL). Siehe EXPERIMENTELL.md.
 FEATURE_NUMERIC_EDIT = "expose_numeric_edit"
 FEATURE_LIST_COLUMNS = "list_columns"
+FEATURE_DEVICE_IMAGES = "device_images"
+FEATURE_STATISTICS = "statistics_tab"
 EXPERIMENTAL_FEATURES: tuple[dict[str, str], ...] = (
     {"key": FEATURE_NUMERIC_EDIT, "since": "1.4.0", "icon": "mdi:numeric"},
     {"key": FEATURE_LIST_COLUMNS, "since": "1.4.0", "icon": "mdi:view-column-outline"},
+    {"key": FEATURE_DEVICE_IMAGES, "since": "1.5.0", "icon": "mdi:image-plus-outline"},
+    {"key": FEATURE_STATISTICS, "since": "1.5.0", "icon": "mdi:chart-box-outline"},
 )
 EXPERIMENTAL_KEYS: tuple[str, ...] = tuple(f["key"] for f in EXPERIMENTAL_FEATURES)

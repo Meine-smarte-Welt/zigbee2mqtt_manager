@@ -1,5 +1,5 @@
-| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | 🇮🇹<br>**Italiano** | [🇷🇸<br>**Српски**](README.sr.md) |
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| [🇩🇪<br>**Deutsch**](README.md) | [🇬🇧<br>**English**](README.en.md) | [🇳🇱<br>**Nederlands**](README.nl.md) | [🇫🇷<br>**Français**](README.fr.md) | [🇪🇸<br>**Español**](README.es.md) | 🇮🇹<br>**Italiano** | [🇷🇸<br>**Српски**](README.sr.md) | [🇷🇴<br>**Română**](README.ro.md) |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 
 ![Zigbee2MQTT Manager – Banner](docs/images/zigbee2mqtt_manager.webp)
 
@@ -10,6 +10,16 @@
 Gestisci Zigbee2MQTT senza lasciare Home Assistant: dispositivi, batterie, aggiornamenti firmware, gruppi, binding e bridge in un'unica scheda della dashboard, come integrazione HACS.
 
 [![Apri il repository in Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Meine-smarte-Welt&repository=zigbee2mqtt_manager&category=integration)
+
+## Novità della 1.5.0
+
+- **La mappa di rete segue i genitori segnalati** (issue #31): l'albero dei router è costruito dal campo `relationship` delle tabelle dei vicini; la stima LQI resta solo come ripiego. Sostituisce il comportamento precedente, senza interruttore.
+- **Valori numerici con cursore e immissione diretta, anche negativi** (issue #26, ancora sperimentale `expose_numeric_edit`), anche nelle opzioni del dispositivo.
+- **Statistiche** (nuovo, sperimentale `statistics_tab`): scheda con tessere e barre (tipi di dispositivo, alimentazione, produttori, qualità del segnale, batteria, ultimo contatto, firmware).
+- **Immagini personalizzate dei dispositivi** (nuovo, sperimentale `device_images`): nella finestra, sotto «Immagine», caricare un'immagine o scattare una foto; viene ridotta nel browser prima del caricamento (al massimo 640 pixel).
+- **Logo come icona** `zmm:logo` in Home Assistant (il prefisso `mdi:` non può essere esteso da un'integrazione).
+- Ripresi: serbo nella scheda (PR #29) e README in rumeno (PR #30). Completamente compatibile con la 1.4.0; nulla è stato rimosso.
+- **Stato dei test 1.5.0:** backend con programmi di test, scheda in Chrome (headless) con dati simulati. **Non provato:** hardware reale, fotocamera reale, Firefox, Safari, app companion. Le nuove traduzioni non sono state verificate da madrelingua.
 
 ## Novità della 1.4.0
 
@@ -32,6 +42,7 @@ Gestisci Zigbee2MQTT senza lasciare Home Assistant: dispositivi, batterie, aggio
 
 | Versione | Modifiche |
 |---|---|
+| **1.5.0** | Corretto: mappa di rete con i genitori segnalati (#31). Valori numerici con cursore e immissione diretta, anche negativi (#26). Nuovo (sperimentale): **Statistiche**, **immagini dei dispositivi** (caricamento o fotocamera). Nuovo: icona `zmm:logo`. Ripresi: serbo nella scheda (#29), README rumeno (#30). |
 | **1.4.0** | Nuovo (sperimentale, spento di default): valori numerici nella finestra (#26), elenco su più colonne (#24); lingua italiana (PR #25). |
 
 ## Licenza
