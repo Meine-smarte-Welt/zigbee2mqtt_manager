@@ -20,6 +20,7 @@ Administrează Zigbee2MQTT fără să părăsești Home Assistant: dispozitive, 
 ## Cuprins
 
 - [Funcții](#funcții)
+- [Noutăți în 1.5.1](#noutăți-în-151)
 - [Noutăți în 1.5.0](#noutăți-în-150)
 - [Noutăți în 1.4.0](#noutăți-în-140)
 - [Cerințe](#cerințe)
@@ -54,6 +55,13 @@ Alte funcții:
 - **Zoom:** `zoom` scalează întregul card.
 - **Limbi:** germană, engleză, olandeză, franceză, spaniolă, italiană, sârbă și **română** (conform limbii Home Assistant).
 - **Descărcare diagnostic** cu nume și adrese IEEE anonimizate.
+
+## Noutăți în 1.5.1
+
+- **Statistici, online/offline:** dacă Zigbee2MQTT nu raportează disponibilitatea, apare acum o placă **Necunoscut** și un indiciu pentru a activa `availability: true` în Zigbee2MQTT.
+- **Fotografiere pe Android:** se deschide mai întâi vizualizarea camerei din card (doar cu HTTPS); fără HTTPS sau acces la cameră se folosește aplicația de cameră a dispozitivului.
+- **Funcții (Expose) în fereastră:** fără a doua bară de derulare; la câmpurile numerice eticheta este deasupra cursorului.
+- Complet compatibil; nouă este doar o cheie de traducere a cardului. Traducerile noi nu au fost verificate de vorbitori nativi.
 
 ## Noutăți în 1.5.0
 
@@ -131,6 +139,7 @@ Lista completă a opțiunilor, serviciile, evenimentele pentru automatizări, se
 
 | Versiune | Modificări |
 |---|---|
+| **1.5.1** | Corectat: statistici cu **Necunoscut** și indiciu despre disponibilitate; **Fotografiere** deschide camera pe Android; **Funcții (Expose)** fără a doua bară de derulare. |
 | **1.5.0** | Corectat: harta rețelei urmează părinții raportați (#31). Valori numerice cu cursor și introducere directă, inclusiv negative (#26). Nou (experimental): **Statistici**, **imagini ale dispozitivelor** (încărcare sau cameră). Nou: pictograma `zmm:logo`. Preluate: sârbă în card (#29), README în română (#30). |
 | **1.4.0** | Nou (experimental, oprit implicit): **valori numerice** ale funcțiilor scriibile în fereastra dispozitivului (#26) și **listă de dispozitive pe mai multe coloane** (#24), controlate de un comutator principal, cheia `show_experimental` și un comutator pe funcție. Nou: limba **italiană** (PR #25), **sârbă** în Notification Center (PR #28). |
 | **1.3.1** | Corectat: **lista de dispozitive sărea înapoi sus în timpul derulării**. |

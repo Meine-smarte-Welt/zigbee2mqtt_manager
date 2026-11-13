@@ -11,6 +11,13 @@ Gestisci Zigbee2MQTT senza lasciare Home Assistant: dispositivi, batterie, aggio
 
 [![Apri il repository in Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Meine-smarte-Welt&repository=zigbee2mqtt_manager&category=integration)
 
+## Novità della 1.5.1
+
+- **Statistiche, online/offline:** se Zigbee2MQTT non segnala la disponibilità, ora compare una tessera **Sconosciuto** e un'indicazione per attivare `availability: true` in Zigbee2MQTT.
+- **Scattare una foto su Android:** si apre prima la vista fotocamera della scheda (solo con HTTPS); senza HTTPS o accesso alla fotocamera si usa l'app fotocamera del dispositivo.
+- **Funzioni (Expose) nella finestra:** niente più seconda barra di scorrimento; nei campi numerici l'etichetta sta sopra il cursore.
+- Completamente compatibile; nuova solo una chiave di traduzione della scheda. Le nuove traduzioni non sono state verificate da madrelingua.
+
 ## Novità della 1.5.0
 
 - **La mappa di rete segue i genitori segnalati** (issue #31): l'albero dei router è costruito dal campo `relationship` delle tabelle dei vicini; la stima LQI resta solo come ripiego. Sostituisce il comportamento precedente, senza interruttore.
@@ -42,6 +49,7 @@ Gestisci Zigbee2MQTT senza lasciare Home Assistant: dispositivi, batterie, aggio
 
 | Versione | Modifiche |
 |---|---|
+| **1.5.1** | Corretto: statistiche con **Sconosciuto** e indicazione sulla disponibilità; **Scattare una foto** apre la fotocamera su Android; **Funzioni (Expose)** senza seconda barra di scorrimento. |
 | **1.5.0** | Corretto: mappa di rete con i genitori segnalati (#31). Valori numerici con cursore e immissione diretta, anche negativi (#26). Nuovo (sperimentale): **Statistiche**, **immagini dei dispositivi** (caricamento o fotocamera). Nuovo: icona `zmm:logo`. Ripresi: serbo nella scheda (#29), README rumeno (#30). |
 | **1.4.0** | Nuovo (sperimentale, spento di default): valori numerici nella finestra (#26), elenco su più colonne (#24); lingua italiana (PR #25). |
 

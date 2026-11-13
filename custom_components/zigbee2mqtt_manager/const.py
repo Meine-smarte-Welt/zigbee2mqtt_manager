@@ -1,10 +1,10 @@
-# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): c28e40e49054735abb88302c9d7ff50f99a41cb0ef576d3a12cdd10877c02b64
+# SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): 2981aeab213ad39b7cbd629947fcf48225a2fc3136b8eef71dd44579b8e11e76
 """Konstanten für Zigbee2MQTT Manager."""
 
 from datetime import timedelta
 
 DOMAIN = "zigbee2mqtt_manager"
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 
 CONF_BASE_TOPIC = "base_topic"
 CONF_LOW_BATTERY = "low_battery_threshold"

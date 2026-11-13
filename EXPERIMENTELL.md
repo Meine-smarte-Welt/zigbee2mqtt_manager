@@ -1,4 +1,4 @@
-# Experimentelle Funktionen (Stand 1.5.0)
+# Experimentelle Funktionen (Stand 1.5.1)
 
 Neue Funktionen sind zunächst **experimentell** und **standardmäßig unsichtbar**. Sie sind **nicht von Thorsten als „geprüft“ freigegeben** und nicht an echter Hardware getestet.
 
@@ -32,12 +32,12 @@ Ist eine der drei Stufen aus, verhält sich die Integration wie 1.3.1; das Backe
 
 ### Statistik-Reiter (`statistics_tab`)
 - **Was:** Eigener Reiter **Statistik** mit Kacheln und Balken: Gerätearten, Stromversorgung, Hersteller und Modelle, Signalqualität (gut ab 100, mittel ab 50, darunter schwach), Batterie, zuletzt gesehen, Firmware-Stand und Netzdaten (Meldungen). Die Auswertung läuft im Backend.
-- **Testschritte:** (1) Schalter einschalten, Karte neu laden. (2) Reiter öffnen: Summen und Balken mit der eigenen Geräteliste vergleichen (Anzahl Router, Endgeräte, Batteriegeräte). (3) Ein Gerät ohne Signalwert oder ohne Batterie darf die Zahlen nicht verfälschen. (4) Schalter aus: Reiter verschwindet, das Backend liefert keine Statistik.
+- **Testschritte:** (1) Schalter einschalten, Karte neu laden. (2) Reiter öffnen: Summen und Balken mit der eigenen Geräteliste vergleichen (Anzahl Router, Endgeräte, Batteriegeräte). (3) Ein Gerät ohne Signalwert oder ohne Batterie darf die Zahlen nicht verfälschen. (4) Schalter aus: Reiter verschwindet, das Backend liefert keine Statistik. (5) **Seit 1.5.1:** Meldet Zigbee2MQTT keine Verfügbarkeit, zeigt die Karte eine Kachel **Unbekannt** und den Hinweis auf `availability: true`.
 - **Grenzen:** reine Anzeige; die Werte stammen aus dem Zwischenspeicher der Karte, nicht aus einer Langzeitaufzeichnung.
 
 ### Eigene Gerätebilder (`device_images`)
 - **Was:** Im Popup eines Geräts unter **Bild**: **Hochladen** oder **Foto aufnehmen**. Das Bild wird im Browser verkleinert (höchstens 640 Pixel, Vorschau 160 Pixel, JPEG), das Backend prüft Format, Größe und Dateikopf und speichert es getrennt von den Einstellungen. Es ersetzt in Liste und Popup das Standardbild. **Bild entfernen** (mit Zwei-Klick-Bestätigung) stellt das Standardbild wieder her.
-- **Testschritte:** (1) Schalter einschalten, Popup öffnen, **Bild** aufklappen. (2) Ein großes Foto hochladen: Vorschau im Popup und Miniatur in der Liste müssen erscheinen. (3) Smartphone: **Foto aufnehmen** muss die Kamera-App öffnen. Desktop mit HTTPS: Kameraansicht mit **Aufnehmen**; ohne HTTPS oder ohne Erlaubnis kommt ein Hinweis. (4) Home Assistant neu starten: das Bild muss bleiben. (5) Bild entfernen. (6) Eine Datei, die kein Bild ist (umbenannte Textdatei), muss abgelehnt werden.
+- **Testschritte:** (1) Schalter einschalten, Popup öffnen, **Bild** aufklappen. (2) Ein großes Foto hochladen: Vorschau im Popup und Miniatur in der Liste müssen erscheinen. (3) Smartphone: **Foto aufnehmen** muss die Kamera-App öffnen. Desktop mit HTTPS: Kameraansicht mit **Aufnehmen**; ohne HTTPS oder ohne Erlaubnis kommt ein Hinweis. (4) Home Assistant neu starten: das Bild muss bleiben. (5) Bild entfernen. (6) Eine Datei, die kein Bild ist (umbenannte Textdatei), muss abgelehnt werden. (7) **Seit 1.5.1:** Auf Android mit HTTPS öffnet **Foto aufnehmen** zuerst die Kameraansicht der Karte; verweigerst du die Kamera, kommt ein Hinweis; ohne HTTPS oder ohne Kamerazugriff der App öffnet sich das Dateifeld mit Kamera-Auswahl.
 - **Grenzen:** nur Administratoren, nicht im Nur-lesen-Modus; begrenzte Gesamtgröße aller Bilder. Das Bild bleibt in Home Assistant und wird nicht an Zigbee2MQTT oder Dritte gesendet. **Nicht geprüft:** echte Kamera, Hoch-/Querformat auf dem Smartphone, Firefox, Safari, Companion-App.
 
 ## Keine Funktion mit Schalter, aber neu in 1.5.0

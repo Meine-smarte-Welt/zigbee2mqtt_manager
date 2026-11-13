@@ -12,6 +12,7 @@ Manage Zigbee2MQTT without leaving Home Assistant: devices, batteries, firmware 
 ## Contents
 
 - [Features](#features)
+- [New in 1.5.1](#new-in-151)
 - [New in 1.5.0](#new-in-150)
 - [New in 1.4.0](#new-in-140)
 - [New in 1.3.0](#new-in-130)
@@ -71,6 +72,13 @@ Further points:
 - **Zoom:** `zoom` scales the whole card.
 - **Languages:** German, English, Dutch, French and Spanish (following the Home Assistant language).
 - **Diagnostics download** with anonymized names and IEEE addresses.
+
+## New in 1.5.1
+
+- **Statistics, online/offline (bug report):** If Zigbee2MQTT reports no availability, the tab showed "0 online, 0 offline" and the devices only appeared as "unknown" in the bar below. Now there is an **Unknown** tile and, as long as no device reports online or offline, a hint to enable `availability: true` in Zigbee2MQTT.
+- **Take photo on Android (bug report):** The button opened the same file dialog as "Upload". Now the **own camera view** opens first, also on phones and tablets (HTTPS only). Without HTTPS or camera access the card falls back to the device's camera app via the file field. If the camera is explicitly denied, a hint appears.
+- **Functions (Expose) in the popup (bug report):** The second scrollbar is gone (the list no longer scrolls on its own), and for number fields the label now sits **above** the slider. Before, it was squeezed next to the slider (for example "ti  mer" instead of `timer`).
+- Fully backward compatible; the only addition is one card translation key (`st_avail_hint`).
 
 ## New in 1.5.0
 
@@ -331,6 +339,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 - **New in 1.2.1, test status:** network button, entity and device links, greyed-out missing devices and the sidebar-name dialog were checked against simulated data, **not on real hardware or a real Home Assistant installation**. The Serbian card is only partly translated.
 - **Test status 1.3.0:** Tested were the processing of the network map (parsing nodes and links, building the tree, broken answers) with a test program, and the card in a headless browser (Chromium) with simulated data (10 routers, 40 end devices, a router without connection): all tabs, the device popup with the switch, accordions, two-click confirmation, loading state and read-only mode in all seven languages. **Not tested:** on real hardware and with Zigbee2MQTT's real answer (format, duration, load on the network), with very large networks, in the iOS/Android companion app. The Python part (network map request, storage, ignoring offline, setup, **external broker**, **Z2M update check**) was only checked for syntax errors and unknown names with `py_compile` and `pyflakes` and **was not run in Home Assistant**; the same goes for the Notification Center side of the switch. The network drawing is an approximation of the real routes. The Serbian card is only partly translated. Also tested: the title icon (on/off, broken image file, empty or hidden title, title with special characters) and the card editor in all languages were checked in a headless browser; the editor inside a real Home Assistant installation (real `ha-form`) is **not** tested. Also tested in a headless browser with simulated data: dragging the network map with the mouse (horizontally and vertically, click suppressed after dragging, a normal click opens the popup), the description in list and popup (also with an old `show_comment: false` in the configuration), the card editor and all tabs in all eight language variants. **Not tested:** the options dialog with slider and input box in Home Assistant, dragging on real devices and with touch, and reading the description from `bridge/devices` against a real Zigbee2MQTT.
 - **Test status 1.3.1:** In Chromium the jumping could only be reproduced by making `focus()` scroll like in Firefox/Safari (1.3.0 jumped, 1.3.1 did not). It is **not tested** in Firefox, Safari, the companion app or on a real Home Assistant installation with 97 devices. Feedback is explicitly welcome (please state the browser or app).
+- **Test status 1.5.1:** statistics hint, camera flow (own view on a simulated touch device, fallback to the file field) and expose layout checked in a headless browser. **Not** on a real Android device, not in the companion app (there the camera depends on the app's permission).
 - **Test status 1.5.0:** see "New in 1.5.0" above. **Not tested:** real hardware, the real camera (permissions, portrait/landscape), Firefox, Safari, companion app, the network map with the real data from issue #31. **Serbian in the card** and the **Romanian README** have not been checked by native speakers; `sr-Latn` is generated automatically from `sr`.
 - **Test status 1.4.0:** Backend (number validation, main switch, per-function switch, staying silent when "off") with 50 test cases in a real Home Assistant test environment; card in Chrome (headless) with backend-generated data: all seven tabs, popup, all nine language variants, column count at seven widths, number field (invalid, valid, Enter, decimal), editor, without JavaScript errors. **Not verified:** real hardware (whether Zigbee2MQTT accepts the values), a running Home Assistant installation (options dialog with the new switch, real `ha-form` in the editor), Firefox, Safari, companion app. **Italian and Serbian** (card, integration, Notification Center) are **not checked by native speakers**; the Italian README is abridged and a Romanian README is still missing. The Notification Center was not tested against a real Notification Center. The file `frontend/zigbee2mqtt-manager-card.js` is a leftover of version 0.0.1 and is not loaded.
 
@@ -354,6 +363,7 @@ All write actions (rename, options, toggling features, remove, firmware, groups,
 
 | Version | Changes |
 |---|---|
+| **1.5.1** | Fixed: statistics show **Unknown** and an availability hint instead of only "0 online, 0 offline"; **Take photo** opens the camera view on Android; **Functions (Expose)** without a second scrollbar and with a readable label for number fields. |
 | **1.5.0** | Fixed: **network map** follows the reported parents (issue #31). Numbers with **slider and direct entry**, also negative (issue #26). New (experimental): **Statistics** tab, **custom device pictures** (upload or camera). New: icon **`zmm:logo`**. Merged: Serbian in the card (PR #29), Romanian README (PR #30). |
 | **1.4.0** | New (experimental, off by default): set **numeric values** of writable functions in the popup (issue #26) and **device list in several columns** (issue #24), controlled by a main switch, the card key `show_experimental` and a switch per function (see `EXPERIMENTELL.md`). New: language **Italian** (PR #25, Salvatore Scalzi), **Serbian** in the Notification Center (PR #28, Brano). |
 | **1.3.1** | Fixed: the **device list kept jumping back to the top while scrolling** (hard to use with 97 devices). Suspected cause: on every redraw the card gave focus back to the last used field (search, sorting, grouping, filter) with `focus()`; Firefox, Safari and the companion app scroll that field into view, i.e. to the top. A field that still has focus is now left alone, a replaced one gets focus back without scrolling, and the card restores the scroll position after every redraw. |
@@ -372,7 +382,7 @@ Every `.py`, `.js` and `.yaml` file carries a SHA-256 hash of its content from l
 
 | File | SHA-256 |
 |---|---|
-| `custom_components/zigbee2mqtt_manager/manifest.json` | `56acb946481c97e174c517c1878503fbb71f2a0ec99a4fb0981e0f58197fff1f` |
+| `custom_components/zigbee2mqtt_manager/manifest.json` | `e391b66993328473e0d5be2f2e55e1a9acbc9d64790852f4e4099f7fe14577a7` |
 | `custom_components/zigbee2mqtt_manager/strings.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |
 | `custom_components/zigbee2mqtt_manager/icons.json` | `7edb380606df1bfbae5954235fcab84bed87d0b0d5a1c40834653dbd1a7c3d7e` |
 | `custom_components/zigbee2mqtt_manager/translations/de.json` | `aeccde74558be3f9956f75012d6b641a2dcfc767820ec94238484738431c6771` |

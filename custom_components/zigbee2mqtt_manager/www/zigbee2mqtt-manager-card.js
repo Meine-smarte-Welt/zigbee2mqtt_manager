@@ -1,4 +1,4 @@
-// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): a8785cfd041e20f3f183c991efe1840add48f95ecb3c0674b38ef218b20fabc4
+// SHA256 (Inhalt ab Zeile 2, d.h. dieser Datei ohne diese erste Zeile): dc00b61b06a4122d8170c53d93f03527870e0f34768fde7f99dcdd099b970826
 /**
  * zigbee2mqtt-manager-card
  * -------------------------
@@ -50,7 +50,7 @@
  * Kartentyp: custom:zigbee2mqtt-manager-card
  */
 
-const CARD_VERSION = "1.5.0";
+const CARD_VERSION = "1.5.1";
 
 // Logo als Symbol "zmm:logo": eigener Symbolsatz für Home Assistant (nutzbar in jedem ha-icon,
 // Symbolauswahl, Dashboards, Skripten). Der Satz "mdi:" selbst ist fest in Home Assistant eingebaut
@@ -382,6 +382,7 @@ const I18N = {
     tab_statistics: "Statistik",
     st_hint: "Auswertung der aktuell bekannten Geräte und der zuletzt gelesenen Netzwerkkarte.",
     st_overview: "Überblick",
+    st_avail_hint: "Zigbee2MQTT meldet für diese Geräte keine Verfügbarkeit. Aktiviere in Zigbee2MQTT `availability: true`, dann erscheinen Online und Offline.",
     st_kinds: "Gerätearten",
     st_weakest: "Schwächstes Signal",
     st_b_full: "Voll",
@@ -565,6 +566,7 @@ const I18N = {
     tab_statistics: "Statistics",
     st_hint: "Evaluation of the currently known devices and the most recently read network map.",
     st_overview: "Overview",
+    st_avail_hint: "Zigbee2MQTT reports no availability for these devices. Enable `availability: true` in Zigbee2MQTT to see Online and Offline.",
     st_kinds: "Device types",
     st_weakest: "Weakest signal",
     st_b_full: "Full",
@@ -740,6 +742,7 @@ const I18N = {
     tab_statistics: "Statistieken",
     st_hint: "Overzicht van de momenteel bekende apparaten en de laatst gelezen netwerkkaart.",
     st_overview: "Overzicht",
+    st_avail_hint: "Zigbee2MQTT meldt voor deze apparaten geen beschikbaarheid. Zet in Zigbee2MQTT `availability: true` aan, dan verschijnen Online en Offline.",
     st_kinds: "Apparaattypen",
     st_weakest: "Zwakste signaal",
     st_b_full: "Vol",
@@ -922,6 +925,7 @@ const I18N = {
     tab_statistics: "Statistiques",
     st_hint: "Évaluation des appareils actuellement connus et de la dernière carte du réseau lue.",
     st_overview: "Aperçu",
+    st_avail_hint: "Zigbee2MQTT ne signale pas la disponibilité de ces appareils. Active `availability: true` dans Zigbee2MQTT pour voir En ligne et Hors ligne.",
     st_kinds: "Types d'appareils",
     st_weakest: "Signal le plus faible",
     st_b_full: "Pleine",
@@ -1104,6 +1108,7 @@ const I18N = {
     tab_statistics: "Estadísticas",
     st_hint: "Evaluación de los dispositivos conocidos actualmente y del último mapa de red leído.",
     st_overview: "Resumen",
+    st_avail_hint: "Zigbee2MQTT no informa de la disponibilidad de estos dispositivos. Activa `availability: true` en Zigbee2MQTT para ver En línea y Sin conexión.",
     st_kinds: "Tipos de dispositivo",
     st_weakest: "Señal más débil",
     st_b_full: "Llena",
@@ -1287,6 +1292,7 @@ const I18N = {
     tab_statistics: "Statistici",
     st_hint: "Evaluarea dispozitivelor cunoscute în prezent și a ultimei hărți de rețea citite.",
     st_overview: "Prezentare generală",
+    st_avail_hint: "Zigbee2MQTT nu raportează disponibilitatea acestor dispozitive. Activează `availability: true` în Zigbee2MQTT pentru a vedea Online și Offline.",
     st_kinds: "Tipuri de dispozitive",
     st_weakest: "Cel mai slab semnal",
     st_b_full: "Plină",
@@ -1470,6 +1476,7 @@ const I18N = {
     tab_statistics: "Statistiche",
     st_hint: "Valutazione dei dispositivi attualmente noti e dell'ultima mappa di rete letta.",
     st_overview: "Panoramica",
+    st_avail_hint: "Zigbee2MQTT non segnala la disponibilità di questi dispositivi. Attiva `availability: true` in Zigbee2MQTT per vedere Online e Offline.",
     st_kinds: "Tipi di dispositivo",
     st_weakest: "Segnale più debole",
     st_b_full: "Piena",
@@ -1646,6 +1653,7 @@ const I18N = {
     tab_statistics: "Статистика",
     st_hint: "Анализа тренутно познатих уређаја и последње прочитане мреже.",
     st_overview: "Преглед",
+    st_avail_hint: "Zigbee2MQTT не пријављује доступност ових уређаја. Укључи `availability: true` у Zigbee2MQTT да би се приказали Онлајн и Офлајн.",
     st_kinds: "Врсте уређаја",
     st_weakest: "Најслабији сигнал",
     st_b_full: "Пуна",
@@ -1830,6 +1838,7 @@ const I18N = {
     tab_statistics: "Statistika",
     st_hint: "Analiza trenutno poznatih uređaja i poslednje pročitane mreže.",
     st_overview: "Pregled",
+    st_avail_hint: "Zigbee2MQTT ne prijavljuje dostupnost ovih uređaja. Uključi `availability: true` u Zigbee2MQTT da bi se prikazali Onlajn i Oflajn.",
     st_kinds: "Vrste uređaja",
     st_weakest: "Najslabiji signal",
     st_b_full: "Puna",
@@ -2282,12 +2291,13 @@ const BASE_CARD_STYLES = `
   .nm-row ha-icon { --mdc-icon-size: 18px; color: var(--secondary-text-color, #727272); }
   .nm-rel { white-space: nowrap; }
   /* Expose-Funktionen im Geräte-Popup */
-  .ex-list { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
+  .ex-list { display: flex; flex-direction: column; }
   .ex-group { font-size: 0.8em; font-weight: 600; color: var(--secondary-text-color, #727272); padding: 10px 0 2px; }
   .ex-group:first-child { padding-top: 2px; }
   .ex-row { padding: 6px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); }
   .ex-row[hidden], .ex-group[hidden] { display: none; }
   .ex-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .ex-top.ex-top-num { flex-direction: column; align-items: stretch; gap: 4px; }
   .ex-label { font-weight: 500; }
   .ex-prop { font-size: 0.78em; margin-left: 6px; color: var(--secondary-text-color, #727272); word-break: break-all; }
   .ex-value { font-weight: 500; text-align: right; word-break: break-word; }
@@ -4173,12 +4183,14 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       tile(s.total, t("chip_devices")),
       tile(s.state.online, t("flt_online")),
       tile(s.state.offline, t("flt_offline")),
+      ...(s.state.unknown > 0 ? [tile(s.state.unknown, t("unknown"))] : []),
       tile(kindCount("Router"), t("type_Router")),
       tile(kindCount("EndDevice"), t("type_EndDevice")),
       tile(s.vendor_count, t("flt_vendor")),
       tile(s.lqi_avg ?? "–", `Ø ${t("f_lqi")}`),
       tile(s.battery_avg === null || s.battery_avg === undefined ? "–" : `${s.battery_avg} %`, `Ø ${t("f_battery")}`),
     ].join("")}</div>
+      ${s.state.unknown > 0 && s.state.online + s.state.offline === 0 ? `<div class="hint">${esc(t("st_avail_hint"))}</div>` : ""}
       ${sub(t("st_kinds"))}${bars(s.kinds.map((k) => ({ label: word("type_", k.key), n: k.count })), s.total)}
       ${sub(t("f_power"))}${bars([
         { label: t("st_mains"), n: s.power.mains, color: C.ok },
@@ -4405,24 +4417,34 @@ class Zigbee2MqttManagerCard extends HTMLElement {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    if (capture) input.setAttribute("capture", "environment");
+    input.hidden = true;
+    if (capture) {
+      // Fallback ohne Kameraansicht: die Kamera-App des Geräts über das Dateifeld öffnen (Android: capture)
+      input.setAttribute("capture", "environment");
+      input.capture = "environment";
+    }
+    const done = () => input.remove();
     input.addEventListener("change", () => {
       const file = input.files && input.files[0];
+      done();
       if (file) this._uploadImage(ieee, file);
     });
+    input.addEventListener("cancel", done);
+    this.shadowRoot.appendChild(input);
     input.click();
   }
 
   async _takePhoto(ieee) {
     if (!ieee) return;
-    const coarse = window.matchMedia?.("(pointer: coarse)")?.matches;
-    // Smartphone/Tablet oder ohne sichere Verbindung: die Kamera-App des Geräts über das Dateifeld nutzen
-    if (coarse || !navigator.mediaDevices?.getUserMedia || !window.isSecureContext) return this._pickImage(ieee, true);
+    // Eigene Kameraansicht auf allen Geräten (auch Smartphone/Tablet), sobald die Verbindung sicher ist (HTTPS)
+    if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) return this._pickImage(ieee, true);
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
-    } catch (_e) {
-      return void this._toast(this._t("img_camera_denied"), true);
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+    } catch (e) {
+      // Zugriff verweigert: Hinweis. Sonst (keine Kamera, App ohne Kameraerlaubnis): Kamera-App über das Dateifeld versuchen
+      if (e && (e.name === "NotAllowedError" || e.name === "SecurityError")) return void this._toast(this._t("img_camera_denied"), true);
+      return this._pickImage(ieee, true);
     }
     if (this._camClose) this._camClose();
     const overlay = document.createElement("div");
@@ -5179,7 +5201,7 @@ class Zigbee2MqttManagerCard extends HTMLElement {
       const search = `${r.label} ${r.property} ${r.group || ""}`.toLowerCase();
       const hidden = filter && !search.includes(filter) ? " hidden" : "";
       html += `<div class="ex-row" data-s="${esc(search)}"${hidden}>
-          <div class="ex-top"><span><span class="ex-label">${esc(r.label)}</span>${
+          <div class="ex-top${!(r.switchable && !ro) && numEdit && r.settable ? " ex-top-num" : ""}"><span><span class="ex-label">${esc(r.label)}</span>${
             r.label !== r.property ? `<span class="ex-prop">${esc(r.property)}</span>` : ""
           }</span><span class="ex-value">${r.switchable && !ro ? this._exposeSwitch(ieee, r) : numEdit && r.settable ? this._exposeNumber(ieee, r) : this._exposeValue(r)}</span></div>
           <div class="ex-meta">${meta.join("")}</div>${r.description ? `<div class="ex-desc">${esc(r.description)}</div>` : ""}
